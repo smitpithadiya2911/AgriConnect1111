@@ -11,5 +11,5 @@ echo "Python version: $(python3 --version)"
 
 python3 -m pip install -r requirements.txt --break-system-packages
 
-# Use temporary SQLite DB — no MySQL needed for collectstatic
-DATABASE_URL=sqlite:////tmp/db.sqlite3 python3 manage.py collectstatic --no-input --clear
+# Use build_settings.py (SQLite in-memory) — no MySQL driver needed during build
+DJANGO_SETTINGS_MODULE=agriconnect_project.build_settings python3 manage.py collectstatic --no-input --clear

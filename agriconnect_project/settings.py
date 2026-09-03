@@ -110,12 +110,23 @@ default_db_url = (
 
 DATABASE_URL = os.environ.get('DATABASE_URL', default_db_url)
 
+db_config = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+
+# PyMySQL does not accept mysqlclient-specific keyword arguments like 'ssl-mode' or 'sslmode'
+if 'OPTIONS' in db_config:
+    db_config['OPTIONS'].pop('ssl-mode', None)
+    db_config['OPTIONS'].pop('sslmode', None)
+
+# Configure SSL for TiDB Cloud or any remote MySQL provider using PyMySQL
+if 'tidbcloud' in DATABASE_URL or 'ssl' in DATABASE_URL.lower():
+    try:
+        import certifi
+        db_config.setdefault('OPTIONS', {})['ssl'] = {'ca': certifi.where()}
+    except ImportError:
+        db_config.setdefault('OPTIONS', {})['ssl'] = {'ssl': True}
+
 DATABASES = {
-    'default': dj_database_url.parse(
-        DATABASE_URL,
-        conn_max_age=600,
-        ssl_require=True if 'tidbcloud' in DATABASE_URL else False
-    )
+    'default': db_config
 }
 
 # Password validation

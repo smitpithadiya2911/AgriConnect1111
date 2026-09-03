@@ -1,0 +1,512 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Smart Produce Marketplace Catalog – AgriConnect{% endblock %}
+
+{% block content %}
+<!-- 1. Marketplace Hero Section with Background -->
+<div class="py-5 text-white position-relative overflow-hidden mb-4" style="background: linear-gradient(135deg, rgba(46, 125, 50, 0.95), rgba(76, 175, 80, 0.85)), url('{% static "images/crops/wheat.jpg" %}') no-repeat center center/cover;">
+    <div class="container py-4 text-center position-relative" style="z-index: 2;">
+        <h1 class="fw-extrabold mb-2 text-white" style="font-size: 2.8rem; font-weight: 800;">Fresh Farm Products Marketplace</h1>
+        <p class="text-light-green mb-4" style="color: #e8f5e9; font-size: 1.1rem; max-width: 720px; margin: 0 auto;">
+            Browse vegetables, fruits, grains, dairy products, seeds, and organic crops directly from trusted farmers.
+        </p>
+
+        <!-- Platform Stats row -->
+        <div class="row g-2 max-width-md mx-auto justify-content-center text-center mb-4 small" style="max-width: 600px;">
+            <div class="col-3 border-end border-light"><strong>500+</strong><br>Farmers</div>
+            <div class="col-3 border-end border-light"><strong>1,000+</strong><br>Crops</div>
+            <div class="col-3 border-end border-light"><strong>10,000+</strong><br>Orders</div>
+            <div class="col-3"><strong>5,000+</strong><br>Buyers</div>
+        </div>
+
+        <!-- Integrated Search Bar -->
+        <form method="GET" action="{% url 'crop_list' %}" class="card-premium p-2 bg-white rounded-5 shadow-lg border-0 d-flex flex-row align-items-center mx-auto" style="max-width: 650px;">
+            <div class="input-group text-dark">
+                <span class="input-group-text bg-transparent border-0 text-success"><i class="fa-solid fa-magnifying-glass fs-5"></i></span>
+                <input type="text" name="q" value="{{ q }}" class="form-control border-0 text-dark" placeholder="Search vegetables, fruits, grains, dairy products, seeds..." style="box-shadow: none;">
+                
+                <!-- Retain current filters if any -->
+                {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+                {% if min_price %}<input type="hidden" name="min_price" value="{{ min_price }}">{% endif %}
+                {% if max_price %}<input type="hidden" name="max_price" value="{{ max_price }}">{% endif %}
+                {% if availability %}<input type="hidden" name="availability" value="{{ availability }}">{% endif %}
+                
+                <button type="submit" class="btn btn-success rounded-pill px-4 py-2 fw-bold" style="background: var(--primary-color); border: none;">Search</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="container py-3">
+    <div class="row g-4">
+        
+        <!-- 2. Advanced Sticky Filter Sidebar -->
+        <div class="col-lg-3">
+            <div class="card-premium p-4 border border-success-subtle bg-white sticky-filter-sidebar">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-success mb-0"><i class="fa-solid fa-sliders me-2"></i>Filter Options</h5>
+                    <a href="{% url 'crop_list' %}" class="small text-danger text-decoration-none fw-bold">Reset All</a>
+                </div>
+                
+                <form method="GET" action="{% url 'crop_list' %}">
+                    {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+                    {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+                    
+                    <!-- Categories -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-dark mb-2 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Categories</label>
+                        <select class="form-select border rounded-3 p-2.5 small" name="category" onchange="this.form.submit()">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if selected_category == cat.id %}selected{% endif %}>{{ cat.name }} ({{ cat.crop_count }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Price Limits -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-dark mb-2 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Price Limits (₹)</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light text-muted">Min</span>
+                                    <input type="number" class="form-control" name="min_price" value="{{ min_price }}" placeholder="0" step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light text-muted">Max</span>
+                                    <input type="number" class="form-control" name="max_price" value="{{ max_price }}" placeholder="500" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location Search -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-dark mb-2 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Location (City/Region)</label>
+                        <input type="text" name="location" value="{{ location }}" class="form-control border rounded-3 p-2.5 small" placeholder="e.g. Rajkot">
+                    </div>
+
+                    <!-- Merchant Trust -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-dark mb-2 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Farmer Trust Status</label>
+                        <select class="form-select border rounded-3 p-2.5 small" name="farmer_type" onchange="this.form.submit()">
+                            <option value="">All Farmers</option>
+                            <option value="verified" {% if farmer_type == 'verified' %}selected{% endif %}>✓ Verified Sellers Only</option>
+                            <option value="top_rated" {% if farmer_type == 'top_rated' %}selected{% endif %}>★ Top Rated (4.5+)</option>
+                            <option value="organic" {% if farmer_type == 'organic' %}selected{% endif %}>🌿 Organic Certified</option>
+                        </select>
+                    </div>
+
+                    <!-- Min Rating -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-dark mb-2 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Min Seller Rating</label>
+                        <select class="form-select border rounded-3 p-2.5 small" name="min_rating" onchange="this.form.submit()">
+                            <option value="">Any Rating</option>
+                            <option value="4" {% if min_rating == '4' %}selected{% endif %}>4★ & Above</option>
+                            <option value="3" {% if min_rating == '3' %}selected{% endif %}>3★ & Above</option>
+                            <option value="2" {% if min_rating == '2' %}selected{% endif %}>2★ & Above</option>
+                        </select>
+                    </div>
+
+                    <!-- Stock Status -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-dark mb-2 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Availability</label>
+                        <select class="form-select border rounded-3 p-2.5 small" name="stock_status" onchange="this.form.submit()">
+                            <option value="">All Stock</option>
+                            <option value="in_stock" {% if stock_status == 'in_stock' %}selected{% endif %}>In Stock Only</option>
+                            <option value="low_stock" {% if stock_status == 'low_stock' %}selected{% endif %}>Low Stock Warnings</option>
+                            <option value="out_of_stock" {% if stock_status == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 py-2.5 rounded-3 fw-bold text-white shadow-sm" style="background: var(--primary-color); border: none;"><i class="fa-solid fa-filter me-2"></i>Apply Filters</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 3. Crops Marketplace Listings -->
+        <div class="col-lg-9">
+            
+            <!-- Controls Toolbar (Sorting, Count, View Toggler) -->
+            <div class="card-premium p-3 bg-white border border-success-subtle mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center">
+                    <span class="text-success fw-bold me-2"><i class="fa-solid fa-leaf me-1"></i>{{ crops|length }}</span>
+                    <span class="text-muted small">farm yields listed today</span>
+                </div>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Sort controls -->
+                    <select class="form-select form-select-sm border rounded-pill px-3" style="width: 170px;" onchange="location = this.value;">
+                        <option value="?{% if q %}q={{ q }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}{% if location %}location={{ location }}&{% endif %}{% if farmer_type %}farmer_type={{ farmer_type }}&{% endif %}{% if min_rating %}min_rating={{ min_rating }}&{% endif %}{% if stock_status %}stock_status={{ stock_status }}&{% endif %}sort=newest" {% if sort == 'newest' %}selected{% endif %}>Newest First</option>
+                        <option value="?{% if q %}q={{ q }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}{% if location %}location={{ location }}&{% endif %}{% if farmer_type %}farmer_type={{ farmer_type }}&{% endif %}{% if min_rating %}min_rating={{ min_rating }}&{% endif %}{% if stock_status %}stock_status={{ stock_status }}&{% endif %}sort=price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                        <option value="?{% if q %}q={{ q }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}{% if location %}location={{ location }}&{% endif %}{% if farmer_type %}farmer_type={{ farmer_type }}&{% endif %}{% if min_rating %}min_rating={{ min_rating }}&{% endif %}{% if stock_status %}stock_status={{ stock_status }}&{% endif %}sort=price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                        <option value="?{% if q %}q={{ q }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}{% if location %}location={{ location }}&{% endif %}{% if farmer_type %}farmer_type={{ farmer_type }}&{% endif %}{% if min_rating %}min_rating={{ min_rating }}&{% endif %}{% if stock_status %}stock_status={{ stock_status }}&{% endif %}sort=rating" {% if sort == 'rating' %}selected{% endif %}>Highest Rated</option>
+                        <option value="?{% if q %}q={{ q }}&{% endif %}{% if selected_category %}category={{ selected_category }}&{% endif %}{% if min_price %}min_price={{ min_price }}&{% endif %}{% if max_price %}max_price={{ max_price }}&{% endif %}{% if location %}location={{ location }}&{% endif %}{% if farmer_type %}farmer_type={{ farmer_type }}&{% endif %}{% if min_rating %}min_rating={{ min_rating }}&{% endif %}{% if stock_status %}stock_status={{ stock_status }}&{% endif %}sort=popular" {% if sort == 'popular' %}selected{% endif %}>Most Popular</option>
+                    </select>
+
+                    <!-- View toggler buttons -->
+                    <div class="btn-group btn-group-sm border rounded-pill overflow-hidden bg-light" role="group">
+                        <button type="button" class="btn btn-light border-0 active" id="btnGridView" onclick="setViewMode('grid')"><i class="fa-solid fa-grip"></i></button>
+                        <button type="button" class="btn btn-light border-0" id="btnListView" onclick="setViewMode('list')"><i class="fa-solid fa-list"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Showcase Grid/List -->
+            <div class="row g-4" id="marketplaceContainer">
+                {% for crop in crops %}
+                    <div class="col-md-4 col-sm-6 marketplace-item-col">
+                        <div class="card-premium h-100 d-flex flex-column justify-content-between border border-success-subtle hover-zoom-card bg-white p-0 overflow-hidden">
+                            <div>
+                                <!-- Image & Badges overlay -->
+                                <div class="position-relative overflow-hidden" style="height: 180px;">
+                                    {% if crop.image %}
+                                        <img src="{{ crop.image.url }}" class="w-100 h-100 object-fit-cover transition-img" alt="{{ crop.name }}">
+                                    {% else %}
+                                        <div class="bg-success-subtle d-flex align-items-center justify-content-center text-success h-100 w-100">
+                                            <i class="fa-solid fa-wheat-awn fs-1"></i>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Status Badges Overlay -->
+                                    <div class="position-absolute top-0 end-0 m-2 d-flex flex-column align-items-end gap-1" style="z-index: 10;">
+                                        <span class="badge bg-success shadow-sm">{{ crop.get_availability_status_display }}</span>
+                                        {% if "organic" in crop.category.name.lower or "organic" in crop.name.lower %}
+                                            <span class="badge bg-warning text-dark shadow-sm">🌿 Organic</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Wishlist Heart Button -->
+                                     {% if request.user.is_authenticated %}
+                                         <a href="{% url 'wishlist_toggle' crop.id %}" class="btn btn-light btn-sm rounded-circle position-absolute top-0 start-0 m-2 border-0 shadow-sm d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; z-index: 10; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" title="{% if crop.id in wishlist_crop_ids %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}">
+                                             <i class="{% if crop.id in wishlist_crop_ids %}fa-solid text-danger{% else %}fa-regular text-muted{% endif %} fa-heart"></i>
+                                         </a>
+                                     {% else %}
+                                         <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-light btn-sm rounded-circle position-absolute top-0 start-0 m-2 border-0 shadow-sm text-muted d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; z-index: 10;" title="Login to add to Wishlist">
+                                             <i class="fa-regular fa-heart"></i>
+                                         </a>
+                                     {% endif %}
+                                </div>
+
+                                <!-- Card details -->
+                                <div class="p-3 pb-0">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="badge-category">{{ crop.category.name }}</span>
+                                        {% if crop.freshness_status == 'Fresh' %}
+                                            <span class="badge bg-success-subtle text-success small border border-success px-1.5 py-0.5 rounded-pill" style="font-size: 0.65rem;"><i class="fa-solid fa-seedling me-0.5"></i>Fresh</span>
+                                        {% elif crop.freshness_status == 'Expiring Soon' %}
+                                            <span class="badge bg-warning-subtle text-warning small border border-warning px-1.5 py-0.5 rounded-pill" style="font-size: 0.65rem;"><i class="fa-solid fa-hourglass-half me-0.5"></i>Expiring</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger small border border-danger px-1.5 py-0.5 rounded-pill" style="font-size: 0.65rem;"><i class="fa-solid fa-circle-xmark me-0.5"></i>Expired</span>
+                                        {% endif %}
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1 text-truncate" style="font-size: 1.05rem;">{{ crop.name }}</h6>
+                                    <p class="text-muted small mb-2 text-truncate-2" style="font-size: 0.82rem; height: 38px;">{{ crop.description }}</p>
+
+                                    <!-- Farmer Mini Profile -->
+                                    <div class="border-top pt-2 mt-2">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div class="d-flex align-items-center">
+                                                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold me-2" style="width: 30px; height: 30px; font-size: 0.75rem;">
+                                                    {{ crop.farmer.user.username|slice:":2"|upper }}
+                                                </div>
+                                                <div>
+                                                    <span class="fw-bold text-dark small d-block" style="font-size: 0.8rem;">{{ crop.farmer.user.first_name|default:crop.farmer.user.username }}</span>
+                                                    <small class="text-muted" style="font-size: 0.7rem;"><i class="fa-solid fa-location-dot me-1 text-success"></i>{{ crop.farmer.farm_location }}</small>
+                                                </div>
+                                            </div>
+                                            {% if crop.farmer.verification_status == 'approved' %}
+                                                <span class="badge bg-success text-white" style="font-size: 0.6rem;" title="Trust score: {{ crop.farmer.trust_score }}%"><i class="fa-solid fa-circle-check"></i> Verified</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary text-white" style="font-size: 0.6rem;"><i class="fa-solid fa-circle-minus"></i> Standard</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Purchase Actions and pricing footer -->
+                            <div class="p-3 border-top mt-3 bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="fs-4 fw-bold text-success">₹{{ crop.price_per_kg }}</span>
+                                        <span class="small text-muted">/ {{ crop.get_unit_display }}</span>
+                                    </div>
+                                    <div class="d-flex gap-1">
+                                        <!-- Quick View Button using serialized data attributes -->
+                                        <button type="button" class="btn btn-outline-secondary btn-sm px-2 rounded-3" 
+                                                data-bs-toggle="modal" data-bs-target="#quickViewModal"
+                                                data-id="{{ crop.id }}"
+                                                data-name="{{ crop.name }}"
+                                                data-category="{{ crop.category.name }}"
+                                                data-price="{{ crop.price_per_kg }}"
+                                                data-unit="{{ crop.get_unit_display }}"
+                                                data-image="{% if crop.image %}{{ crop.image.url }}{% else %}/static/images/default-crop.jpg{% endif %}"
+                                                data-desc="{{ crop.description }}"
+                                                data-farm="{{ crop.farmer.farm_name }}"
+                                                data-location="{{ crop.farmer.farm_location }}"
+                                                data-rating="{{ crop.farmer.store_rating }}"
+                                                data-experience="{{ crop.farmer.experience }}"
+                                                data-phone="{{ crop.farmer.user.phone|default:'9876543210' }}"
+                                                data-chaturl="{% url 'chat_detail' crop.farmer.user.username %}"
+                                                data-carturl="{% url 'add_to_cart' crop.id %}"
+                                                data-stock="{{ crop.quantity_available|floatformat:0 }}"
+                                                data-detailurl="{% url 'crop_detail' crop.id %}"
+                                                onclick="loadQuickView(this)">
+                                            <i class="fa-regular fa-eye"></i>
+                                        </button>
+                                        
+                                        <a href="{% url 'crop_detail' crop.id %}" class="btn btn-outline-success btn-sm px-3 rounded-3">Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <!-- 4. Premium No Results Experience -->
+                    <div class="col-12 text-center py-5">
+                        <div class="card border-0 rounded-4 shadow-sm bg-white p-5 max-width-md mx-auto" style="max-width: 620px;">
+                            <i class="fa-solid fa-magnifying-glass-blur fs-1 text-success mb-3"></i>
+                            <h4 class="fw-bold text-dark">No Product Yields Found</h4>
+                            <p class="text-muted small mb-4">We couldn't find any direct-trade crops matching your active search filters.</p>
+                            
+                            <!-- Search recommendations -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-secondary text-uppercase mb-2.5" style="font-size: 0.72rem; letter-spacing: 0.5px;">Try Popular Searches</h6>
+                                <div class="d-flex flex-wrap justify-content-center gap-2">
+                                    <a href="?q=Tomato" class="btn btn-xs btn-outline-success rounded-pill px-3 py-1 text-decoration-none">Tomato</a>
+                                    <a href="?q=Organic" class="btn btn-xs btn-outline-success rounded-pill px-3 py-1 text-decoration-none">Organic Produce</a>
+                                    <a href="?q=Potato" class="btn btn-xs btn-outline-success rounded-pill px-3 py-1 text-decoration-none">Potato</a>
+                                    <a href="?q=Onion" class="btn btn-xs btn-outline-success rounded-pill px-3 py-1 text-decoration-none">Onion</a>
+                                    <a href="?q=Wheat" class="btn btn-xs btn-outline-success rounded-pill px-3 py-1 text-decoration-none">Wheat</a>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex gap-2 justify-content-center">
+                                <a href="{% url 'crop_list' %}" class="btn btn-success px-4 rounded-pill text-white"><i class="fa-solid fa-basket-shopping me-1 text-white"></i>Clear Filters & Browse All</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination Controls -->
+            {% if page_obj.has_other_pages %}
+            <div class="d-flex justify-content-center mt-5">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-success gap-1 border-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link border-0 rounded-circle text-success" href="?{{ query_string }}&page={{ page_obj.previous_page_number }}">Prev</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link border-0 rounded-circle text-muted">Prev</span></li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active"><span class="page-link border-0 rounded-circle bg-success text-white">{{ num }}</span></li>
+                            {% else %}
+                                <li class="page-item"><a class="page-link border-0 rounded-circle text-success" href="?{{ query_string }}&page={{ num }}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link border-0 rounded-circle text-success" href="?{{ query_string }}&page={{ page_obj.next_page_number }}">Next</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link border-0 rounded-circle text-muted">Next</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 5. Interactive Quick View Modal -->
+<div class="modal fade" id="quickViewModal" tabindex="-1" aria-labelledby="quickViewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header border-0 bg-success text-white py-3">
+                <h5 class="modal-title fw-bold" id="quickViewModalLabel"><i class="fa-solid fa-leaf me-2"></i>Quick View Crop Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-white">
+                <div class="row g-4">
+                    <!-- Left: Image Viewer -->
+                    <div class="col-md-6">
+                        <div class="border rounded-4 overflow-hidden bg-light text-center" style="height: 280px;">
+                            <img id="qvImage" src="" class="w-100 h-100 object-fit-cover" alt="Product Image">
+                        </div>
+                    </div>
+                    <!-- Right: Purchase Actions & Specs -->
+                    <div class="col-md-6 d-flex flex-column justify-content-between">
+                        <div>
+                            <span id="qvCategory" class="badge bg-success-subtle text-success px-2 py-1 rounded-pill mb-2 small">Category</span>
+                            <h4 id="qvName" class="fw-bold text-dark mb-1">Product Name</h4>
+                            
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <span class="text-warning small"><i class="fa-solid fa-star"></i> 4.8</span>
+                                <span class="text-muted small">|</span>
+                                <span id="qvStock" class="badge bg-light text-success border">150 units available</span>
+                            </div>
+
+                            <div class="mb-3">
+                                <span class="fs-2 fw-bold text-success" id="qvPrice">₹0.00</span>
+                                <span class="text-muted small">/ <span id="qvUnit">kg</span></span>
+                            </div>
+
+                            <p id="qvDesc" class="text-muted small mb-3">Product Description text goes here.</p>
+
+                            <!-- Farmer Details row -->
+                            <div class="p-3 bg-light rounded-3 small border mb-3">
+                                <div class="mb-1"><strong>Farmer:</strong> <span id="qvFarmName">Farm Name</span></div>
+                                <div class="mb-1"><strong>Location:</strong> <span id="qvLocation">Gujarat</span></div>
+                                <div class="mb-0"><strong>Store Rating:</strong> <span id="qvRating">4.8 ⭐</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Purchase Form Action -->
+                        <div class="d-flex gap-2 mt-2">
+                            {% if request.user.is_authenticated and request.user.role == 'buyer' %}
+                                <form id="qvCartForm" action="" method="POST" class="d-flex w-100 gap-2 mb-0">
+                                    {% csrf_token %}
+                                    <input type="number" class="form-control text-center py-2" name="quantity" value="1" min="1" style="width: 70px;">
+                                    <button type="submit" class="btn btn-success w-100 py-2 rounded-3 fw-bold"><i class="fa-solid fa-cart-plus me-2"></i>Add to Cart</button>
+                                </form>
+                            {% endif %}
+                            <a id="qvDetailsLink" href="" class="btn btn-outline-success py-2 rounded-3 px-3"><i class="fa-solid fa-circle-info"></i> Details</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 6. Trust Signals Section -->
+<div class="container py-5 mt-4">
+    <div class="row g-4 text-center">
+        <div class="col-md-4">
+            <div class="card-premium p-4 border bg-white">
+                <i class="fa-solid fa-tractor text-success fs-1 mb-3"></i>
+                <h5 class="fw-bold text-dark mb-2">Verified Farmers</h5>
+                <p class="text-muted small mb-0">All local sellers are credential checked for pesticide compliance and sorting grades.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-premium p-4 border bg-white">
+                <i class="fa-solid fa-shield-halved text-success fs-1 mb-3"></i>
+                <h5 class="fw-bold text-dark mb-2">Secure Escrow Trades</h5>
+                <p class="text-muted small mb-0">Payments are processed securely and only dispatched to the farmer's wallet upon verified delivery.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-premium p-4 border bg-white">
+                <i class="fa-solid fa-award text-success fs-1 mb-3"></i>
+                <h5 class="fw-bold text-dark mb-2">Fresh Quality Guarantee</h5>
+                <p class="text-muted small mb-0">Products are plucked fresh on demand and shipped inside climate-ventilated packaging.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Grid vs List View toggle logic
+    function setViewMode(mode) {
+        const container = document.getElementById('marketplaceContainer');
+        const gridBtn = document.getElementById('btnGridView');
+        const listBtn = document.getElementById('btnListView');
+        
+        if (mode === 'list') {
+            container.classList.add('list-view-mode');
+            gridBtn.classList.remove('active');
+            listBtn.classList.add('active');
+            
+            // Re-arrange cols from col-md-4 to col-12
+            document.querySelectorAll('.marketplace-item-col').forEach(col => {
+                col.className = 'col-12 mb-3 marketplace-item-col';
+                // Toggle horizontal flex structure on inner card
+                const card = col.querySelector('.card-premium');
+                card.classList.add('flex-md-row');
+                card.style.height = 'auto';
+                
+                const imgContainer = card.querySelector('.position-relative');
+                imgContainer.style.width = '240px';
+                imgContainer.style.height = '100%';
+                imgContainer.style.minHeight = '180px';
+            });
+        } else {
+            container.classList.remove('list-view-mode');
+            gridBtn.classList.add('active');
+            listBtn.classList.remove('active');
+            
+            // Restore cols
+            document.querySelectorAll('.marketplace-item-col').forEach(col => {
+                col.className = 'col-md-4 col-sm-6 mb-4 marketplace-item-col';
+                const card = col.querySelector('.card-premium');
+                card.classList.remove('flex-md-row');
+                card.style.height = '100%';
+                
+                const imgContainer = card.querySelector('.position-relative');
+                imgContainer.style.width = '100%';
+                imgContainer.style.height = '180px';
+            });
+        }
+    }
+
+    // Dynamic Quick View population logic
+    function loadQuickView(button) {
+        const id = button.getAttribute('data-id');
+        const name = button.getAttribute('data-name');
+        const category = button.getAttribute('data-category');
+        const price = button.getAttribute('data-price');
+        const unit = button.getAttribute('data-unit');
+        const image = button.getAttribute('data-image');
+        const desc = button.getAttribute('data-desc');
+        const farm = button.getAttribute('data-farm');
+        const location = button.getAttribute('data-location');
+        const rating = button.getAttribute('data-rating');
+        const stock = button.getAttribute('data-stock');
+        const cartUrl = button.getAttribute('data-carturl');
+        const detailUrl = button.getAttribute('data-detailurl');
+
+        // Populate elements
+        document.getElementById('qvImage').src = image;
+        document.getElementById('qvCategory').innerText = category;
+        document.getElementById('qvName').innerText = name;
+        document.getElementById('qvPrice').innerText = '₹' + price;
+        document.getElementById('qvUnit').innerText = unit;
+        document.getElementById('qvDesc').innerText = desc;
+        document.getElementById('qvFarmName').innerText = farm;
+        document.getElementById('qvLocation').innerText = location;
+        document.getElementById('qvRating').innerText = rating + ' ⭐';
+        document.getElementById('qvStock').innerText = stock + ' ' + unit + ' available';
+        document.getElementById('qvDetailsLink').href = detailUrl;
+
+        // Populate Cart form URL
+        const cartForm = document.getElementById('qvCartForm');
+        if (cartForm) {
+            cartForm.action = cartUrl;
+        }
+    }
+</script>
+<style>
+    .sticky-filter-sidebar {
+        position: sticky;
+        top: 90px;
+        z-index: 100;
+    }
+    
+    .text-truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;  
+        overflow: hidden;
+    }
+</style>
+{% endblock %}

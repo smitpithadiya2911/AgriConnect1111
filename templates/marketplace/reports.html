@@ -1,0 +1,304 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reports & Business Intelligence Center - AgriConnect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-bold text-success mb-1">
+                <i class="fa-solid fa-chart-line me-2"></i>Business Intelligence & Reporting Center
+            </h2>
+            <p class="text-muted mb-0">Generate, schedule, visualize, and export marketplace analytics</p>
+        </div>
+        <div>
+            <a href="#generateReportSection" class="btn btn-success text-white px-4 rounded-pill">
+                <i class="fa-solid fa-plus me-2"></i>Generate Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style="width: 52px; height: 52px; font-size: 1.4rem;">
+                        <i class="fa-solid fa-file-invoice"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small mb-1">Total Reports Generated</h6>
+                        <h3 class="fw-extrabold text-success mb-0">{{ total_generated }}</h3>
+                    </div>
+                </div>
+                <div class="position-absolute end-0 bottom-0 opacity-10 text-success me-3 mb-2" style="font-size: 4rem;">
+                    <i class="fa-solid fa-file-lines"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style="width: 52px; height: 52px; font-size: 1.4rem;">
+                        <i class="fa-solid fa-download"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small mb-1">Total Reports Downloaded</h6>
+                        <h3 class="fw-extrabold text-success mb-0">{{ total_downloads }}</h3>
+                    </div>
+                </div>
+                <div class="position-absolute end-0 bottom-0 opacity-10 text-success me-3 mb-2" style="font-size: 4rem;">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100 position-relative overflow-hidden">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center me-3" style="width: 52px; height: 52px; font-size: 1.4rem;">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted small mb-1">Active Scheduled Reports</h6>
+                        <h3 class="fw-extrabold text-warning mb-0">{{ active_schedules }}</h3>
+                    </div>
+                </div>
+                <div class="position-absolute end-0 bottom-0 opacity-10 text-warning me-3 mb-2" style="font-size: 4rem;">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Dashboard Charts (Enterprise Visualizations) -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-8">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-success mb-0">Revenue & Sales Performance Analytics</h5>
+                    <span class="badge bg-success-subtle text-success py-1 px-2.5 rounded">Live Data</span>
+                </div>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="revenuePerformanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100">
+                <h5 class="fw-bold text-success mb-3">Order Status Distribution</h5>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="orderDistributionChart"></canvas>
+                </div>
+                <div class="text-center mt-3 small text-muted">
+                    Total Revenue: <strong class="text-success">₹{{ revenue_data|floatformat:2 }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Request & Scheduling Engine -->
+    <div class="row g-4 mb-5" id="generateReportSection">
+        <div class="col-md-5">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100">
+                <h4 class="fw-bold text-success mb-3">
+                    <i class="fa-solid fa-gears me-2"></i>Generate Report
+                </h4>
+                <form method="POST" action="{% url 'report_generate' %}">
+                    {% csrf_token %}
+                    
+                    <!-- Report Type Selector -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Report Scope / Type</label>
+                        <select name="report_type" class="form-select rounded-3">
+                            {% if request.user.role == 'admin' %}
+                                <option value="user">User Registrations Report</option>
+                                <option value="product">Marketplace Inventory Report</option>
+                                <option value="order">Order Transaction Report</option>
+                                <option value="revenue">Platform Revenue Audit</option>
+                                <option value="verification">Farmer Verification & Trust Scores</option>
+                            {% elif request.user.role == 'farmer' %}
+                                <option value="order">My Sales & Crop Orders</option>
+                                <option value="product">My Inventory Performance</option>
+                                <option value="revenue">Earnings & Revenue Report</option>
+                            {% else %}
+                                <option value="order">My Purchases History</option>
+                                <option value="product">Saved Crops & Wishlist Summary</option>
+                            {% endif %}
+                        </select>
+                    </div>
+
+                    <!-- Date Range Filter -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Filter Period</label>
+                        <select name="date_range" class="form-select rounded-3">
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="7d" selected>Last 7 Days</option>
+                            <option value="30d">Last 30 Days</option>
+                            <option value="90d">Last 3 Months</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+
+                    <!-- Export Format Selection -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">File Format</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="format" id="fmtCsv" value="csv" checked>
+                                <label class="form-check-label small" for="fmtCsv">CSV Spreadsheet</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="format" id="fmtXlsx" value="xlsx">
+                                <label class="form-check-label small" for="fmtXlsx">Excel (.xlsx)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="format" id="fmtPdf" value="pdf">
+                                <label class="form-check-label small" for="fmtPdf">PDF Document</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Automation / Schedule Reports -->
+                    <div class="mb-3.5">
+                        <label class="form-label fw-bold small text-muted">Automated Schedule (Optional)</label>
+                        <select name="scheduled_interval" class="form-select rounded-3">
+                            <option value="">One-Time Instant Generation</option>
+                            <option value="daily">Schedule Daily Report</option>
+                            <option value="weekly">Schedule Weekly Report</option>
+                            <option value="monthly">Schedule Monthly Report</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-success text-white w-100 py-2.5 rounded-3">
+                        <i class="fa-solid fa-file-export me-2"></i>Create Report
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Download Logs & History Table -->
+        <div class="col-md-7">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100">
+                <h4 class="fw-bold text-success mb-3">
+                    <i class="fa-solid fa-clock-rotate-left me-2"></i>Report History & Downloads
+                </h4>
+                <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr class="text-muted small">
+                                <th>Report Name</th>
+                                <th>Format</th>
+                                <th>Interval</th>
+                                <th class="text-center">Downloads</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rep in reports %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark mb-0 style-truncate small">{{ rep.name }}</div>
+                                        <small class="text-muted" style="font-size: 0.65rem;">
+                                            <i class="fa-regular fa-clock me-1"></i>{{ rep.created_at|date:"M d, Y H:i" }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if rep.format == 'pdf' %}bg-danger-subtle text-danger{% elif rep.format == 'xlsx' %}bg-success-subtle text-success{% else %}bg-primary-subtle text-primary{% endif %} text-uppercase" style="font-size: 0.65rem;">
+                                            {{ rep.format }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if rep.scheduled_interval %}
+                                            <span class="badge bg-warning-subtle text-warning small py-1 rounded" style="font-size: 0.65rem;">
+                                                <i class="fa-solid fa-repeat me-1"></i>{{ rep.scheduled_interval|title }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted small" style="font-size: 0.65rem;">Once</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center fw-bold text-muted small">{{ rep.download_count }}</td>
+                                    <td class="text-end">
+                                        <div class="d-flex justify-content-end gap-1.5">
+                                            <a href="{% url 'report_download' rep.id %}" class="btn btn-sm btn-success text-white py-1 px-2.5 rounded-pill" style="font-size: 0.72rem;">
+                                                <i class="fa-solid fa-download me-1"></i>Export
+                                            </a>
+                                            <a href="{% url 'report_delete' rep.id %}" class="btn btn-sm btn-outline-danger py-1 px-2.5 rounded-pill" style="font-size: 0.72rem;">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-muted text-center py-5 small">No reports generated yet. Use the left panel to export marketplace files.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // 1. Revenue Chart.js Line configuration
+        const ctxRevenue = document.getElementById('revenuePerformanceChart').getContext('2d');
+        const revenueChart = new Chart(ctxRevenue, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+                datasets: [{
+                    label: 'Monthly Growth (₹)',
+                    data: [12000, 19000, 32000, 5000, 2000, 45000, {{ revenue_data }}],
+                    borderColor: '#2E7D32',
+                    backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // 2. Order distribution doughnut chart configuration
+        const ctxOrder = document.getElementById('orderDistributionChart').getContext('2d');
+        const orderChart = new Chart(ctxOrder, {
+            type: 'doughnut',
+            data: {
+                labels: ['Delivered', 'Pending', 'Cancelled'],
+                datasets: [{
+                    data: [65, 25, 10],
+                    backgroundColor: ['#2E7D32', '#FF9800', '#dc3545'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

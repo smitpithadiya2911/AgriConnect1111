@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Smart Alerts & Activity Center – AgriConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notif-card {
+        border-radius: 16px;
+        background: white;
+        transition: all 0.25s ease;
+        border: 1px solid rgba(46, 125, 50, 0.1);
+    }
+    .notif-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(46, 125, 50, 0.08);
+    }
+    .notif-card.unread {
+        background-color: #f1faf2;
+        border-left: 4px solid #2e7d32;
+    }
+    .priority-high {
+        border-left: 4px solid #d32f2f !important;
+    }
+    .priority-medium {
+        border-left: 4px solid #f57c00 !important;
+    }
+    .priority-low {
+        border-left: 4px solid #1976d2 !important;
+    }
+    .notif-icon-box {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    .filter-btn {
+        border-radius: 50px;
+        font-size: 0.85rem;
+        padding: 6px 16px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade">
+    <div class="row">
+        <!-- Main Panel Header -->
+        <div class="col-12 mb-4">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 d-flex flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <h2 class="fw-bold text-success mb-1"><i class="fa-regular fa-bell me-2"></i>Alerts & Activity Center</h2>
+                    <p class="text-muted mb-0">Manage system alerts, order updates, meteorological warnings, and direct trading communications.</p>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill small fw-bold">Unread: {{ unread_count }}</span>
+                    {% if unread_count > 0 %}
+                        <a href="{% url 'notifications_mark_all_read' %}" class="btn btn-sm btn-outline-success rounded-pill px-3"><i class="fa-solid fa-check-double me-1"></i>Mark All Read</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 sticky-top" style="top: 20px;">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-sliders me-2"></i>Filter Alerts</h5>
+                
+                <form method="GET" action="{% url 'notifications_list' %}" class="d-flex flex-column gap-3">
+                    <div>
+                        <label class="form-label small fw-bold text-secondary uppercase">Notification Category</label>
+                        <select name="type" class="form-select border-success-subtle rounded-3" onchange="this.form.submit()">
+                            <option value="">All Categories</option>
+                            <option value="order" {% if selected_type == 'order' %}selected{% endif %}>📦 Orders & Shipments</option>
+                            <option value="price" {% if selected_type == 'price' %}selected{% endif %}>📈 Market Prices</option>
+                            <option value="weather" {% if selected_type == 'weather' %}selected{% endif %}>🌦️ Weather Advisories</option>
+                            <option value="message" {% if selected_type == 'message' %}selected{% endif %}>💬 Customer Chat</option>
+                            <option value="review" {% if selected_type == 'review' %}selected{% endif %}>★ Reviews & Feedback</option>
+                            <option value="product" {% if selected_type == 'product' %}selected{% endif %}>🌾 Product Status</option>
+                            <option value="verification" {% if selected_type == 'verification' %}selected{% endif %}>🛡️ Verification Center</option>
+                            <option value="system" {% if selected_type == 'system' %}selected{% endif %}>⚙️ System Announcements</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label small fw-bold text-secondary uppercase">Priority Level</label>
+                        <select name="priority" class="form-select border-success-subtle rounded-3" onchange="this.form.submit()">
+                            <option value="">All Priorities</option>
+                            <option value="high" {% if selected_priority == 'high' %}selected{% endif %}>🔴 High Priority</option>
+                            <option value="medium" {% if selected_priority == 'medium' %}selected{% endif %}>🟡 Medium Priority</option>
+                            <option value="low" {% if selected_priority == 'low' %}selected{% endif %}>🔵 Low Priority</option>
+                        </select>
+                    </div>
+
+                    <a href="{% url 'notifications_list' %}" class="btn btn-sm btn-outline-secondary w-100 rounded-pill mt-2">Clear Filters</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Notifications Feed List -->
+        <div class="col-lg-9">
+            <div class="d-flex flex-column gap-3">
+                {% for notif in notifications %}
+                    <div class="notif-card p-3 shadow-sm d-flex gap-3 justify-content-between align-items-center {% if not notif.is_read %}unread{% endif %} {% if notif.priority == 'high' %}priority-high{% elif notif.priority == 'medium' %}priority-medium{% else %}priority-low{% endif %}">
+                        <div class="d-flex align-items-center gap-3">
+                            <!-- Categorized Icon -->
+                            <div class="notif-icon-box 
+                                {% if notif.notification_type == 'order' %}bg-success-subtle text-success
+                                {% elif notif.notification_type == 'weather' %}bg-warning-subtle text-warning
+                                {% elif notif.notification_type == 'price' %}bg-info-subtle text-info
+                                {% elif notif.notification_type == 'message' %}bg-primary-subtle text-primary
+                                {% elif notif.notification_type == 'review' %}bg-warning-subtle text-warning
+                                {% elif notif.notification_type == 'product' %}bg-success-subtle text-success
+                                {% elif notif.notification_type == 'verification' %}bg-danger-subtle text-danger
+                                {% else %}bg-secondary-subtle text-secondary{% endif %}">
+                                
+                                {% if notif.notification_type == 'order' %}<i class="fa-solid fa-cart-shopping"></i>
+                                {% elif notif.notification_type == 'weather' %}<i class="fa-solid fa-cloud-sun"></i>
+                                {% elif notif.notification_type == 'price' %}<i class="fa-solid fa-chart-line"></i>
+                                {% elif notif.notification_type == 'message' %}<i class="fa-solid fa-comments"></i>
+                                {% elif notif.notification_type == 'review' %}<i class="fa-solid fa-star"></i>
+                                {% elif notif.notification_type == 'product' %}<i class="fa-solid fa-wheat-awn"></i>
+                                {% elif notif.notification_type == 'verification' %}<i class="fa-solid fa-square-check"></i>
+                                {% else %}<i class="fa-solid fa-circle-info"></i>{% endif %}
+                            </div>
+
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                    <span class="badge 
+                                        {% if notif.priority == 'high' %}bg-danger text-white
+                                        {% elif notif.priority == 'medium' %}bg-warning text-dark
+                                        {% else %}bg-info text-white{% endif %} text-uppercase" style="font-size: 0.62rem;">
+                                        {{ notif.priority }}
+                                    </span>
+                                    <span class="small text-muted">{{ notif.created_at|timesince }} ago</span>
+                                </div>
+                                <p class="mb-0 text-dark small fw-semibold">{{ notif.message }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Action Controls -->
+                        <div class="d-flex align-items-center gap-1">
+                            {% if not notif.is_read %}
+                                <a href="{% url 'notifications_mark_read' notif.id %}" class="btn btn-sm btn-outline-success rounded-pill px-2.5" title="Mark Read">
+                                    <i class="fa-solid fa-check"></i>
+                                </a>
+                            {% endif %}
+                            <form action="{% url 'notifications_delete' notif.id %}" method="POST" class="mb-0">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2.5" title="Delete alert">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="card border-0 rounded-4 shadow-sm bg-white p-5 text-center text-muted">
+                        <i class="fa-regular fa-bell-slash fs-1 text-secondary mb-3"></i>
+                        <h5 class="fw-bold text-dark">No notifications to display</h5>
+                        <p class="small mb-0">You're all caught up! New alerts about orders, price shifts, and weather advisories will appear here.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Activity Timeline Summary -->
+        <div class="col-12 mt-5">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
+                <h5 class="fw-bold text-success mb-4"><i class="fa-solid fa-clock-rotate-left me-2"></i>Alerts Log Timeline</h5>
+                <div class="position-relative ps-4 border-start border-success-subtle">
+                    {% for notif in notifications|slice:":5" %}
+                        <div class="position-relative mb-4">
+                            <!-- Bullet -->
+                            <div class="position-absolute rounded-circle bg-success" style="width: 12px; height: 12px; left: -30px; top: 4px; border: 2px solid white;"></div>
+                            <span class="small text-muted d-block">{{ notif.created_at|date:"l, h:i A" }}</span>
+                            <span class="small text-dark fw-semibold d-block">{{ notif.message }}</span>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted small mb-0">No timeline activities recorded yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

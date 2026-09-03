@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Track Order #{{ order.id }} – AgriConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tracking-timeline-container {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 40px;
+        margin-bottom: 40px;
+    }
+    .tracking-bar {
+        position: absolute;
+        height: 6px;
+        background: #e0e0e0;
+        top: 22px;
+        left: 5%;
+        width: 90%;
+        z-index: 1;
+    }
+    .tracking-progress {
+        height: 100%;
+        background: var(--primary-color);
+        width: 0%;
+        transition: width 0.8s ease;
+    }
+    .timeline-node {
+        position: relative;
+        z-index: 2;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        color: #757575;
+        border: 4px solid white;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        transition: all 0.4s ease;
+    }
+    .timeline-node.active {
+        background: var(--primary-color);
+        color: white;
+        box-shadow: 0 0 15px rgba(46, 125, 50, 0.4);
+    }
+    .timeline-label {
+        position: absolute;
+        top: 60px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #757575;
+        text-align: center;
+        width: 120px;
+        left: -35px;
+    }
+    .timeline-label.active {
+        color: var(--primary-color);
+    }
+    .pulse-glow {
+        animation: pulseAnimation 2s infinite;
+    }
+    @keyframes pulseAnimation {
+        0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(46, 125, 50, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade" style="max-width: 900px;">
+    <!-- Order header navigation -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <span class="badge bg-success-subtle text-success mb-1 px-3 py-1.5 rounded-pill fw-bold text-uppercase" style="font-size: 0.72rem;"><i class="fa-solid fa-receipt me-1"></i>Active Order</span>
+            <h2 class="fw-bold text-dark mb-0">Track Order #{{ order.id }}</h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'order_invoice' order.id %}" class="btn btn-outline-success rounded-pill px-3"><i class="fa-solid fa-file-invoice me-2"></i>Invoice</a>
+            {% if request.user.role == 'buyer' %}
+                <a href="{% url 'buyer_orders' %}" class="btn btn-outline-secondary rounded-pill px-3"><i class="fa-solid fa-chevron-left me-2"></i>My Orders</a>
+            {% else %}
+                <a href="{% url 'farmer_orders' %}" class="btn btn-outline-secondary rounded-pill px-3"><i class="fa-solid fa-chevron-left me-2"></i>Dashboard</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 1. Interactive Visual Status Timeline Card -->
+    <div class="card-premium p-5 bg-white border border-success-subtle mb-4">
+        
+        <div class="tracking-timeline-container">
+            <div class="tracking-bar">
+                <div class="tracking-progress" id="timelineBar"></div>
+            </div>
+            
+            <!-- Step 1: Order Placed -->
+            <div class="position-relative">
+                <div class="timeline-node active" id="nodePlaced" title="Order Placed"><i class="fa-solid fa-clipboard-list"></i></div>
+                <div class="timeline-label active">Order Placed</div>
+            </div>
+
+            <!-- Step 2: Accepted -->
+            <div class="position-relative">
+                <div class="timeline-node" id="nodeAccepted" title="Farmer Accepted"><i class="fa-solid fa-handshake"></i></div>
+                <div class="timeline-label" id="labelAccepted">Accepted</div>
+            </div>
+
+            <!-- Step 3: Packed -->
+            <div class="position-relative">
+                <div class="timeline-node" id="nodePacked" title="Produce Packed"><i class="fa-solid fa-box-open"></i></div>
+                <div class="timeline-label" id="labelPacked">Packed</div>
+            </div>
+
+            <!-- Step 4: Out for Delivery -->
+            <div class="position-relative">
+                <div class="timeline-node" id="nodeOut" title="Out for Delivery"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                <div class="timeline-label" id="labelOut">Out For Delivery</div>
+            </div>
+
+            <!-- Step 5: Delivered -->
+            <div class="position-relative">
+                <div class="timeline-node" id="nodeDelivered" title="Order Delivered"><i class="fa-solid fa-house-circle-check"></i></div>
+                <div class="timeline-label" id="labelDelivered">Delivered</div>
+            </div>
+        </div>
+
+        <hr class="my-5">
+
+        <!-- Status Analytics indicators -->
+        <div class="row text-center text-md-start">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <span class="text-muted small text-uppercase fw-bold mb-1 d-block">Live Shipment Status</span>
+                <div class="d-flex align-items-center gap-2 flex-wrap justify-content-center justify-content-md-start">
+                    <h3 class="fw-bold text-dark mb-0" id="currentStatusText">{{ order.status }}</h3>
+                    <span class="badge" id="statusBadge" style="padding: 6px 12px; font-size: 0.75rem;">Active Shipment</span>
+                </div>
+                <p class="text-muted small mt-2 mb-0">Last updated: {{ order.updated_at|date:"M d, Y, h:i A" }}</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <span class="text-muted small text-uppercase fw-bold mb-1 d-block">Expected Arrival Range</span>
+                <h4 class="fw-bold text-success mb-0" id="expectedArrivalText">2 - 4 Business Days</h4>
+                <small class="text-muted">Shipped directly from verified orchards</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Dual Column: Shipment Items Summary & COD Payment info -->
+    <div class="row g-4">
+        <!-- Left: Shipment summary -->
+        <div class="col-md-7">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-box me-2"></i>Shipment Items Summary</h5>
+                <div class="d-flex flex-column gap-3">
+                    {% for item in order.items.all %}
+                        <div class="d-flex align-items-center justify-content-between border-bottom pb-3">
+                            <div class="d-flex align-items-center gap-3">
+                                {% if item.crop.image %}
+                                    <img src="{{ item.crop.image.url }}" class="rounded-3 object-fit-cover border" style="width: 60px; height: 60px;" alt="{{ item.crop.name }}">
+                                {% else %}
+                                    <div class="bg-success-subtle rounded-3 text-success d-flex align-items-center justify-content-center border" style="width: 60px; height: 60px;"><i class="fa-solid fa-wheat-awn fs-4"></i></div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0">{{ item.crop.name }}</h6>
+                                    <small class="text-muted">{{ item.quantity|floatformat:0 }} {{ item.crop.get_unit_display }} &bull; ₹{{ item.price_per_unit }} per unit</small>
+                                    {% if order.status == 'Delivered' %}
+                                        <br><a href="{% url 'crop_detail' item.crop.id %}#reviews" class="text-success text-decoration-none small fw-bold" style="font-size: 0.72rem;"><i class="fa-solid fa-star text-warning me-1"></i>Review Product</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <strong class="text-success fs-5">₹{{ item.total_price }}</strong>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Address & COD Payment Info -->
+        <div class="col-md-5">
+            <!-- Payment card -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-sack-dollar me-2"></i>Payment Details</h5>
+                
+                <div class="p-3 bg-light rounded-4 mb-3 border border-success-subtle">
+                    <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.7rem; letter-spacing: 0.5px;">Settlement Mode</span>
+                    <h5 class="fw-bold text-dark mb-2"><i class="fa-solid fa-money-bill-1-wave text-success me-2"></i>Cash On Delivery (COD)</h5>
+                    <span class="badge {% if order.status == 'Delivered' %}bg-success{% else %}bg-warning text-dark{% endif %} px-2.5 py-1.5 rounded-pill small">
+                        {% if order.status == 'Delivered' %}
+                            Collected on Delivery ✓
+                        {% else %}
+                            Pending COD Collection
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="d-flex justify-content-between small text-muted mb-2">
+                    <span>Order Subtotal:</span>
+                    <span class="text-dark fw-bold">₹{{ order.total_amount }}</span>
+                </div>
+                <div class="d-flex justify-content-between small text-muted mb-2">
+                    <span>Shipping Charges:</span>
+                    <span class="text-dark fw-bold">₹0.00 (Free Shipping)</span>
+                </div>
+                <hr class="my-2">
+                <div class="d-flex justify-content-between fs-5 fw-bold text-dark">
+                    <span>Amount To Pay:</span>
+                    <span class="text-success">₹{{ order.total_amount }}</span>
+                </div>
+            </div>
+
+            <!-- Shipping card -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-truck-arrow-right me-2"></i>Delivery Address</h5>
+                <p class="text-muted small mb-2"><i class="fa-solid fa-map-pin text-success me-2"></i>{{ order.shipping_address }}</p>
+                <p class="text-muted small mb-0"><i class="fa-solid fa-phone text-success me-2"></i>{{ order.buyer.phone|default:"8887776660" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Actions Center -->
+    {% if request.user.role == 'buyer' %}
+        <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mt-4">
+            <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-sliders me-2"></i>Order Actions Center</h5>
+            <div class="d-flex flex-wrap gap-2">
+                {% if order.status == 'Pending' or order.status == 'Accepted' %}
+                    <form action="{% url 'order_cancel' order.id %}" method="POST" class="mb-0" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger rounded-pill px-4"><i class="fa-solid fa-ban me-2"></i>Cancel Order</button>
+                    </form>
+                {% endif %}
+                
+                {% if order.status == 'Delivered' %}
+                    <a href="{% url 'order_return' order.id %}" class="btn btn-outline-warning text-dark rounded-pill px-4"><i class="fa-solid fa-rotate-left me-2"></i>Return Request</a>
+                {% endif %}
+                
+                <a href="{% url 'chat_detail' order.farmer.user.username %}" class="btn btn-outline-success rounded-pill px-4"><i class="fa-regular fa-comment-dots me-2"></i>Contact Farmer</a>
+                <a href="{% url 'contact' %}" class="btn btn-outline-secondary rounded-pill px-4"><i class="fa-solid fa-headset me-2"></i>Submit Dispute ticket</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const status = "{{ order.status }}";
+        const progressLine = document.getElementById('timelineBar');
+        
+        // Timeline node elements
+        const nodeAccepted = document.getElementById('nodeAccepted');
+        const nodePacked = document.getElementById('nodePacked');
+        const nodeOut = document.getElementById('nodeOut');
+        const nodeDelivered = document.getElementById('nodeDelivered');
+
+        const labelAccepted = document.getElementById('labelAccepted');
+        const labelPacked = document.getElementById('labelPacked');
+        const labelOut = document.getElementById('labelOut');
+        const labelDelivered = document.getElementById('labelDelivered');
+
+        const badge = document.getElementById('statusBadge');
+
+        if (status === 'Pending') {
+            progressLine.style.width = '0%';
+            badge.className = 'badge bg-secondary';
+            badge.innerText = 'Pending confirmation';
+        } 
+        else if (status === 'Accepted') {
+            progressLine.style.width = '25%';
+            nodeAccepted.classList.add('active', 'pulse-glow');
+            labelAccepted.classList.add('active');
+            badge.className = 'badge bg-info';
+            badge.innerText = 'Farmer Confirmed';
+        }
+        else if (status === 'Packed') {
+            progressLine.style.width = '50%';
+            nodeAccepted.classList.add('active');
+            labelAccepted.classList.add('active');
+            nodePacked.classList.add('active', 'pulse-glow');
+            labelPacked.classList.add('active');
+            badge.className = 'badge bg-warning text-dark';
+            badge.innerText = 'Packed & Sorted';
+        }
+        else if (status === 'Out For Delivery') {
+            progressLine.style.width = '75%';
+            nodeAccepted.classList.add('active');
+            labelAccepted.classList.add('active');
+            nodePacked.classList.add('active');
+            labelPacked.classList.add('active');
+            nodeOut.classList.add('active', 'pulse-glow');
+            labelOut.classList.add('active');
+            badge.className = 'badge bg-primary';
+            badge.innerText = 'With Courier Partner';
+        }
+        else if (status === 'Delivered') {
+            progressLine.style.width = '100%';
+            nodeAccepted.classList.add('active');
+            labelAccepted.classList.add('active');
+            nodePacked.classList.add('active');
+            labelPacked.classList.add('active');
+            nodeOut.classList.add('active');
+            labelOut.classList.add('active');
+            nodeDelivered.classList.add('active');
+            labelDelivered.classList.add('active');
+            badge.className = 'badge bg-success';
+            badge.innerText = 'Delivered & Paid';
+        }
+        else if (status === 'Cancelled') {
+            progressLine.style.width = '100%';
+            progressLine.style.background = '#e53e3e';
+            document.querySelectorAll('.timeline-node').forEach(node => {
+                node.style.background = '#e53e3e';
+                node.style.color = 'white';
+            });
+            document.querySelectorAll('.timeline-label').forEach(lbl => {
+                lbl.style.color = '#e53e3e';
+            });
+            badge.className = 'badge bg-danger';
+            badge.innerText = 'Cancelled';
+        }
+        else if (status === 'Returned') {
+            progressLine.style.width = '100%';
+            progressLine.style.background = '#e53e3e';
+            document.querySelectorAll('.timeline-node').forEach(node => {
+                node.style.background = '#ff9800';
+                node.style.color = 'white';
+            });
+            document.querySelectorAll('.timeline-label').forEach(lbl => {
+                lbl.style.color = '#ff9800';
+            });
+            badge.className = 'badge bg-warning text-dark';
+            badge.innerText = 'Returned for Checkup';
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+Django==5.2.16
+django-allauth==65.18.0
+djangorestframework==3.17.1
+drf-spectacular==0.30.0
+gunicorn==26.0.0
+mysql-connector-python==9.7.0
+mysqlclient==2.2.8
+pillow==12.2.0
+python-dotenv==1.2.2
+PyMySQL==1.2.0
+whitenoise==6.12.0
+qrcode==8.2
+dj-database-url==3.1.2

@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Farming Tools – AgriConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade">
+    <h2 class="fw-bold text-success text-center mb-2"><i class="fa-solid fa-microchip me-2"></i>Smart Farming Ecosystem</h2>
+    <p class="text-muted text-center mb-5">Harness location-based predictions, algorithmic crop recommendations, and market price analytics.</p>
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-pills justify-content-center mb-4" id="smartToolsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active px-4 py-2 me-2" id="recommendation-tab" data-bs-toggle="tab" data-bs-target="#recommendation" type="button" role="tab" aria-controls="recommendation" aria-selected="true"><i class="fa-solid fa-wheat-awn me-2"></i>Crop Recommendation</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link px-4 py-2 me-2" id="price-tab" data-bs-toggle="tab" data-bs-target="#price" type="button" role="tab" aria-controls="price" aria-selected="false"><i class="fa-solid fa-chart-line me-2"></i>Price Analytics</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link px-4 py-2" id="weather-tab" data-bs-toggle="tab" data-bs-target="#weather" type="button" role="tab" aria-controls="weather" aria-selected="false"><i class="fa-solid fa-cloud-sun-rain me-2"></i>Weather Forecast</button>
+        </li>
+    </ul>
+
+    <!-- Tab panes -->
+    <div class="tab-content" id="smartToolsTabContent"        <!-- Crop Recommendation Panel -->
+        <div class="tab-pane fade show active" id="recommendation" role="tabpanel" aria-labelledby="recommendation-tab">
+            <div class="row justify-content-center">
+                <div class="col-md-9">
+                    <div class="card-premium p-4">
+                        <h4 class="fw-bold text-success mb-3"><i class="fa-solid fa-microchip me-2"></i>Advanced Crop Suitability Recommender</h4>
+                        <p class="text-muted small mb-4">Input detailed soil composition (N-P-K values) and atmospheric parameters to calculate matching suitability scores across different crops.</p>
+                        
+                        <form method="POST">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold small text-secondary">Soil Type</label>
+                                    {{ form.soil_type }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold small text-secondary">Soil pH (4.0 - 9.0)</label>
+                                    {{ form.soil_ph }}
+                                </div>
+                            </div>
+                            
+                            <h6 class="fw-bold text-success my-3"><i class="fa-solid fa-flask-vial me-2"></i>Soil Chemistry (NPK Levels)</h6>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-bold small text-secondary">{{ form.nitrogen.label }}</label>
+                                    {{ form.nitrogen }}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-bold small text-secondary">{{ form.phosphorus.label }}</label>
+                                    {{ form.phosphorus }}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-bold small text-secondary">{{ form.potassium.label }}</label>
+                                    {{ form.potassium }}
+                                </div>
+                            </div>
+
+                            <h6 class="fw-bold text-success my-3"><i class="fa-solid fa-cloud-sun me-2"></i>Climatic Parameters</h6>
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold small text-secondary">{{ form.temperature.label }}</label>
+                                    {{ form.temperature }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold small text-secondary">{{ form.rainfall.label }}</label>
+                                    {{ form.rainfall }}
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary-custom w-100 py-2 mt-2"><i class="fa-solid fa-square-poll-vertical me-2"></i>Run Suitability Algorithm</button>
+                        </form>
+
+                        {% if recommendations %}
+                            <div class="mt-5">
+                                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-list-check me-2"></i>Crop Compatibility Match Rankings</h5>
+                                <div class="row">
+                                    {% for rec in recommendations %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card p-3 bg-light border border-success-subtle h-100 rounded-3">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <h6 class="fw-bold mb-0 text-dark">{{ rec.crop }}</h6>
+                                                    <span class="badge bg-success">{{ rec.match }}% Match</span>
+                                                </div>
+                                                <div class="progress mb-3" style="height: 6px;">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ rec.match }}%;" aria-valuenow="{{ rec.match }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                <div class="small text-muted">
+                                                    <div><strong>Ideal Soil:</strong> {{ rec.soil }} (pH: {{ rec.ph }})</div>
+                                                    <div><strong>Ideal Chemistry:</strong> {{ rec.npk }}</div>
+                                                </div>
+                                                <div class="mt-2 text-end">
+                                                    <a href="{% url 'crop_list' %}?q={{ rec.crop }}" class="btn btn-sm btn-outline-custom p-1 px-2" style="font-size: 0.75rem;"><i class="fa-solid fa-magnifying-glass me-1"></i>Search Listings</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Price Analytics Panel -->
+        <div class="tab-pane fade" id="price" role="tabpanel" aria-labelledby="price-tab">
+            <div class="row">
+                <!-- Trend Chart -->
+                <div class="col-md-8 mb-4">
+                    <div class="card-premium p-4">
+                        <h4 class="fw-bold text-success mb-3"><i class="fa-solid fa-chart-line me-2"></i>Market Price Trends (6 Months)</h4>
+                        <canvas id="priceTrendAnalyticsChart" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Price tracking comparison -->
+                <div class="col-md-4 mb-4">
+                    <div class="card-premium p-4 h-100">
+                        <h4 class="fw-bold text-success mb-3">National Average vs AgriConnect</h4>
+                        <p class="text-muted small">Compare recent marketplace values against government wholesale estimates.</p>
+                        
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item bg-transparent px-0 py-2 d-flex justify-content-between">
+                                <span>Wheat</span>
+                                <div>
+                                    <span class="text-decoration-line-through text-muted small me-2">₹2.10</span>
+                                    <span class="text-success fw-bold">₹1.85</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item bg-transparent px-0 py-2 d-flex justify-content-between">
+                                <span>Organic Rice</span>
+                                <div>
+                                    <span class="text-decoration-line-through text-muted small me-2">₹3.50</span>
+                                    <span class="text-success fw-bold">₹3.10</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item bg-transparent px-0 py-2 d-flex justify-content-between">
+                                <span>Potatoes</span>
+                                <div>
+                                    <span class="text-decoration-line-through text-muted small me-2">₹0.95</span>
+                                    <span class="text-success fw-bold">₹0.80</span>
+                                </div>
+                            </div>
+                            <div class="list-group-item bg-transparent px-0 py-2 d-flex justify-content-between">
+                                <span>Sweet Corn</span>
+                                <div>
+                                    <span class="text-decoration-line-through text-muted small me-2">₹1.50</span>
+                                    <span class="text-success fw-bold">₹1.35</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weather Forecast Panel -->
+        <div class="tab-pane fade" id="weather" role="tabpanel" aria-labelledby="weather-tab">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card-premium p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold text-success mb-0">Live Farming Weather Advisory</h4>
+                            <!-- Selection form -->
+                            <form method="GET" action="{% url 'smart_tools' %}#weather" class="d-flex">
+                                <input type="text" class="form-control form-control-sm me-2" name="location" value="{{ weather.location }}" placeholder="Enter Region">
+                                <button type="submit" class="btn btn-sm btn-success">Update</button>
+                            </form>
+                        </div>
+
+                        <!-- Current Conditions -->
+                        <div class="row align-items-center bg-light p-4 rounded-4 mb-4">
+                            <div class="col-md-6 text-center border-end">
+                                <div class="text-warning display-3 mb-2">
+                                    {% if weather.condition == 'Sunny' %}<i class="fa-solid fa-sun animate-pulse"></i>
+                                    {% elif weather.condition == 'Light Rain' %}<i class="fa-solid fa-cloud-showers-heavy"></i>
+                                    {% else %}<i class="fa-solid fa-cloud-sun"></i>{% endif %}
+                                </div>
+                                <h1 class="fw-bold text-dark mb-0">{{ weather.temp }}&deg;C</h1>
+                                <span class="text-muted fw-semibold text-uppercase">{{ weather.condition }}</span>
+                            </div>
+                            <div class="col-md-6 ps-md-4 mt-3 mt-md-0">
+                                <h6><strong>Region:</strong> {{ weather.location }}</h6>
+                                <h6><strong>Humidity:</strong> {{ weather.humidity }}%</h6>
+                                <h6><strong>Wind speed:</strong> {{ weather.wind_speed }} km/h</h6>
+                                <h6 class="mb-0"><strong>Status:</strong> Normal</h6>
+                            </div>
+                        </div>
+
+                        <!-- Farm Advisory Alert -->
+                        <div class="alert alert-info card-premium py-3 mb-0">
+                            <h6 class="fw-bold mb-2"><i class="fa-solid fa-circle-exclamation me-2"></i>Agricultural Advisory</h6>
+                            <p class="mb-0 small">{{ weather.recommendation }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle retaining tab active status on page reload (e.g. after post submission)
+        const hash = window.location.hash;
+        if (hash) {
+            const triggerEl = document.querySelector(`button[data-bs-target="${hash}"]`);
+            if (triggerEl) {
+                bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+            }
+        }
+
+        // Price Analytics Line Charts
+        const ctx = document.getElementById('priceTrendAnalyticsChart').getContext('2d');
+        const cropTrends = {{ crop_trends|safe }};
+        
+        // Prepare datasets for Chart.js
+        const datasets = [];
+        const colors = ['#2e7d32', '#81c784', '#ffb300', '#0288d1', '#7b1fa2'];
+        let colorIdx = 0;
+        let labels = [];
+
+        for (const crop in cropTrends) {
+            if (labels.length === 0) {
+                labels = cropTrends[crop]['dates'];
+            }
+            datasets.push({
+                label: crop,
+                data: cropTrends[crop]['prices'],
+                borderColor: colors[colorIdx % colors.length],
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                tension: 0.3
+            });
+            colorIdx++;
+        }
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels.length > 0 ? labels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: datasets.length > 0 ? datasets : [{
+                    label: 'No Data',
+                    data: [0, 0, 0, 0, 0, 0]
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

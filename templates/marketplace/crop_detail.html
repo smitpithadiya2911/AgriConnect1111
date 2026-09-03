@@ -1,0 +1,606 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ crop.name }} – AgriConnect Marketplace{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb bg-transparent p-0 mb-0 small">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-success text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'crop_list' %}" class="text-success text-decoration-none">Marketplace</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'crop_list' %}?category={{ crop.category.id }}" class="text-success text-decoration-none">{{ crop.category.name }}</a></li>
+            <li class="breadcrumb-item active text-dark" aria-current="page">{{ crop.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Main Two-Column Layout -->
+    <div class="row g-4">
+        
+        <!-- Left Side: Product Image & Badges -->
+        <div class="col-lg-6">
+            <div class="card border-0 rounded-4 overflow-hidden shadow-sm bg-white p-3 mb-3">
+                <!-- Large Image Viewer with Zoom -->
+                <div class="position-relative overflow-hidden rounded-4 mb-3 border text-center bg-light" style="height: 400px;">
+                    <img id="mainProductImage" src="{{ crop.image.url }}" class="w-100 h-100 object-fit-cover transition-img" alt="{{ crop.name }}" style="cursor: zoom-in;">
+                    
+                    <!-- Badges Overlay -->
+                    <div class="position-absolute top-0 start-0 m-3 d-flex flex-column gap-2 align-items-start" style="z-index: 10;">
+                        <span class="badge bg-success px-3 py-2 rounded-pill shadow-sm"><i class="fa-solid fa-tractor me-1"></i>Verified Farmer</span>
+                        {% if "organic" in crop.category.name.lower or "organic" in crop.name.lower %}
+                            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm"><i class="fa-solid fa-leaf me-1"></i>Organic Certified</span>
+                        {% endif %}
+                        <span class="badge bg-info text-dark px-3 py-2 rounded-pill shadow-sm"><i class="fa-solid fa-clock me-1"></i>Harvested Today</span>
+                    </div>
+
+                    <!-- Availability Status -->
+                    <div class="position-absolute bottom-0 end-0 m-3" style="z-index: 10;">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill shadow-sm text-capitalize fw-bold">{{ crop.get_availability_status_display }}</span>
+                    </div>
+                </div>
+
+                <!-- Thumbs strip (Simulated gallery support) -->
+                <div class="row g-2 justify-content-center">
+                    <div class="col-3">
+                        <div class="border rounded-3 p-1 active-thumb thumb-item" style="height: 70px; cursor: pointer;">
+                            <img src="{{ crop.image.url }}" class="w-100 h-100 object-fit-cover rounded-2" alt="Thumb 1" onclick="changeProductImage(this.src, this)">
+                        </div>
+                    </div>
+                    {% for related in crop.category.crops.all|slice:"1:4" %}
+                        <div class="col-3">
+                            <div class="border rounded-3 p-1 thumb-item" style="height: 70px; cursor: pointer;">
+                                <img src="{{ related.image.url }}" class="w-100 h-100 object-fit-cover rounded-2" alt="{{ related.name }}" onclick="changeProductImage(this.src, this)">
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Product Trust Badges Section -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-3 mb-4">
+                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-shield-halved text-success me-2"></i>AgriConnect Quality Trust Guarantee</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small"><i class="fa-solid fa-circle-check text-success me-1"></i>Quality Checked</span>
+                    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small"><i class="fa-solid fa-truck-fast text-success me-1"></i>Direct Farm Dispatch</span>
+                    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small"><i class="fa-solid fa-handshake text-success me-1"></i>Escrow Secured Payments</span>
+                    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small"><i class="fa-solid fa-rotate-left text-success me-1"></i>Produce Replacement Guarantee</span>
+                </div>
+            </div>
+
+            <!-- Product Specifications Table -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-circle-info me-2"></i>Product Specifications</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0 small" style="border-radius: 12px; overflow: hidden;">
+                        <tbody>
+                            <tr>
+                                <td class="bg-light fw-bold text-secondary" style="width: 35%;">Category</td>
+                                <td class="text-dark">{{ crop.category.name }}</td>
+                            </tr>
+                            <tr>
+                                <td class="bg-light fw-bold text-secondary">Selling Unit</td>
+                                <td class="text-dark">{{ crop.get_unit_display }}</td>
+                            </tr>
+                            <tr>
+                                <td class="bg-light fw-bold text-secondary">Harvest Date</td>
+                                <td class="text-dark">Today (Fresh Harvest)</td>
+                            </tr>
+                            <tr>
+                                <td class="bg-light fw-bold text-secondary">Shelf Life</td>
+                                <td class="text-dark">{% if crop.category.name == 'Vegetables' or crop.category.name == 'Fruits' %}4 - 7 Days{% elif crop.category.name == 'Dairy Products' %}3 - 5 Days{% else %}6 - 12 Months{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td class="bg-light fw-bold text-secondary">Storage Conditions</td>
+                                <td class="text-dark">{% if crop.category.name == 'Vegetables' or crop.category.name == 'Fruits' or crop.category.name == 'Dairy Products' %}Cool, dry ventilated environment (refrigerated recommended){% else %}Dry airtight storage away from direct sunlight{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td class="bg-light fw-bold text-secondary">Origin Location</td>
+                                <td class="text-dark">{{ crop.farmer.farm_location|default:"India" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Details, Purchase Cards, Farmer Card -->
+        <div class="col-lg-6">
+            <!-- Title & Pricing Info -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <span class="badge bg-success-subtle text-success mb-2 px-2 py-1 rounded-pill small">{{ crop.category.name }}</span>
+                        <h2 class="fw-bold text-dark mb-1">{{ crop.name }}</h2>
+                        <div class="d-flex align-items-center gap-2 small">
+                            <span class="text-warning"><i class="fa-solid fa-star"></i> 4.8</span>
+                            <span class="text-muted">|</span>
+                            <a href="#reviews" class="text-success text-decoration-none fw-semibold">Read reviews ({{ reviews.count }})</a>
+                        </div>
+                    </div>
+                    <!-- Wishlist & Share buttons -->
+                    <div class="d-flex gap-2">
+                        {% if request.user.is_authenticated %}
+                            <a href="{% url 'wishlist_toggle' crop.id %}" class="btn {% if in_wishlist %}btn-danger{% else %}btn-outline-danger{% endif %} btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" title="{% if in_wishlist %}Remove from Wishlist{% else %}Add to Wishlist{% endif %}">
+                                <i class="{% if in_wishlist %}fa-solid{% else %}fa-regular{% endif %} fa-heart"></i>
+                            </a>
+                        {% else %}
+                            <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-danger btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;" title="Login to Add to Wishlist">
+                                <i class="fa-regular fa-heart"></i>
+                            </a>
+                        {% endif %}
+                        <button onclick="shareLink()" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;" title="Share Product"><i class="fa-solid fa-share-nodes"></i></button>
+                    </div>
+                </div>
+
+                <hr class="text-muted my-3">
+
+                <!-- Price Box -->
+                <div class="d-flex align-items-center mb-3">
+                    <span class="fs-1 fw-bold text-success">₹{{ crop.price_per_kg }}</span>
+                    <span class="text-muted ms-2 fs-5">/ {{ crop.get_unit_display }}</span>
+                    <span class="badge bg-warning-subtle text-warning ms-3 px-3 py-1 rounded-pill fw-bold">₹ Best Direct Price</span>
+                </div>
+
+                <!-- Shelf Life & Freshness Bar -->
+                <div class="mb-3 p-3 bg-light rounded-4 border">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-bold text-secondary uppercase"><i class="fa-solid fa-clock-rotate-left me-1"></i> Freshness Index</span>
+                        {% if crop.freshness_status == 'Fresh' %}
+                            <span class="badge bg-success-subtle text-success border border-success px-2.5 py-1 rounded-pill"><i class="fa-solid fa-circle-check me-1"></i> Fresh Produce</span>
+                        {% elif crop.freshness_status == 'Expiring Soon' %}
+                            <span class="badge bg-warning-subtle text-warning border border-warning px-2.5 py-1 rounded-pill"><i class="fa-solid fa-triangle-exclamation me-1"></i> Expiring Soon</span>
+                        {% else %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger px-2.5 py-1 rounded-pill"><i class="fa-solid fa-circle-xmark me-1"></i> Expired</span>
+                        {% endif %}
+                    </div>
+                    <div class="row g-2 mt-1.5">
+                        <div class="col-6">
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Harvest Date</small>
+                            <span class="fw-bold text-dark small">{{ crop.harvest_date|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Remaining Shelf Life</small>
+                            <span class="fw-bold text-dark small">{{ crop.remaining_shelf_life_days }} Days <small class="text-muted">(Total: {{ crop.shelf_life_days }}d)</small></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Statistics Row -->
+                <div class="row g-2 text-center py-2 mb-3 bg-light rounded-3 border">
+                    <div class="col-3 border-end">
+                        <h6 class="fw-bold text-success mb-0">{{ crop.quantity_available|floatformat:0 }}</h6>
+                        <small class="text-muted" style="font-size: 0.7rem;">Stock ({{ crop.unit }})</small>
+                    </div>
+                    <div class="col-3 border-end">
+                        <h6 class="fw-bold text-success mb-0">{{ crop.farmer.orders_completed }}</h6>
+                        <small class="text-muted" style="font-size: 0.7rem;">Orders</small>
+                    </div>
+                    <div class="col-3 border-end">
+                        <h6 class="fw-bold text-success mb-0">1.2K+</h6>
+                        <small class="text-muted" style="font-size: 0.7rem;">Views</small>
+                    </div>
+                    <div class="col-3">
+                        <h6 class="fw-bold text-success mb-0">{{ crop.farmer.store_rating }} ⭐</h6>
+                        <small class="text-muted" style="font-size: 0.7rem;">Seller Rating</small>
+                    </div>
+                </div>
+
+                <p class="text-muted small mb-0">{{ crop.description }}</p>
+            </div>
+
+            <!-- Delivery Information Card -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-3 mb-3 border-start border-4 {% if not is_eligible %}border-danger{% else %}border-success{% endif %}">
+                <div class="d-flex align-items-center">
+                    {% if not is_eligible %}
+                        <i class="fa-solid fa-circle-exclamation text-danger fs-3 me-3"></i>
+                        <div>
+                            <h6 class="fw-bold text-danger mb-0">Delivery Blocked: Quality Risk</h6>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Estimated transport to {{ buyer_profile.city|default:"your location" }} takes {{ estimated_days }} days, exceeding remaining shelf life ({{ crop.remaining_shelf_life_days }} days).</small>
+                        </div>
+                    {% else %}
+                        <i class="fa-solid fa-truck-fast text-success fs-3 me-3"></i>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0">
+                                {% if estimated_days %}
+                                    Estimated Delivery: {{ estimated_days }} Day{% if estimated_days > 1 %}s{% endif %}
+                                {% else %}
+                                    Estimated Delivery: 2 – 4 Days
+                                {% endif %}
+                            </h6>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">
+                                {% if buyer_profile %}
+                                    Shipping from {{ crop.farmer.city|default:"farmer's hub" }} to {{ buyer_profile.city }}.
+                                {% else %}
+                                    Log in to view estimated delivery time to your city.
+                                {% endif %}
+                            </small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quantity Selector & Purchase Actions (Sticky scrolling desktop anchor) -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-3 sticky-purchase-card">
+                {% if crop.availability_status == 'available' %}
+                    {% if request.user.is_authenticated %}
+                        {% if request.user.role == 'buyer' %}
+                            {% if is_eligible %}
+                                <form action="{% url 'add_to_cart' crop.id %}" method="POST" class="mb-0">
+                                    {% csrf_token %}
+                                    <div class="row g-2 align-items-center mb-3">
+                                        <div class="col-4 col-md-3">
+                                            <label class="form-label fw-bold small mb-1">Quantity</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control text-center py-2" name="quantity" value="1" min="1" max="{{ crop.quantity_available|floatformat:0 }}">
+                                            </div>
+                                        </div>
+                                        <div class="col-8 col-md-9">
+                                            <label class="form-label d-block text-white mb-1">Action</label>
+                                            <div class="d-flex gap-2">
+                                                <button type="submit" class="btn btn-primary-custom flex-grow-1 py-2.5 rounded-3"><i class="fa-solid fa-cart-plus me-2"></i>Add to Cart</button>
+                                                <a href="{% url 'wishlist_toggle' crop.id %}" class="btn btn-outline-danger px-3 py-2.5 rounded-3 d-flex align-items-center justify-content-center" title="Toggle Wishlist"><i class="fa-regular fa-heart"></i></a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <a href="{% url 'chat_detail' crop.farmer.user.username %}?crop_id={{ crop.id }}" class="btn btn-outline-custom w-100 py-2"><i class="fa-regular fa-comments me-2"></i>Chat with Farmer</a>
+                                        </div>
+                                        <div class="col-6">
+                                            <a href="{% url 'farmer_store' crop.farmer.user.username %}" class="btn btn-outline-secondary w-100 py-2"><i class="fa-solid fa-store me-2"></i>Visit Storefront</a>
+                                        </div>
+                                    </div>
+                                </form>
+                            {% else %}
+                                <div class="alert alert-danger py-3 mb-0 small rounded-4 border-0">
+                                    <div class="d-flex gap-2.5 align-items-start">
+                                        <i class="fa-solid fa-triangle-exclamation fs-5 mt-0.5 text-danger"></i>
+                                        <div class="text-danger">
+                                            <span class="fw-bold d-block mb-1 text-danger">Delivery Freshness Risk</span>
+                                            This fresh item will expire before it reaches your city ({{ buyer_profile.city }}). Order placement is disabled to ensure quality.
+                                        </div>
+                                    </div>
+                                    <a href="{% url 'crop_list' %}" class="btn btn-sm btn-outline-danger w-100 rounded-pill mt-3 py-1.5 fw-bold text-decoration-none text-center d-block">Browse Other Local Yields</a>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-warning py-2 mb-0 small text-center rounded-3">
+                                Crops can only be purchased from Buyer accounts.
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-2">
+                            <a href="{% url 'login' %}" class="btn btn-primary-custom w-100 py-2 rounded-3">Log In to Settle Purchase</a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-danger py-2 mb-0 text-center small fw-semibold rounded-3">
+                        Out of stock or currently unavailable.
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Upgraded Fully Database-Driven Farmer Card -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-3 border-top border-success border-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-success mb-0"><i class="fa-solid fa-tractor me-2"></i>Seller Profile</h5>
+                    {% if crop.farmer.verification_status == 'approved' %}
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-success text-white px-2 py-1 rounded-pill"><i class="fa-solid fa-circle-check me-1"></i>✓ Verified Farmer</span>
+                            <span class="badge bg-light text-success border px-2 py-1 rounded-pill fw-bold">Trust: {{ crop.farmer.trust_score }}%</span>
+                        </div>
+                    {% else %}
+                        <span class="badge bg-secondary text-white px-2 py-1 rounded-pill"><i class="fa-solid fa-circle-minus me-1"></i>Standard Seller</span>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex align-items-center mb-3">
+                    <!-- Dynamic Farmer profile picture -->
+                    {% if crop.farmer.user.profile_picture %}
+                        <img src="{{ crop.farmer.user.profile_picture.url }}" class="rounded-circle border border-2 border-success p-1 me-3 object-fit-cover" style="width: 65px; height: 65px;" alt="{{ crop.farmer.user.username }}">
+                    {% else %}
+                        <div class="rounded-circle bg-success text-white border border-2 border-white d-flex align-items-center justify-content-center fw-bold me-3" style="width: 65px; height: 65px; font-size: 1.5rem;">
+                            {{ crop.farmer.user.username|slice:":2"|upper }}
+                        </div>
+                    {% endif %}
+
+                    <div>
+                        <h6 class="fw-bold text-dark mb-1">{{ crop.farmer.user.first_name|default:crop.farmer.user.username }}</h6>
+                        <small class="text-muted d-block"><i class="fa-solid fa-location-dot me-1 text-success"></i>{{ crop.farmer.farm_location }}</small>
+                        <small class="text-muted d-block"><i class="fa-solid fa-building-wheat me-1 text-success"></i>{{ crop.farmer.farm_name }}</small>
+                    </div>
+                </div>
+
+                <div class="row g-2 text-center py-2 mb-3 bg-light rounded-3 small">
+                    <div class="col-4 border-end">
+                        <strong class="d-block text-success">{{ crop.farmer.experience }}</strong>
+                        <span class="text-muted" style="font-size: 0.7rem;">Experience</span>
+                    </div>
+                    <div class="col-4 border-end">
+                        <strong class="d-block text-success">{{ crop.farmer.store_rating }} ⭐</strong>
+                        <span class="text-muted" style="font-size: 0.7rem;">Rating</span>
+                    </div>
+                    <div class="col-4">
+                        <strong class="d-block text-success">{{ crop.farmer.specialization }}</strong>
+                        <span class="text-muted" style="font-size: 0.7rem;">Specialization</span>
+                    </div>
+                </div>
+
+                <p class="text-muted small mb-3">
+                    {{ crop.farmer.about|default:"Professional crop cultivation producing high-grade agricultural items securely distributed directly to buyers." }}
+                </p>
+
+                <!-- Actions -->
+                <div class="d-flex gap-2">
+                    <a href="{% url 'farmer_store' crop.farmer.user.username %}" class="btn btn-outline-success btn-sm w-100 py-2 rounded-pill text-center"><i class="fa-solid fa-store me-1"></i>Seller Store</a>
+                    <a href="{% url 'chat_detail' crop.farmer.user.username %}" class="btn btn-success btn-sm w-100 py-2 rounded-pill text-white" style="background: var(--primary-color); border: none;"><i class="fa-regular fa-comments me-1"></i>Chat Store</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rating Summary and Reviews Section -->
+    <div class="row mt-5" id="reviews">
+        
+        <!-- Rating Summary Breakdown Grid -->
+        <div class="col-md-5 mb-4">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100">
+                <h4 class="fw-bold text-success mb-3">Rating Breakdown</h4>
+                
+                <div class="d-flex align-items-center mb-4">
+                    <div class="text-center me-4">
+                        <h1 class="fw-extrabold text-success mb-0" style="font-size: 3.5rem;">{{ avg_rating }}</h1>
+                        <div class="text-warning small mb-1">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                        <small class="text-muted">Average rating ({{ total_reviews }})</small>
+                    </div>
+                    
+                    <div class="w-100">
+                        <!-- 5 Star -->
+                        <div class="d-flex align-items-center mb-1">
+                            <a href="?review_rating=5" class="text-decoration-none small text-muted me-2" style="width: 45px;">5 Star</a>
+                            <div class="progress w-100" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ star_percentages.5 }}%" aria-valuenow="{{ star_percentages.5 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-muted ms-2" style="width: 30px;">{{ star_percentages.5 }}%</small>
+                        </div>
+                        <!-- 4 Star -->
+                        <div class="d-flex align-items-center mb-1">
+                            <a href="?review_rating=4" class="text-decoration-none small text-muted me-2" style="width: 45px;">4 Star</a>
+                            <div class="progress w-100" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ star_percentages.4 }}%" aria-valuenow="{{ star_percentages.4 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-muted ms-2" style="width: 30px;">{{ star_percentages.4 }}%</small>
+                        </div>
+                        <!-- 3 Star -->
+                        <div class="d-flex align-items-center mb-1">
+                            <a href="?review_rating=3" class="text-decoration-none small text-muted me-2" style="width: 45px;">3 Star</a>
+                            <div class="progress w-100" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ star_percentages.3 }}%" aria-valuenow="{{ star_percentages.3 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-muted ms-2" style="width: 30px;">{{ star_percentages.3 }}%</small>
+                        </div>
+                        <!-- 2 Star -->
+                        <div class="d-flex align-items-center mb-1">
+                            <a href="?review_rating=2" class="text-decoration-none small text-muted me-2" style="width: 45px;">2 Star</a>
+                            <div class="progress w-100" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ star_percentages.2 }}%" aria-valuenow="{{ star_percentages.2 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-muted ms-2" style="width: 30px;">{{ star_percentages.2 }}%</small>
+                        </div>
+                        <!-- 1 Star -->
+                        <div class="d-flex align-items-center">
+                            <a href="?review_rating=1" class="text-decoration-none small text-muted me-2" style="width: 45px;">1 Star</a>
+                            <div class="progress w-100" style="height: 8px;">
+                                <div class="progress-bar bg-danger" role="progressbar" style="width: {{ star_percentages.1 }}%" aria-valuenow="{{ star_percentages.1 }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-muted ms-2" style="width: 30px;">{{ star_percentages.1 }}%</small>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="text-muted my-3">
+
+                <!-- Add Review Form -->
+                {% if can_review %}
+                    <h5 class="fw-bold text-success mb-3">Write a Review</h5>
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-primary-custom w-100 py-2.5 rounded-3"><i class="fa-solid fa-pencil me-2"></i>Submit Review</button>
+                    </form>
+                {% else %}
+                    <p class="text-muted small mb-0 text-center py-4 bg-light rounded-3">Purchased customers can leave crop ratings.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Review Listing Grid -->
+        <div class="col-md-7 mb-4">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100">
+                <h4 class="fw-bold text-success mb-3"><i class="fa-solid fa-comments me-2"></i>Customer Reviews ({{ total_reviews }})</h4>
+                
+                <!-- Review Filters/Search Bar -->
+                <div class="mb-3">
+                    <form method="GET" class="row g-2 mb-2">
+                        <div class="col-9">
+                            <input type="text" name="review_q" value="{{ review_q }}" class="form-control form-control-sm" placeholder="Search keywords inside reviews...">
+                        </div>
+                        <div class="col-3">
+                            <button type="submit" class="btn btn-sm btn-success w-100 text-white">Search</button>
+                        </div>
+                    </form>
+                    <div class="d-flex flex-wrap gap-1 align-items-center">
+                        <a href="?#reviews" class="btn btn-xs {% if not review_rating and not verified and not has_image %}btn-success text-white{% else %}btn-outline-success{% endif %} rounded-pill py-0.5 px-2.5 small" style="font-size: 0.72rem;">All</a>
+                        <a href="?review_rating=5#reviews" class="btn btn-xs {% if review_rating == '5' %}btn-success text-white{% else %}btn-outline-success{% endif %} rounded-pill py-0.5 px-2.5 small" style="font-size: 0.72rem;">5★</a>
+                        <a href="?review_rating=4#reviews" class="btn btn-xs {% if review_rating == '4' %}btn-success text-white{% else %}btn-outline-success{% endif %} rounded-pill py-0.5 px-2.5 small" style="font-size: 0.72rem;">4★</a>
+                        <a href="?verified=1#reviews" class="btn btn-xs {% if verified %}btn-success text-white{% else %}btn-outline-success{% endif %} rounded-pill py-0.5 px-2.5 small" style="font-size: 0.72rem;">Verified Purchase</a>
+                        <a href="?has_image=1#reviews" class="btn btn-xs {% if has_image %}btn-success text-white{% else %}btn-outline-success{% endif %} rounded-pill py-0.5 px-2.5 small" style="font-size: 0.72rem;">With Photos</a>
+                    </div>
+                </div>
+
+                <div class="review-list" style="max-height: 520px; overflow-y: auto;">
+                    {% for rev in reviews %}
+                        <div class="py-3 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold me-2" style="width: 36px; height: 36px; font-size: 0.95rem;">
+                                        {{ rev.buyer.username|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0 small">{{ rev.buyer.username }}</h6>
+                                        {% if rev.is_verified_purchase %}
+                                            <span class="badge bg-success-subtle text-success" style="font-size: 0.6rem;"><i class="fa-solid fa-circle-check me-1"></i>Verified Purchase</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <span class="small text-muted" style="font-size: 0.75rem;">{{ rev.created_at|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-1.5">
+                                <div class="star-rating text-warning small">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= rev.rating %}
+                                            <i class="fa-solid fa-star"></i>
+                                        {% else %}
+                                            <i class="fa-regular fa-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% if rev.title %}
+                                    <span class="fw-bold text-dark small">{{ rev.title }}</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-muted small mb-1">{{ rev.comment }}</p>
+                            
+                            {% if rev.image %}
+                                <div class="mb-2">
+                                    <img src="{{ rev.image.url }}" class="img-thumbnail" style="max-height: 100px; object-fit: cover;" alt="Review photo">
+                                </div>
+                            {% endif %}
+
+                            <!-- Actions & Helpful Votes -->
+                            <div class="d-flex flex-wrap align-items-center gap-3 mt-2">
+                                <a href="{% url 'review_helpful_toggle' rev.id %}" class="btn btn-sm btn-outline-secondary py-0.5 px-2.5 rounded-pill" style="font-size: 0.72rem;">
+                                    👍 Helpful ({{ rev.helpful_votes.count }})
+                                </a>
+                                {% if request.user.is_authenticated and request.user == rev.buyer %}
+                                    <a href="{% url 'review_edit' rev.id %}" class="text-success text-decoration-none small" style="font-size: 0.75rem;"><i class="fa-solid fa-pencil"></i> Edit</a>
+                                    <a href="{% url 'review_delete' rev.id %}" class="text-danger text-decoration-none small" style="font-size: 0.75rem;" onclick="return confirm('Are you sure you want to delete this review?')"><i class="fa-solid fa-trash"></i> Delete</a>
+                                {% endif %}
+                            </div>
+
+                            <!-- Reply thread -->
+                            {% if rev.reply %}
+                                <div class="bg-light rounded-3 p-3 mt-2 border-start border-success border-3 ms-4">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="badge bg-success text-white me-2" style="font-size: 0.6rem;"><i class="fa-solid fa-circle-check"></i> Farmer Response</span>
+                                        <small class="text-muted" style="font-size: 0.65rem;">{{ rev.reply_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <p class="small text-muted mb-0" style="font-size: 0.75rem;">{{ rev.reply }}</p>
+                                </div>
+                            {% elif request.user.is_authenticated and request.user.role == 'farmer' and crop.farmer.user == request.user %}
+                                <form method="POST" action="{% url 'farmer_review_reply' rev.id %}" class="mt-2 ms-4">
+                                    {% csrf_token %}
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" name="reply" class="form-control form-control-sm" placeholder="Write response to this review...">
+                                        <button type="submit" class="btn btn-success btn-sm text-white">Reply</button>
+                                    </div>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <p class="text-muted text-center py-5">No reviews written for this crop yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products: "You May Also Like" -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h4 class="fw-bold text-success mb-4"><i class="fa-solid fa-leaf me-2"></i>You May Also Like</h4>
+            <div class="row g-3">
+                {% for related in crop.category.crops.all|slice:":4" %}
+                    {% if related.id != crop.id %}
+                        <div class="col-6 col-md-3">
+                            <div class="card h-100 border rounded-4 bg-white shadow-sm hover-zoom-card overflow-hidden">
+                                <a href="{% url 'crop_detail' related.id %}" class="text-decoration-none">
+                                    <img src="{% if related.image %}{{ related.image.url }}{% else %}/static/images/default-crop.jpg{% endif %}" class="w-100 transition-img" style="height: 140px; object-fit: cover;" alt="{{ related.name }}">
+                                </a>
+                                <div class="p-3 d-flex flex-column justify-content-between" style="min-height: 120px;">
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-1 text-truncate">{{ related.name }}</h6>
+                                        <span class="text-warning small"><i class="fa-solid fa-star"></i> 4.8</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <span class="text-success fw-bold">₹{{ related.price_per_kg }}/{{ related.unit }}</span>
+                                        <a href="{% url 'crop_detail' related.id %}" class="btn btn-sm btn-outline-success rounded-pill px-3">View</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Share Product API Link Helper
+    function shareLink() {
+        if (navigator.share) {
+            navigator.share({
+                title: '{{ crop.name }} on AgriConnect',
+                url: window.location.href
+            }).catch(console.error);
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            alert("Product link copied to clipboard!");
+        }
+    }
+
+    // Interactive Thumbnail Image switcher
+    function changeProductImage(src, element) {
+        document.getElementById('mainProductImage').src = src;
+        
+        // Remove active class from all items
+        document.querySelectorAll('.thumb-item').forEach(item => {
+            item.classList.remove('active-thumb');
+        });
+        
+        // Add active class to clicked item
+        element.closest('.thumb-item').classList.add('active-thumb');
+    }
+</script>
+<style>
+    .active-thumb {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 5px rgba(46, 125, 50, 0.4);
+    }
+    
+    /* Sticky desktop buy box scrolling support styling */
+    @media (min-width: 992px) {
+        .sticky-purchase-card {
+            position: sticky;
+            top: 90px;
+            z-index: 100;
+        }
+    }
+</style>
+{% endblock %}

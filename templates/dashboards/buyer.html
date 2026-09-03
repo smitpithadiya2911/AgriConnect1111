@@ -1,0 +1,391 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Buyer Procurement Hub – AgriConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .glass-buyer-card {
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(46, 125, 50, 0.15);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .glass-buyer-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px 0 rgba(46, 125, 50, 0.12);
+        border-color: rgba(46, 125, 50, 0.3);
+    }
+    .buyer-sidebar-nav {
+        border-radius: 20px;
+        background: white;
+        border: 1px solid rgba(46, 125, 50, 0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <div class="col-md-3 mb-4">
+            <div class="buyer-sidebar-nav p-3 shadow-sm">
+                <div class="text-center mb-4">
+                    {% if request.user.profile_picture %}
+                        <img src="{{ request.user.profile_picture.url }}" alt="Buyer" class="rounded-circle mb-2 border border-success border-2" style="width: 80px; height: 80px; object-fit: cover;">
+                    {% else %}
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 80px; height: 80px; font-size: 2rem; font-weight: bold; border: 3px solid #e8f5e9;">
+                            {{ request.user.username|slice:":1"|upper }}
+                        </div>
+                    {% endif %}
+                    <h5 class="fw-bold mb-0 text-dark">{{ request.user.username }}</h5>
+                    <span class="badge bg-success-subtle text-success px-3 py-1.5 rounded-pill small mt-1 fw-bold text-uppercase" style="font-size: 0.7rem;"><i class="fa-solid fa-cart-shopping me-1"></i>Procurement Partner</span>
+                </div>
+                <hr>
+                <div class="list-group list-group-flush small">
+                    <a href="{% url 'buyer_dashboard' %}" class="sidebar-menu-item active"><i class="fa-solid fa-gauge"></i>Dashboard Overview</a>
+                    <a href="{% url 'crop_list' %}" class="sidebar-menu-item"><i class="fa-solid fa-store"></i>Marketplace Catalog</a>
+                    <a href="{% url 'view_cart' %}" class="sidebar-menu-item d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-basket-shopping"></i>Shopping Cart</span>
+                        {% if cart_items_count > 0 %}
+                            <span class="badge bg-success text-white rounded-pill">{{ cart_items_count }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{% url 'buyer_orders' %}" class="sidebar-menu-item"><i class="fa-solid fa-receipt"></i>My Orders Log</a>
+                    <a href="{% url 'market_prices' %}" class="sidebar-menu-item"><i class="fa-solid fa-chart-line"></i>Market Intelligence</a>
+                    <a href="{% url 'weather_dashboard' %}" class="sidebar-menu-item"><i class="fa-solid fa-cloud-sun"></i>Weather Center</a>
+                    <a href="{% url 'notifications_list' %}" class="sidebar-menu-item"><i class="fa-solid fa-bell"></i>Notification Center</a>
+                    <a href="{% url 'wishlist' %}" class="sidebar-menu-item"><i class="fa-solid fa-heart text-danger"></i>My Wishlist & Favorites</a>
+                    <a href="{% url 'profile' %}" class="sidebar-menu-item"><i class="fa-solid fa-user-gear"></i>Account Settings</a>
+                    <a href="{% url 'submit_feedback' %}" class="sidebar-menu-item"><i class="fa-solid fa-comment-dots"></i>Submit Complaint</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Content -->
+        <div class="col-md-9">
+            <!-- Header greeting -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <span class="text-muted small uppercase fw-bold mb-1 d-block"><i class="fa-regular fa-calendar me-1"></i>{% now "l, F d, Y" %}</span>
+                        <h2 class="fw-bold text-success mb-1">Hello, {{ request.user.username }}!</h2>
+                        <h6 class="text-muted mb-0"><i class="fa-solid fa-location-dot me-2 text-success"></i>Shipping Address: <strong>{{ request.user.address|default:"Not configured" }}</strong></h6>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <a href="{% url 'crop_list' %}" class="btn btn-success rounded-pill px-4" style="background: var(--primary-color); border: none;"><i class="fa-solid fa-magnifying-glass me-2 text-white"></i>Find Produce</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards Row -->
+            <div class="row g-3 mb-4 text-center">
+                <div class="col-6 col-md-3">
+                    <div class="card-premium p-3 bg-white border border-success-subtle">
+                        <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem;">Total Spent</span>
+                        <h3 class="fw-extrabold text-success mb-0">₹{{ total_spent }}</h3>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card-premium p-3 bg-white border border-success-subtle">
+                        <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem;">Orders Placed</span>
+                        <h3 class="fw-extrabold text-success mb-0">{{ total_orders }}</h3>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card-premium p-3 bg-white border border-success-subtle">
+                        <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem;">Pending Deliveries</span>
+                        <h3 class="fw-extrabold text-warning mb-0">{{ pending_deliveries }}</h3>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card-premium p-3 bg-white border border-success-subtle">
+                        <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem;">Cart Items</span>
+                        <h3 class="fw-extrabold text-success mb-0">{{ cart_items_count }}</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Graph & Weather Panel Row -->
+            <div class="row g-4 mb-4">
+                <!-- Sales Trend -->
+                <div class="col-lg-8">
+                    <div class="card-premium p-4 bg-white border border-success-subtle h-100">
+                        <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-chart-line me-2"></i>Procurement Index</h5>
+                        <div style="height: 220px; position: relative;">
+                            <canvas id="spendingTrendChart" height="220"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weather widget -->
+                <div class="col-lg-4">
+                    <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100">
+                        <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-cloud-sun me-2"></i>Weather Alert</h5>
+                        
+                        <div class="text-center mb-3">
+                            <span class="text-muted small uppercase fw-bold d-block">{{ location }}</span>
+                            <div class="fs-1 text-warning my-2">
+                                <i class="fa-solid fa-sun text-warning"></i>
+                            </div>
+                            <h3 class="fw-extrabold text-success mb-0">{{ temp }}&deg;C</h3>
+                            <small class="text-muted">Precipitation: {{ rain }}%</small>
+                        </div>
+
+                        <div class="p-2.5 bg-light rounded-3 small">
+                            <strong>Note for Buyers:</strong>
+                            <p class="text-muted mb-0 mt-1" style="font-size: 0.75rem;">
+                                Sowing season is currently active. Grain supply is stable. Pricing index shows steady margins.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Market Intelligence & Action Shortcuts Row -->
+            <div class="row g-4 mb-4">
+                <!-- Market intelligence -->
+                <div class="col-lg-6">
+                    <div class="card-premium p-4 bg-white border border-success-subtle h-100">
+                        <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-chart-area me-2"></i>APMC Price Analytics</h5>
+                        <div class="d-flex flex-column gap-3">
+                            {% for insight in market_insights %}
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0">{{ insight.crop_name }}</h6>
+                                        <small class="text-muted">{{ insight.region }} &bull; Vol: {{ insight.volume_tonnes }}T</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong class="text-success d-block">₹{{ insight.current_price }}/kg</strong>
+                                        <span class="badge bg-success-subtle text-success small">+{{ insight.price_change_percent }}%</span>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <p class="text-muted small text-center my-4">No price trends indexes available.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shortcuts Actions -->
+                <div class="col-lg-6">
+                    <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100">
+                        <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-sliders me-2"></i>Quick Actions</h5>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <a href="{% url 'crop_list' %}" class="btn btn-outline-success btn-sm w-100 py-3 rounded-3 text-center"><i class="fa-solid fa-store d-block fs-4 mb-2"></i>Marketplace</a>
+                            </div>
+                            <div class="col-6">
+                                <a href="{% url 'buyer_orders' %}" class="btn btn-outline-success btn-sm w-100 py-3 rounded-3 text-center"><i class="fa-solid fa-receipt d-block fs-4 mb-2"></i>View Orders</a>
+                            </div>
+                            <div class="col-6">
+                                <a href="{% url 'market_prices' %}" class="btn btn-outline-success btn-sm w-100 py-3 rounded-3 text-center"><i class="fa-solid fa-chart-line d-block fs-4 mb-2"></i>Market Prices</a>
+                            </div>
+                            <div class="col-6">
+                                <a href="{% url 'weather_dashboard' %}" class="btn btn-outline-success btn-sm w-100 py-3 rounded-3 text-center"><i class="fa-solid fa-cloud-sun d-block fs-4 mb-2"></i>Weather Center</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Orders log list -->
+            <div class="card-premium p-4 bg-white border border-success-subtle mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-success mb-0"><i class="fa-solid fa-clock-rotate-left me-2"></i>My Recent Orders</h5>
+                    <a href="{% url 'buyer_orders' %}" class="small text-success text-decoration-none">View All orders</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr class="bg-light">
+                                <th>Order ID</th>
+                                <th>Farmer Name</th>
+                                <th>Total Bill (₹)</th>
+                                <th>Payment Method</th>
+                                <th>Shipment Status</th>
+                                <th>Track</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                                <tr>
+                                    <td class="fw-bold">#{{ order.id }}</td>
+                                    <td>{{ order.farmer.user.first_name|default:order.farmer.user.username }}</td>
+                                    <td class="fw-bold text-success">₹{{ order.total_amount }}</td>
+                                    <td>Cash On Delivery</td>
+                                    <td>
+                                        <span class="badge {% if order.status == 'Pending' %}bg-secondary{% elif order.status == 'Delivered' %}bg-success{% else %}bg-info{% endif %}" style="font-size: 0.72rem;">
+                                            {{ order.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'order_tracking' order.id %}" class="btn btn-sm btn-outline-success rounded-pill px-3"><i class="fa-solid fa-route"></i></a>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No recent orders yet.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Favorite Farmers storefront list -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-tractor me-2"></i>Verified Partner Farmers</h5>
+                <div class="row g-3">
+                    {% for farmer in favorite_farmers %}
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded-4 border h-100 text-center d-flex flex-column justify-content-between">
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-1">{{ farmer.user.first_name|default:farmer.user.username }}</h6>
+                                    <small class="text-muted d-block mb-2"><i class="fa-solid fa-map-pin text-success me-1"></i>{{ farmer.farm_location }}</small>
+                                </div>
+                                <div class="mt-2 d-flex gap-1 justify-content-center">
+                                    <a href="{% url 'farmer_store' farmer.user.username %}" class="btn btn-xs btn-outline-success rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">Store</a>
+                                    <a href="{% url 'chat_detail' farmer.user.username %}" class="btn btn-xs btn-success rounded-pill px-2.5 py-1 text-white" style="background: var(--primary-color); border: none; font-size: 0.72rem;">Chat</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Recommendations Grid -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-seedling me-2"></i>Freshly Picked for You</h5>
+                <div class="row g-3">
+                    {% for crop in recommended_crops %}
+                        <div class="col-md-3">
+                            <div class="card h-100 border border-success-subtle bg-white shadow-sm hover-zoom-card overflow-hidden d-flex flex-column justify-content-between">
+                                <div>
+                                    {% if crop.image %}
+                                        <img src="{{ crop.image.url }}" class="card-img-top object-fit-cover" style="height: 120px;" alt="{{ crop.name }}">
+                                    {% else %}
+                                        <div class="bg-success-subtle text-success d-flex align-items-center justify-content-center border" style="height: 120px;"><i class="fa-solid fa-wheat-awn fs-2"></i></div>
+                                    {% endif %}
+                                    <div class="p-2.5">
+                                        <h6 class="fw-bold mb-1 text-truncate text-dark" style="font-size: 0.9rem;">{{ crop.name }}</h6>
+                                        <span class="text-success fw-bold small">₹{{ crop.price_per_kg }}/kg</span>
+                                    </div>
+                                </div>
+                                <div class="p-2.5 pt-0">
+                                    <a href="{% url 'crop_detail' crop.id %}" class="btn btn-sm btn-success w-100 rounded-pill text-white" style="background: var(--primary-color); border: none;">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted small col-12">No recommendations available.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- My Reviews feedback log list -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mt-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-comments me-2"></i>My Reviews & Ratings History</h5>
+                <div class="d-flex flex-column gap-3">
+                    {% for rev in my_reviews %}
+                        <div class="border-bottom pb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="fw-bold text-dark mb-0">
+                                    Crop: <a href="{% url 'crop_detail' rev.crop.id %}" class="text-success text-decoration-none fw-bold">{{ rev.crop.name }}</a>
+                                    {% if rev.is_verified_purchase %}
+                                        <span class="badge bg-success-subtle text-success ms-1" style="font-size: 0.55rem;"><i class="fa-solid fa-circle-check"></i> Verified</span>
+                                    {% endif %}
+                                </h6>
+                                <span class="text-warning">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= rev.rating %}
+                                            ★
+                                        {% else %}
+                                            ☆
+                                        {% endif %}
+                                    {% endfor %}
+                                </span>
+                            </div>
+                            {% if rev.title %}
+                                <strong class="d-block text-dark small mb-1">{{ rev.title }}</strong>
+                            {% endif %}
+                            <p class="text-muted small mb-2">"{{ rev.comment }}"</p>
+                            
+                            {% if rev.image %}
+                                <div class="mb-2">
+                                    <img src="{{ rev.image.url }}" class="img-thumbnail" style="max-height: 80px;" alt="Review photo">
+                                </div>
+                            {% endif %}
+
+                            <!-- Actions -->
+                            <div class="d-flex gap-3 align-items-center mt-1">
+                                <a href="{% url 'review_edit' rev.id %}" class="btn btn-xs btn-outline-success rounded-pill px-2.5 py-0.5" style="font-size: 0.72rem;"><i class="fa-solid fa-pen"></i> Edit</a>
+                                <a href="{% url 'review_delete' rev.id %}" class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-0.5" style="font-size: 0.72rem;" onclick="return confirm('Are you sure you want to delete this review?');"><i class="fa-solid fa-trash"></i> Delete</a>
+                            </div>
+
+                            {% if rev.reply %}
+                                <div class="bg-light rounded-3 p-2.5 mt-2 border-start border-success border-3 ms-3">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="badge bg-success text-white me-2" style="font-size: 0.55rem;"><i class="fa-solid fa-reply"></i> Farmer's Response</span>
+                                        <small class="text-muted" style="font-size: 0.6rem;">{{ rev.reply_at|date:"M d, Y" }}</small>
+                                    </div>
+                                    <p class="small text-muted mb-0" style="font-size: 0.72rem;">{{ rev.reply }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <p class="text-muted small text-center py-3 mb-0">You haven't written any crop reviews yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('spendingTrendChart').getContext('2d');
+        const labels = {{ months|safe }};
+        const data = {{ spending_trend|safe }};
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels.length > 0 ? labels : ['No Data'],
+                datasets: [{
+                    label: 'Procured Volume (₹)',
+                    data: data.length > 0 ? data : [0],
+                    borderColor: '#2e7d32',
+                    backgroundColor: 'rgba(46, 125, 50, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

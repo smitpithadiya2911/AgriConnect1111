@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load socialaccount %}
+
+{% block title %}Sign In to AgriConnect - Modern Farmer Marketplace{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5 col-lg-5">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 p-md-5">
+                
+                <!-- Logo & Heading -->
+                <div class="text-center mb-4">
+                    <span class="bg-success text-white rounded-circle p-2 d-inline-flex align-items-center justify-content-center mb-3" style="width: 48px; height: 48px; font-size: 1.3rem;">
+                        <i class="fa-solid fa-leaf"></i>
+                    </span>
+                    <h3 class="fw-extrabold text-success mb-1">Welcome Back</h3>
+                    <p class="text-muted small">Log in to manage your marketplace profile &amp; transactions</p>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger rounded-3 py-2 text-center small mb-3">
+                            {{ form.non_field_errors|striptags }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Credentials Input (Username/Email) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Username or Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 rounded-start-3" style="border-color: #dee2e6;"><i class="fa-solid fa-user text-muted"></i></span>
+                            <input type="text" name="username" class="form-control border-start-0 rounded-end-3" placeholder="Enter username or email" required id="id_username" style="border-color: #dee2e6;">
+                        </div>
+                        {% if form.username.errors %}
+                            <div class="text-danger small mt-1">{{ form.username.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Password Input with Toggle -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted mb-1">Password</label>
+                        <div class="input-group position-relative">
+                            <span class="input-group-text bg-light border-end-0 rounded-start-3" style="border-color: #dee2e6;"><i class="fa-solid fa-lock text-muted"></i></span>
+                            <input type="password" name="password" class="form-control border-start-0 border-end-0" placeholder="Enter password" required id="id_password" style="border-color: #dee2e6;">
+                            <span class="input-group-text bg-light border-start-0 rounded-end-3 cursor-pointer" onclick="togglePasswordVisibility()" style="border-color: #dee2e6;"><i class="fa-solid fa-eye text-muted" id="pwEyeIcon"></i></span>
+                        </div>
+                        <div class="text-end mt-1">
+                            <a href="{% url 'password_reset' %}" class="small text-success text-decoration-none fw-semibold" style="font-size: 0.78rem; color: var(--primary-color); transition: color 0.2s;" onmouseover="this.style.color='var(--secondary-color)'" onmouseout="this.style.color='var(--primary-color)'">Forgot Password?</a>
+                        </div>
+                        {% if form.password.errors %}
+                            <div class="text-danger small mt-1">{{ form.password.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="rememberMe">
+                            <label class="form-check-label small text-muted cursor-pointer" for="rememberMe">
+                                Remember me
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-success text-white w-100 py-2.5 rounded-3">
+                        <i class="fa-solid fa-sign-in me-2"></i>Sign In
+                    </button>
+                </form>
+
+                <!-- Social Login Buttons Section -->
+                <div class="mt-4">
+                    <div class="position-relative text-center mb-3">
+                        <hr class="text-muted">
+                        <span class="position-absolute translate-middle bg-white px-2.5 text-muted small" style="font-size: 0.7rem; top: 50%;">Or login with</span>
+                    </div>
+                    <div>
+                        <a href="{% provider_login_url 'google' %}" class="btn btn-outline-secondary w-100 py-2.5 rounded-3 d-flex align-items-center justify-content-center gap-2 text-decoration-none text-dark" style="font-size: 0.88rem;">
+                            <i class="fa-brands fa-google text-danger fs-5"></i> Continue with Google
+                        </a>
+                    </div>
+                </div>
+
+                <hr class="text-muted my-4">
+                <div class="text-center">
+                    <span class="small text-muted">Don't have a marketplace account yet? <a href="{% url 'register' %}" class="text-success fw-bold text-decoration-none">Register here</a></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function togglePasswordVisibility() {
+        const pwField = document.getElementById('id_password');
+        const eyeIcon = document.getElementById('pwEyeIcon');
+        
+        if (pwField.type === 'password') {
+            pwField.type = 'text';
+            eyeIcon.classList.remove('fa-eye');
+            eyeIcon.classList.add('fa-eye-slash');
+        } else {
+            pwField.type = 'password';
+            eyeIcon.classList.remove('fa-eye-slash');
+            eyeIcon.classList.add('fa-eye');
+        }
+    }
+</script>
+{% endblock %}

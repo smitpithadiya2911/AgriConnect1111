@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Contact Us – AgriConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade">
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <h1 class="fw-bold text-success mb-3">Get in Touch</h1>
+            <p class="text-muted">
+                Have questions about the platform, farmer registration, or order tracking? Fill out the form, and our support team will respond within 24 hours.
+            </p>
+            <div class="card-premium p-4 mt-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="rounded bg-success text-white p-2 me-3"><i class="fa-solid fa-location-dot"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-0">Our Location</h6>
+                        <span class="text-muted small">AgriConnect Headquarters, Suite 100, City Center</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center mb-3">
+                    <div class="rounded bg-success text-white p-2 me-3"><i class="fa-solid fa-phone"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-0">Call Us</h6>
+                        <span class="text-muted small">+1 (555) 019-9000</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="rounded bg-success text-white p-2 me-3"><i class="fa-solid fa-envelope"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-0">Email Support</h6>
+                        <span class="text-muted small">support@agriconnect.org</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card-premium p-4">
+                <h4 class="fw-bold mb-4">Send a Message</h4>
+                <form action="{% url 'contact' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required placeholder="John Doe">
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" required placeholder="johndoe@example.com">
+                    </div>
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="subject" name="subject" required placeholder="Question about listing a crop">
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Your Message</label>
+                        <textarea class="form-control" id="message" name="message" rows="5" required placeholder="Explain your inquiry here..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary-custom w-100">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

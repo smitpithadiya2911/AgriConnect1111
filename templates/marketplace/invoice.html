@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Invoice Order #{{ order.id }} – AgriConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .invoice-container, .invoice-container * {
+            visibility: visible;
+        }
+        .invoice-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            padding: 0;
+            box-shadow: none !important;
+        }
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade">
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <h2 class="fw-bold text-success mb-0"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Invoice Details</h2>
+        <div>
+            <a href="{% url 'download_invoice_pdf' order.id %}" class="btn btn-success rounded-pill px-3 me-2 text-white" style="background: var(--primary-color); border: none;"><i class="fa-solid fa-file-pdf me-2"></i>Download PDF</a>
+            <button onclick="window.print()" class="btn btn-outline-success rounded-pill px-3 me-2"><i class="fa-solid fa-print me-2"></i>Print Invoice</button>
+            <a href="{% url 'dashboard_redirect' %}" class="btn btn-outline-secondary rounded-pill px-3">Dashboard</a>
+        </div>
+    </div>
+
+    <div class="invoice-container p-5 bg-white rounded-4 shadow-sm border border-success-subtle">
+        <!-- Invoice Header -->
+        <div class="row border-bottom pb-4 mb-4">
+            <div class="col-md-6">
+                <h3 class="fw-bold text-success mb-1"><i class="fa-solid fa-leaf me-2"></i>AgriConnect</h3>
+                <p class="text-muted small mb-0">Direct Farmer-to-Buyer Ecosystem</p>
+            </div>
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                <h4 class="fw-bold text-secondary mb-1">INVOICE</h4>
+                <span class="text-muted small">Order ID: #{{ order.id }}</span><br>
+                <span class="text-muted small">Date: {{ order.created_at|date:"M d, Y, h:i A" }}</span>
+            </div>
+        </div>
+
+        <!-- Addresses -->
+        <div class="row mb-5">
+            <div class="col-md-6 mb-3">
+                <h6 class="fw-bold text-success uppercase small mb-2">Farmer (Seller)</h6>
+                <div class="small">
+                    <h6 class="fw-bold mb-1">{{ order.farmer.user.username }}</h6>
+                    <div>Farm: {{ order.farmer.farm_name|default:"Local Farm" }}</div>
+                    <div>Location: {{ order.farmer.farm_location|default:"Local Area" }}</div>
+                    <div>Phone: {{ order.farmer.user.phone|default:"N/A" }}</div>
+                </div>
+            </div>
+            <div class="col-md-6 text-md-end mb-3">
+                <h6 class="fw-bold text-success uppercase small mb-2">Buyer (Customer)</h6>
+                <div class="small">
+                    <h6 class="fw-bold mb-1">{{ order.buyer.username }}</h6>
+                    <div>Ship To: {{ order.shipping_address }}</div>
+                    <div>Phone: {{ order.buyer.phone|default:"N/A" }}</div>
+                    <div>Email: {{ order.buyer.email }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ordered Items Table -->
+        <div class="table-responsive mb-4">
+            <table class="table align-middle">
+                <thead>
+                    <tr class="bg-light">
+                        <th>Produce</th>
+                        <th class="text-center">Unit Price</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-end">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.items.all %}
+                        <tr>
+                            <td>
+                                <h6 class="fw-bold text-dark mb-0">{{ item.crop.name }}</h6>
+                                <small class="text-muted">{{ item.crop.category.name }}</small>
+                            </td>
+                            <td class="text-center">₹{{ item.price_per_unit }}</td>
+                            <td class="text-center">{{ item.quantity }} {{ item.crop.get_unit_display }}</td>
+                            <td class="text-end fw-bold text-success">₹{{ item.total_price|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Calculations -->
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <h6 class="fw-bold text-secondary mb-2">Payment Details</h6>
+                <div class="small bg-light p-3 rounded">
+                    <div><strong>Method:</strong> Cash On Delivery (COD)</div>
+                    <div><strong>Status:</strong> 
+                        <span class="badge {% if order.status == 'Delivered' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                            {% if order.status == 'Delivered' %}Collected On Delivery{% else %}Pending Payment{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mt-3 mt-md-0">
+                <div class="float-end" style="width: 250px;">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Subtotal:</span>
+                        <span class="fw-semibold">₹{{ order.total_amount }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">VAT / Taxes (5%):</span>
+                        <span class="fw-semibold">₹{{ tax|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Direct Service Fee:</span>
+                        <span class="fw-semibold">₹{{ service_fee|floatformat:2 }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-bold fs-5 text-dark">Grand Total:</span>
+                        <span class="fw-bold fs-5 text-success">₹{{ grand_total|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Footer notice -->
+        <div class="text-center text-muted small mt-5 border-top pt-4">
+            Thank you for supporting sustainable, direct trade commerce with AgriConnect.
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load allauth %}
+
+{% block title %}Sign In Via Google - AgriConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 p-md-5 text-center">
+                <div class="mb-4">
+                    <span class="bg-success text-white rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px; font-size: 1.5rem;">
+                        <i class="fa-brands fa-google"></i>
+                    </span>
+                    <h3 class="fw-extrabold text-success mb-2">Connect Google Account</h3>
+                    <p class="text-muted small">
+                        You are about to sign in to AgriConnect using your Google account:
+                        <strong>{{ provider.name }}</strong>.
+                    </p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success text-white w-100 py-2.5 rounded-3 fw-bold shadow-sm mb-3">
+                        <i class="fa-solid fa-arrow-right-to-bracket me-2"></i>Continue to Google
+                    </button>
+                </form>
+
+                <a href="{% url 'login' %}" class="small text-muted text-decoration-none">
+                    <i class="fa-solid fa-arrow-left me-1"></i>Cancel and return to login
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

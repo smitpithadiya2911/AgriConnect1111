@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales Reports – AgriConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-success mb-0"><i class="fa-solid fa-chart-pie me-2"></i>Platform Sales Reports</h2>
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-custom"><i class="fa-solid fa-angle-left me-2"></i>Back to Dashboard</a>
+    </div>
+
+    <!-- Metrics row -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card-premium p-3 text-center">
+                <h6 class="text-muted small uppercase fw-bold">Platform Direct Sales</h6>
+                <h2 class="fw-bold text-success mb-0">₹{{ total_sales|floatformat:2 }}</h2>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card-premium p-3 text-center">
+                <h6 class="text-muted small uppercase fw-bold">Active Farmers</h6>
+                <h2 class="fw-bold text-success mb-0">{{ total_farmers }}</h2>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card-premium p-3 text-center">
+                <h6 class="text-muted small uppercase fw-bold">Buyer Accounts</h6>
+                <h2 class="fw-bold text-success mb-0">{{ total_buyers }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Breakdown table -->
+        <div class="col-md-6 mb-4">
+            <div class="card-premium p-4 h-100">
+                <h5 class="fw-bold text-success mb-3">Produce Category Sales Breakdown</h5>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr class="bg-light">
+                                <th>Category</th>
+                                <th class="text-center">Orders Count</th>
+                                <th class="text-end">Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat in category_sales %}
+                                <tr>
+                                    <td class="fw-semibold text-dark">{{ cat.crop__category__name }}</td>
+                                    <td class="text-center">{{ cat.count }}</td>
+                                    <td class="text-end fw-bold text-success">₹{{ cat.total_earned|floatformat:2 }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-4">No completed trades recorded yet.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visual breakdown chart -->
+        <div class="col-md-6 mb-4">
+            <div class="card-premium p-4 h-100">
+                <h5 class="fw-bold text-success mb-4">Market Share distribution</h5>
+                <canvas id="categoryShareChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('categoryShareChart').getContext('2d');
+        
+        // Prepare data from Django variables
+        const labels = [];
+        const data = [];
+        
+        {% for cat in category_sales %}
+            labels.push("{{ cat.crop__category__name }}");
+            data.push({{ cat.total_earned }});
+        {% endfor %}
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels.length > 0 ? labels : ['No Data'],
+                datasets: [{
+                    data: data.length > 0 ? data : [1],
+                    backgroundColor: ['#2e7d32', '#81c784', '#ffb300', '#0288d1', '#7b1fa2'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

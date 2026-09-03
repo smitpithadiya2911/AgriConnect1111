@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Rate Farmer – AgriConnect{% endblock %}
+{% block content %}
+<div class="container py-5" style="max-width: 650px;">
+    <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
+        <div class="d-flex align-items-center mb-3">
+            <i class="fa-solid fa-star-half-stroke text-success fs-2 me-3"></i>
+            <div>
+                <h3 class="fw-bold text-success mb-0">Rate Farm Grower</h3>
+                <p class="text-muted small mb-0">Farmer: <span class="fw-semibold text-dark">{{ farmer.farm_name }}</span> ({{ farmer.user.username }})</p>
+            </div>
+        </div>
+        <p class="text-muted small">Provide feedback on your overall experience, produce quality, communication responsiveness, delivery punctuality, and packaging robustness.</p>
+        <hr class="text-muted">
+        <form method="POST">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-dark">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <div class="d-flex gap-2 justify-content-end mt-4">
+                <a href="{% url 'farmer_store' farmer.user.username %}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                <button type="submit" class="btn btn-success rounded-pill px-4 text-white" style="background: var(--primary-color); border: none;">Submit Rating</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

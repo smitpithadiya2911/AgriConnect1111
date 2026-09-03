@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Choose Your Profile Role - AgriConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 p-md-5">
+                
+                <div class="text-center mb-4">
+                    <span class="bg-success text-white rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px; font-size: 1.5rem;">
+                        <i class="fa-solid fa-user-gear"></i>
+                    </span>
+                    <h3 class="fw-extrabold text-success mb-1">One Last Step!</h3>
+                    <p class="text-muted small">Please select how you want to use AgriConnect</p>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} rounded-3 py-2 text-center small mb-3">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="role" id="selectedRoleInput" value="buyer">
+
+                    <div class="row g-3 mb-4">
+                        <!-- Buyer Card -->
+                        <div class="col-6">
+                            <div class="card border-2 rounded-4 p-4 text-center cursor-pointer role-card active-role border-success bg-success-subtle" id="buyerCard" onclick="chooseRole('buyer')" style="transition: all 0.3s ease;">
+                                <div class="fs-1 text-success mb-2">
+                                    <i class="fa-solid fa-basket-shopping"></i>
+                                </div>
+                                <h6 class="fw-extrabold mb-1">Buyer</h6>
+                                <p class="text-muted mb-0" style="font-size: 0.75rem;">Browse &amp; buy fresh produce directly</p>
+                            </div>
+                        </div>
+
+                        <!-- Farmer Card -->
+                        <div class="col-6">
+                            <div class="card border-2 rounded-4 p-4 text-center cursor-pointer role-card border-light-subtle" id="farmerCard" onclick="chooseRole('farmer')" style="transition: all 0.3s ease;">
+                                <div class="fs-1 text-success mb-2">
+                                    <i class="fa-solid fa-tractor"></i>
+                                </div>
+                                <h6 class="fw-extrabold mb-1">Farmer</h6>
+                                <p class="text-muted mb-0" style="font-size: 0.75rem;">Sell your farm crops directly</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success text-white w-100 py-2.5 rounded-3 fw-bold shadow-sm">
+                        <i class="fa-solid fa-circle-check me-2"></i>Continue to Dashboard
+                    </button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function chooseRole(role) {
+        document.getElementById('selectedRoleInput').value = role;
+        
+        const buyerCard = document.getElementById('buyerCard');
+        const farmerCard = document.getElementById('farmerCard');
+
+        if (role === 'buyer') {
+            buyerCard.classList.add('border-success', 'bg-success-subtle');
+            buyerCard.classList.remove('border-light-subtle');
+            
+            farmerCard.classList.remove('border-success', 'bg-success-subtle');
+            farmerCard.classList.add('border-light-subtle');
+        } else {
+            farmerCard.classList.add('border-success', 'bg-success-subtle');
+            farmerCard.classList.remove('border-light-subtle');
+            
+            buyerCard.classList.remove('border-success', 'bg-success-subtle');
+            buyerCard.classList.add('border-light-subtle');
+        }
+    }
+</script>
+{% endblock %}

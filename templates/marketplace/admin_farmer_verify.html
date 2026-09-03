@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify Farmer Credentials – AgriConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header Card -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h2 class="fw-bold text-success mb-1"><i class="fa-solid fa-user-shield me-2"></i>Farmer Credential Verification Review</h2>
+                <p class="text-muted mb-0">Evaluate agricultural registration documents, organic credentials, and identity checks for: <strong>{{ farmer.user.username }}</strong></p>
+            </div>
+
+            <!-- Profile Summary -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4 small">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-circle-info me-2"></i>Farmer Profile Overview</h5>
+                <div class="row g-3">
+                    <div class="col-6 col-md-4">
+                        <span class="text-muted d-block">Farm Name:</span>
+                        <strong class="text-dark">{{ farmer.farm_name|default:"Local Farm" }}</strong>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <span class="text-muted d-block">Location:</span>
+                        <strong class="text-dark">{{ farmer.farm_location|default:"Local Area" }}</strong>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <span class="text-muted d-block">Experience:</span>
+                        <strong class="text-dark">{{ farmer.experience }}</strong>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <span class="text-muted d-block">Orders Completed:</span>
+                        <strong class="text-dark">{{ farmer.orders_completed }} orders</strong>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <span class="text-muted d-block">Average Store Rating:</span>
+                        <strong class="text-dark">★ {{ farmer.store_rating }}</strong>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <span class="text-muted d-block">Current Trust Score:</span>
+                        <strong class="text-success">{{ farmer.trust_score }}/100</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verification Files Document review -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-file-invoice me-2"></i>Verification Documents Submitted</h5>
+                
+                <div class="list-group list-group-flush small">
+                    <div class="py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1">Aadhaar Identity Proof</h6>
+                            {% if farmer.aadhaar_document %}
+                                <span class="text-success small"><i class="fa-solid fa-file-circle-check me-1"></i>Document Available</span>
+                            {% else %}
+                                <span class="text-danger small"><i class="fa-solid fa-triangle-exclamation me-1"></i>No document uploaded</span>
+                            {% endif %}
+                        </div>
+                        {% if farmer.aadhaar_document %}
+                            <a href="{{ farmer.aadhaar_document.url }}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1">Open Document ↗</a>
+                        {% endif %}
+                    </div>
+                    <div class="py-3 d-flex justify-content-between align-items-center border-top">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1">Farm Ownership land extract Certificate</h6>
+                            {% if farmer.farm_certificate %}
+                                <span class="text-success small"><i class="fa-solid fa-file-circle-check me-1"></i>Document Available</span>
+                            {% else %}
+                                <span class="text-danger small"><i class="fa-solid fa-triangle-exclamation me-1"></i>No document uploaded</span>
+                            {% endif %}
+                        </div>
+                        {% if farmer.farm_certificate %}
+                            <a href="{{ farmer.farm_certificate.url }}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1">Open Document ↗</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review Actions Form -->
+            <div class="card-premium p-4 bg-white border border-success-subtle mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-sliders me-2"></i>Review Assessment Actions</h5>
+                
+                <form action="{% url 'admin_farmer_verify' farmer.id %}" method="POST" class="d-flex flex-column gap-3">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label class="form-label fw-bold text-secondary small uppercase">Review Notes / Explanations (visible to farmer)</label>
+                        <textarea name="admin_notes" rows="3" class="form-control border-success-subtle rounded-3" placeholder="Enter reason for approval or rejection details..."></textarea>
+                    </div>
+
+                    <div class="pt-2 d-flex justify-content-between flex-wrap gap-2">
+                        <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                        <div class="d-inline-flex gap-1.5">
+                            <button type="submit" name="action" value="resubmit" class="btn btn-outline-info rounded-pill px-3">Request Resubmit</button>
+                            <button type="submit" name="action" value="reject" class="btn btn-outline-danger rounded-pill px-3">Reject Application</button>
+                            <button type="submit" name="action" value="approve" class="btn btn-success rounded-pill px-4 text-white" style="background: var(--primary-color); border: none;"><i class="fa-solid fa-circle-check me-1 text-white"></i>Approve Seller</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

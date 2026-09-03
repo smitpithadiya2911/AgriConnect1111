@@ -1,0 +1,415 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load socialaccount %}
+
+{% block title %}Join AgriConnect - Modern Farmer Marketplace{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row g-4 align-items-stretch">
+        
+        <!-- Left Side: Features & Trust Badges -->
+        <div class="col-lg-5 d-flex">
+            <div class="card border-0 rounded-4 shadow-sm bg-success text-white p-5 w-100 d-flex flex-column justify-content-between position-relative overflow-hidden" style="background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);">
+                <!-- Decorative background elements -->
+                <div class="position-absolute end-0 top-0 opacity-10 text-white me-n5 mt-n5" style="font-size: 15rem;">
+                    <i class="fa-solid fa-seedling"></i>
+                </div>
+
+                <div>
+                    <div class="d-flex align-items-center mb-4">
+                        <span class="bg-white text-success rounded-circle p-2 d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px; font-size: 1.3rem;">
+                            <i class="fa-solid fa-leaf"></i>
+                        </span>
+                        <h4 class="fw-extrabold text-white mb-0">AgriConnect</h4>
+                    </div>
+                    
+                    <h2 class="fw-extrabold mb-3">Join the Future of Smart Agriculture</h2>
+                    <p class="text-light-green mb-4" style="color: #c8e6c9; font-size: 0.95rem; line-height: 1.6;">
+                        Connect directly with organic growers, access smart price analytics, track your orders in real-time, and make smarter agricultural choices.
+                    </p>
+
+                    <!-- Features Checklist -->
+                    <div class="d-flex flex-column gap-3 mb-5">
+                        <div class="d-flex align-items-center">
+                            <span class="me-3 text-warning"><i class="fa-solid fa-circle-check fs-5"></i></span>
+                            <span class="small fw-semibold">🚜 Direct Selling &amp; Higher Profit Margins</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="me-3 text-warning"><i class="fa-solid fa-circle-check fs-5"></i></span>
+                            <span class="small fw-semibold">🛒 Buyer-Farmer Instant Chat Communication</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="me-3 text-warning"><i class="fa-solid fa-circle-check fs-5"></i></span>
+                            <span class="small fw-semibold">📦 Real-Time Order Tracking &amp; Digital Invoices</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="me-3 text-warning"><i class="fa-solid fa-circle-check fs-5"></i></span>
+                            <span class="small fw-semibold">📈 Live APMC Market Price Trends &amp; Forecasts</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="me-3 text-warning"><i class="fa-solid fa-circle-check fs-5"></i></span>
+                            <span class="small fw-semibold">🌤️ Weather Alerts &amp; Sowing Impact Advisories</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="me-3 text-warning"><i class="fa-solid fa-circle-check fs-5"></i></span>
+                            <span class="small fw-semibold">🛡️ Verified Farmer Badges &amp; Trust Ratings</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer highlight -->
+                <div class="pt-4 border-top border-success border-opacity-50 small" style="color: #a5d6a7;">
+                    🛡️ Secured by AgriConnect Trust &amp; Safety Protocol.
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Progressive Registration Form -->
+        <div class="col-lg-7">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 p-md-5 h-100">
+                <div class="mb-4">
+                    <h3 class="fw-extrabold text-success mb-1">Create Your Account</h3>
+                    <p class="text-muted small">Select your profile role below to begin registration</p>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data" id="onboardingForm">
+                    {% csrf_token %}
+                    
+                    <!-- Hidden input for selected role -->
+                    <select name="role" id="id_role" class="d-none">
+                        <option value="buyer" {% if form.role.value == 'buyer' %}selected{% endif %}>Buyer</option>
+                        <option value="farmer" {% if form.role.value == 'farmer' %}selected{% endif %}>Farmer</option>
+                    </select>
+
+                    <!-- Interactive Role Selection Cards -->
+                    <div class="row g-3 mb-4">
+                        <!-- Buyer Card -->
+                        <div class="col-6">
+                            <div class="card border-2 rounded-4 p-3 text-center cursor-pointer role-card {% if form.role.value != 'farmer' %}active-role border-success bg-success-subtle{% else %}border-light-subtle{% endif %}" id="buyerRoleCard" onclick="selectRole('buyer')" style="transition: all 0.3s ease;">
+                                <div class="fs-1 text-success mb-2">
+                                    <i class="fa-solid fa-basket-shopping"></i>
+                                </div>
+                                <h6 class="fw-extrabold mb-1">Register as Buyer</h6>
+                                <p class="text-muted mb-0" style="font-size: 0.72rem;">Browse crops &amp; buy fresh</p>
+                            </div>
+                        </div>
+
+                        <!-- Farmer Card -->
+                        <div class="col-6">
+                            <div class="card border-2 rounded-4 p-3 text-center cursor-pointer role-card {% if form.role.value == 'farmer' %}active-role border-success bg-success-subtle{% else %}border-light-subtle{% endif %}" id="farmerRoleCard" onclick="selectRole('farmer')" style="transition: all 0.3s ease;">
+                                <div class="fs-1 text-success mb-2">
+                                    <i class="fa-solid fa-tractor"></i>
+                                </div>
+                                <h6 class="fw-extrabold mb-1">Register as Farmer</h6>
+                                <p class="text-muted mb-0" style="font-size: 0.72rem;">Sell produce directly</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step Indicator -->
+                    <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-2">
+                        <span class="small fw-bold text-success" id="stepIndicatorLabel">Step 1: Account Information</span>
+                        <div class="progress" style="height: 6px; width: 120px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 50%" id="stepProgressBar"></div>
+                        </div>
+                    </div>
+
+                    <!-- Form Fields Wrapper -->
+                    <div class="row g-3">
+                        <!-- Username -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Username</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">{{ form.username.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Email -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Email Address</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">{{ form.email.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Phone Number</label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                                <div class="text-danger small mt-1">{{ form.phone.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Profile Picture -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Profile Photo</label>
+                            {{ form.profile_picture }}
+                            {% if form.profile_picture.errors %}
+                                <div class="text-danger small mt-1">{{ form.profile_picture.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Password -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Password</label>
+                            {{ form.password }}
+                            <div class="progress mt-1.5" style="height: 4px;">
+                                <div id="pwStrengthBar" class="progress-bar bg-danger" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small id="pwStrengthText" class="text-muted" style="font-size: 0.68rem;">Strength: Enter password</small>
+                            {% if form.password.errors %}
+                                <div class="text-danger small mt-1">{{ form.password.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Confirm Password</label>
+                            {{ form.confirm_password }}
+                            {% if form.confirm_password.errors %}
+                                <div class="text-danger small mt-1">{{ form.confirm_password.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Address -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold small text-muted">Street / Delivery Address</label>
+                            {{ form.address }}
+                            {% if form.address.errors %}
+                                <div class="text-danger small mt-1">{{ form.address.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- City, State, Pincode -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-muted">City</label>
+                            {{ form.city }}
+                            {% if form.city.errors %}
+                                <div class="text-danger small mt-1">{{ form.city.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-muted">State</label>
+                            {{ form.state }}
+                            {% if form.state.errors %}
+                                <div class="text-danger small mt-1">{{ form.state.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold small text-muted">Pincode</label>
+                            {{ form.pincode }}
+                            {% if form.pincode.errors %}
+                                <div class="text-danger small mt-1">{{ form.pincode.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Farmer Specific Section (Collapsible with JS) -->
+                        <div id="farmerFormSection" class="col-12 mt-4" style="display: none;">
+                            <div class="p-4 bg-light rounded-4 border border-success-subtle border-opacity-50">
+                                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-wheat-awn me-2"></i>Farmer Onboarding Profile</h5>
+                                
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small text-success">Farm Name</label>
+                                        {{ form.farm_name }}
+                                        {% if form.farm_name.errors %}
+                                            <div class="text-danger small mt-1">{{ form.farm_name.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold small text-success">Village</label>
+                                        {{ form.village }}
+                                        {% if form.village.errors %}
+                                            <div class="text-danger small mt-1">{{ form.village.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold small text-success">Farm Location / Address</label>
+                                        {{ form.farm_location }}
+                                        {% if form.farm_location.errors %}
+                                            <div class="text-danger small mt-1">{{ form.farm_location.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold small text-success">Experience</label>
+                                        {{ form.farming_experience }}
+                                        {% if form.farming_experience.errors %}
+                                            <div class="text-danger small mt-1">{{ form.farming_experience.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold small text-success">Farm Size (e.g. 5 Acres)</label>
+                                        {{ form.farm_size }}
+                                        {% if form.farm_size.errors %}
+                                            <div class="text-danger small mt-1">{{ form.farm_size.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold small text-success">Crops Cultivated</label>
+                                        {{ form.crops_grown }}
+                                        {% if form.crops_grown.errors %}
+                                            <div class="text-danger small mt-1">{{ form.crops_grown.errors|striptags }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Verification Document uploads -->
+                                    <div class="col-12 mt-4">
+                                        <h6 class="fw-bold text-success mb-2.5">Verification Documents (Optional)</h6>
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <label class="form-label small text-muted">Aadhaar Card (PDF / Image)</label>
+                                                {{ form.aadhaar_document }}
+                                                {% if form.aadhaar_document.errors %}
+                                                    <div class="text-danger small mt-1">{{ form.aadhaar_document.errors|striptags }}</div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small text-muted">Farm Ownership Certificate</label>
+                                                {{ form.farm_certificate }}
+                                                {% if form.farm_certificate.errors %}
+                                                    <div class="text-danger small mt-1">{{ form.farm_certificate.errors|striptags }}</div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small text-muted">Organic Certificate (Optional)</label>
+                                                {{ form.organic_certificate }}
+                                                {% if form.organic_certificate.errors %}
+                                                    <div class="text-danger small mt-1">{{ form.organic_certificate.errors|striptags }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-success text-white w-100 py-2.5 rounded-3 mt-4">
+                        <i class="fa-solid fa-circle-check me-2"></i>Create Onboarding Profile
+                    </button>
+                </form>
+
+                <!-- Social Register Section -->
+                <div class="mt-4">
+                    <div class="position-relative text-center mb-3">
+                        <hr class="text-muted">
+                        <span class="position-absolute translate-middle bg-white px-2.5 text-muted small" style="font-size: 0.7rem; top: 50%;">Or sign up with</span>
+                    </div>
+                    <div>
+                        <a href="{% provider_login_url 'google' %}" class="btn btn-outline-secondary w-100 py-2.5 rounded-3 d-flex align-items-center justify-content-center gap-2 text-decoration-none text-dark" style="font-size: 0.88rem;">
+                            <i class="fa-brands fa-google text-danger fs-5"></i> Continue with Google
+                        </a>
+                    </div>
+                </div>
+
+                <hr class="text-muted my-4">
+                <div class="text-center">
+                    <span class="small text-muted">Already have a marketplace account? <a href="{% url 'login' %}" class="text-success fw-bold text-decoration-none">Sign In here</a></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .cursor-pointer {
+        cursor: pointer;
+    }
+    .role-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(46,125,50,0.15);
+    }
+    .active-role {
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(46,125,50,0.2) !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function selectRole(role) {
+        // Set value in hidden select element
+        document.getElementById('id_role').value = role;
+        
+        // Remove class active-role from all role cards
+        document.querySelectorAll('.role-card').forEach(card => {
+            card.classList.remove('active-role', 'border-success', 'bg-success-subtle');
+            card.classList.add('border-light-subtle');
+        });
+
+        // Add class active-role to correct card
+        const selectedCard = document.getElementById(role + 'RoleCard');
+        selectedCard.classList.add('active-role', 'border-success', 'bg-success-subtle');
+        selectedCard.classList.remove('border-light-subtle');
+
+        // Toggle Farmer specific section display
+        const farmerSection = document.getElementById('farmerFormSection');
+        const indicatorLabel = document.getElementById('stepIndicatorLabel');
+        const progressBar = document.getElementById('stepProgressBar');
+
+        if (role === 'farmer') {
+            farmerSection.style.display = 'block';
+            indicatorLabel.innerText = "Step 2: Upload Documents & Farm Info";
+            progressBar.style.width = "100%";
+            
+            // Set required attributes
+            document.querySelector('input[name="farm_name"]').required = true;
+            document.querySelector('input[name="farm_location"]').required = true;
+            document.querySelector('input[name="aadhaar_document"]').required = true;
+            document.querySelector('input[name="farm_certificate"]').required = true;
+        } else {
+            farmerSection.style.display = 'none';
+            indicatorLabel.innerText = "Step 1: Account Information";
+            progressBar.style.width = "50%";
+            
+            // Remove required attributes
+            document.querySelector('input[name="farm_name"]').required = false;
+            document.querySelector('input[name="farm_location"]').required = false;
+            document.querySelector('input[name="aadhaar_document"]').required = false;
+            document.querySelector('input[name="farm_certificate"]').required = false;
+        }
+    }
+
+    // Password strength listener
+    document.addEventListener("DOMContentLoaded", function() {
+        const pwInput = document.querySelector('input[name="password"]');
+        const strengthBar = document.getElementById('pwStrengthBar');
+        const strengthText = document.getElementById('pwStrengthText');
+
+        if(pwInput) {
+            pwInput.addEventListener('keyup', function() {
+                const val = pwInput.value;
+                let score = 0;
+                if (val.length >= 6) score += 20;
+                if (val.length >= 10) score += 20;
+                if (/[A-Z]/.test(val)) score += 20;
+                if (/[0-9]/.test(val)) score += 20;
+                if (/[^A-Za-z0-9]/.test(val)) score += 20;
+
+                strengthBar.style.width = score + "%";
+                if (score <= 40) {
+                    strengthBar.className = "progress-bar bg-danger";
+                    strengthText.innerText = "Strength: Weak";
+                } else if (score <= 80) {
+                    strengthBar.className = "progress-bar bg-warning text-dark";
+                    strengthText.innerText = "Strength: Medium";
+                } else {
+                    strengthBar.className = "progress-bar bg-success";
+                    strengthText.innerText = "Strength: Strong";
+                }
+            });
+        }
+
+        // Trigger default initial role toggle state
+        selectRole(document.getElementById('id_role').value);
+    });
+</script>
+{% endblock %}

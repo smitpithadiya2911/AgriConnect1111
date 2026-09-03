@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Wishlist & Favorites – AgriConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .wish-card {
+        border-radius: 16px;
+        background: white;
+        transition: all 0.25s ease;
+        border: 1px solid rgba(46, 125, 50, 0.1);
+    }
+    .wish-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(46, 125, 50, 0.08);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade">
+    <div class="row">
+        <!-- Wishlist Overview Dashboard Cards -->
+        <div class="col-12 mb-4">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 d-flex flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <h2 class="fw-bold text-success mb-1"><i class="fa-solid fa-heart me-2"></i>My Wishlist & Favorites</h2>
+                    <p class="text-muted mb-0">Manage saved farm products, follow organic growers, and secure direct price-drop updates.</p>
+                </div>
+                <div class="d-flex gap-3 align-items-center">
+                    <div class="text-center px-3 border-end">
+                        <span class="fw-bold fs-4 text-success d-block">{{ wishlist_count }}</span>
+                        <span class="text-muted small">Wishlist Items</span>
+                    </div>
+                    <div class="text-center px-3">
+                        <span class="fw-bold fs-4 text-success d-block">{{ fav_farmers_count }}</span>
+                        <span class="text-muted small">Growers Followed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 sticky-top" style="top: 20px;">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-sliders me-2"></i>Filter Favorites</h5>
+                
+                <form method="GET" action="{% url 'wishlist' %}" class="d-flex flex-column gap-3">
+                    <div>
+                        <label class="form-label small fw-bold text-secondary uppercase">Search Items</label>
+                        <div class="input-group">
+                            <input type="text" name="q" value="{{ q }}" class="form-control border-success-subtle rounded-3" placeholder="Search crops, farmers...">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label small fw-bold text-secondary uppercase">Product Category</label>
+                        <select name="category" class="form-select border-success-subtle rounded-3" onchange="this.form.submit()">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"i" %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <a href="{% url 'wishlist' %}" class="btn btn-sm btn-outline-secondary w-100 rounded-pill mt-2">Clear Filters</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Wishlist List -->
+        <div class="col-lg-9">
+            <div class="d-flex flex-column gap-3">
+                {% for item in wishlist_items %}
+                    <div class="wish-card p-3 shadow-sm d-flex flex-column flex-md-row gap-3 align-items-md-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <!-- Image -->
+                            <div class="position-relative rounded-3 overflow-hidden" style="width: 100px; height: 100px; min-width: 100px;">
+                                {% if item.crop.image %}
+                                    <img src="{{ item.crop.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ item.crop.name }}">
+                                {% else %}
+                                    <div class="bg-success-subtle text-success d-flex align-items-center justify-content-center h-100 w-100">
+                                        <i class="fa-solid fa-wheat-awn fs-3"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Product Info -->
+                            <div>
+                                <span class="badge bg-success-subtle text-success small px-2 py-0.5 rounded mb-1">{{ item.crop.category.name }}</span>
+                                <h5 class="fw-bold text-dark mb-1"><a href="{% url 'crop_detail' item.crop.id %}" class="text-decoration-none text-dark hover-success">{{ item.crop.name }}</a></h5>
+                                <p class="mb-1 text-success fw-bold" style="font-size: 1.1rem;">₹{{ item.crop.price_per_kg }} <small class="text-muted small">/ {{ item.crop.unit }}</small></p>
+                                
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="small text-muted"><i class="fa-solid fa-tractor me-1 text-success"></i>{{ item.crop.farmer.user.username }}</span>
+                                    <span class="small text-muted">&bull;</span>
+                                    <span class="small text-muted">Added {{ item.added_at|date:"M d, Y" }}</span>
+                                    <span class="small text-muted">&bull;</span>
+                                    {% if item.crop.quantity_available > 20 %}
+                                        <span class="badge bg-success text-white py-0.5" style="font-size: 0.65rem;">In Stock</span>
+                                    {% elif item.crop.quantity_available > 0 %}
+                                        <span class="badge bg-warning text-dark py-0.5" style="font-size: 0.65rem;">Low Stock</span>
+                                    {% else %}
+                                        <span class="badge bg-danger text-white py-0.5" style="font-size: 0.65rem;">Out Of Stock</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex flex-row flex-md-column gap-2 align-items-stretch">
+                            {% if item.crop.quantity_available > 0 %}
+                                <a href="{% url 'wishlist_move_to_cart' item.id %}" class="btn btn-sm btn-success rounded-pill px-3 py-2 text-white"><i class="fa-solid fa-basket-shopping me-1 text-white"></i>Move to Cart</a>
+                            {% else %}
+                                <button class="btn btn-sm btn-secondary rounded-pill px-3 py-2" disabled>Out of Stock</button>
+                            {% endif %}
+                            
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'crop_detail' item.crop.id %}" class="btn btn-sm btn-outline-success rounded-pill flex-grow-1"><i class="fa-solid fa-eye me-1"></i>View</a>
+                                <a href="{% url 'wishlist_remove' item.id %}" class="btn btn-sm btn-outline-danger rounded-pill px-2.5" title="Remove"><i class="fa-solid fa-trash-can"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="card border-0 rounded-4 shadow-sm bg-white p-5 text-center text-muted">
+                        <i class="fa-regular fa-heart fs-1 text-secondary mb-3"></i>
+                        <h5 class="fw-bold text-dark">Your wishlist is empty</h5>
+                        <p class="small mb-3">Save products you like to track price cuts and check stock availability.</p>
+                        <a href="{% url 'crop_list' %}" class="btn btn-success rounded-pill px-4" style="background: var(--primary-color); border: none;">Browse Catalog</a>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Recommendations Grid -->
+            {% if recommended_crops %}
+                <div class="mt-5">
+                    <h5 class="fw-bold text-success mb-4"><i class="fa-regular fa-thumbs-up me-2"></i>Recommended Just For You</h5>
+                    <div class="row g-4">
+                        {% for crop in recommended_crops %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card border-0 rounded-4 shadow-sm bg-white p-3 h-100 d-flex flex-column justify-content-between">
+                                    <div>
+                                        <div class="position-relative rounded-3 overflow-hidden mb-3" style="height: 140px;">
+                                            {% if crop.image %}
+                                                <img src="{{ crop.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ crop.name }}">
+                                            {% else %}
+                                                <div class="bg-success-subtle text-success d-flex align-items-center justify-content-center h-100 w-100">
+                                                    <i class="fa-solid fa-wheat-awn fs-2"></i>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <h6 class="fw-bold text-dark mb-1 text-truncate">{{ crop.name }}</h6>
+                                        <p class="text-success fw-bold mb-1">₹{{ crop.price_per_kg }} <small class="text-muted">/ {{ crop.unit }}</small></p>
+                                    </div>
+                                    <div class="mt-2.5">
+                                        <a href="{% url 'crop_detail' crop.id %}" class="btn btn-xs btn-outline-success w-100 rounded-pill py-1.5" style="font-size: 0.75rem;">View Yield</a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

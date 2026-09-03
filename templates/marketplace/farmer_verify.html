@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Farmer Verification Hub – AgriConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .verify-step {
+        position: relative;
+        flex: 1;
+        text-align: center;
+    }
+    .verify-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 8px;
+        font-weight: bold;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #e9ecef;
+        z-index: 2;
+        position: relative;
+    }
+    .verify-step.active .verify-circle {
+        background-color: #2e7d32;
+        color: white;
+        box-shadow: 0 0 0 2px #2e7d32;
+    }
+    .verify-step.completed .verify-circle {
+        background-color: #4caf50;
+        color: white;
+        box-shadow: 0 0 0 2px #4caf50;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header Card -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h2 class="fw-bold text-success mb-1"><i class="fa-solid fa-square-check me-2"></i>Verification & Trust Hub</h2>
+                <p class="text-muted mb-0">Submit verification documents to earn the <strong>Verified Farmer</strong> checkmark badge and activate direct-trade credibility.</p>
+            </div>
+
+            <!-- Verification Progress Tracker -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <div class="d-flex align-items-center mb-4 position-relative" style="min-height: 80px;">
+                    <!-- Line connecting circles -->
+                    <div class="position-absolute top-50 start-0 translate-middle-y w-100 bg-secondary-subtle" style="height: 4px; z-index: 1;"></div>
+                    
+                    <div class="verify-step {% if farmer.verification_status != 'pending' %}completed{% else %}active{% endif %}">
+                        <div class="verify-circle">1</div>
+                        <span class="small fw-bold text-dark d-block">Submit Files</span>
+                    </div>
+                    <div class="verify-step {% if farmer.verification_status == 'review' %}active{% elif farmer.verification_status == 'approved' or farmer.verification_status == 'rejected' %}completed{% endif %}">
+                        <div class="verify-circle">2</div>
+                        <span class="small fw-bold text-dark d-block">Admin Review</span>
+                    </div>
+                    <div class="verify-step {% if farmer.verification_status == 'approved' %}completed{% elif farmer.verification_status == 'rejected' %}active{% endif %}">
+                        <div class="verify-circle">3</div>
+                        <span class="small fw-bold text-dark d-block">Badge Issued</span>
+                    </div>
+                </div>
+
+                <!-- Alert status cards -->
+                {% if farmer.verification_status == 'approved' %}
+                    <div class="alert alert-success d-flex align-items-center gap-3 rounded-3" role="alert">
+                        <i class="fa-solid fa-circle-check fs-4"></i>
+                        <div>
+                            <strong class="d-block">Verification Approved!</strong>
+                            Your verified farmer badge is active on all your product listings. Current trust score is **{{ farmer.trust_score }}/100**.
+                        </div>
+                    </div>
+                {% elif farmer.verification_status == 'review' %}
+                    <div class="alert alert-warning d-flex align-items-center gap-3 rounded-3 text-dark" role="alert">
+                        <i class="fa-solid fa-circle-notch fa-spin fs-4"></i>
+                        <div>
+                            <strong class="d-block">Under Review</strong>
+                            Admin is currently reviewing your uploaded files. You will be notified of verification completion.
+                        </div>
+                    </div>
+                {% elif farmer.verification_status == 'resubmit' %}
+                    <div class="alert alert-info d-flex align-items-center gap-3 rounded-3" role="alert">
+                        <i class="fa-solid fa-triangle-exclamation fs-4"></i>
+                        <div>
+                            <strong class="d-block">Resubmission Required</strong>
+                            Admin Notes: {{ farmer.admin_notes }}
+                        </div>
+                    </div>
+                {% elif farmer.verification_status == 'rejected' %}
+                    <div class="alert alert-danger d-flex align-items-center gap-3 rounded-3" role="alert">
+                        <i class="fa-solid fa-circle-xmark fs-4"></i>
+                        <div>
+                            <strong class="d-block">Verification Rejected</strong>
+                            Admin Notes: {{ farmer.admin_notes }}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-secondary d-flex align-items-center gap-3 rounded-3" role="alert">
+                        <i class="fa-solid fa-circle-info fs-4"></i>
+                        <div>
+                            Please submit your Aadhaar Identity document and Farm Land ownership Certificate below.
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Upload Documents Form -->
+            {% if farmer.verification_status == 'pending' or farmer.verification_status == 'resubmit' or farmer.verification_status == 'rejected' %}
+                <div class="card-premium p-4 bg-white border border-success-subtle mb-4">
+                    <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-file-arrow-up me-2"></i>Upload New Verification Documents</h5>
+                    
+                    <form action="{% url 'farmer_verification_submit' %}" method="POST" enctype="multipart/form-data" class="d-flex flex-column gap-3">
+                        {% csrf_token %}
+                        
+                        <div>
+                            <label class="form-label fw-bold text-secondary small uppercase">1. Government ID Proof (Aadhaar / Passport / Voter Card)</label>
+                            <input type="file" name="aadhaar_document" class="form-control border-success-subtle" required>
+                            <small class="text-muted">Accepted formats: PDF, JPG, PNG (Max 5MB)</small>
+                        </div>
+
+                        <div>
+                            <label class="form-label fw-bold text-secondary small uppercase">2. Farm Land Ownership Certificate (APMC registration or 7/12 land extract document)</label>
+                            <input type="file" name="farm_certificate" class="form-control border-success-subtle" required>
+                            <small class="text-muted">Accepted formats: PDF, JPG, PNG (Max 5MB)</small>
+                        </div>
+
+                        <div class="pt-2 text-end">
+                            <a href="{% url 'farmer_dashboard' %}" class="btn btn-outline-secondary rounded-pill px-4 me-2">Cancel</a>
+                            <button type="submit" class="btn btn-success rounded-pill px-4 text-white" style="background: var(--primary-color); border: none;"><i class="fa-solid fa-paper-plane me-2 text-white"></i>Submit Documents</button>
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
+
+            <!-- Uploaded Files Review Block -->
+            {% if farmer.aadhaar_document or farmer.farm_certificate %}
+                <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
+                    <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-paperclip me-2"></i>Current Uploaded Documents</h5>
+                    
+                    <div class="list-group list-group-flush small">
+                        {% if farmer.aadhaar_document %}
+                            <div class="py-2.5 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fa-solid fa-file-pdf me-2 text-danger"></i><strong>Aadhaar / ID Card Document</strong>
+                                </div>
+                                <a href="{{ farmer.aadhaar_document.url }}" target="_blank" class="btn btn-xs btn-outline-success rounded-pill px-3 py-1" style="font-size: 0.72rem;">View Document ↗</a>
+                            </div>
+                        {% endif %}
+                        {% if farmer.farm_certificate %}
+                            <div class="py-2.5 d-flex justify-content-between align-items-center border-top">
+                                <div>
+                                    <i class="fa-solid fa-file-pdf me-2 text-danger"></i><strong>Farm Ownership Certificate</strong>
+                                </div>
+                                <a href="{{ farmer.farm_certificate.url }}" target="_blank" class="btn btn-xs btn-outline-success rounded-pill px-3 py-1" style="font-size: 0.72rem;">View Document ↗</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

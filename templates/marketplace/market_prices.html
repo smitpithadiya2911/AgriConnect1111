@@ -1,0 +1,468 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Agricultural Market Intelligence Dashboard – AgriConnect{% endblock %}
+
+{% block content %}
+<!-- 1. Market Price Hero Section -->
+<div class="py-5 text-white mb-4" style="background: linear-gradient(135deg, rgba(27, 94, 32, 0.95), rgba(46, 125, 50, 0.85)), url('{% static "images/crops/wheat.jpg" %}') no-repeat center center/cover;">
+    <div class="container py-4 text-center position-relative">
+        <span class="badge bg-warning text-dark mb-2 px-3 py-1.5 rounded-pill fw-bold text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;"><i class="fa-solid fa-chart-line me-1"></i>APMC Price Analytics</span>
+        <h1 class="fw-extrabold text-white mb-2" style="font-size: 2.8rem; font-weight: 800;">Agricultural Market Intelligence</h1>
+        <p class="text-light-green mb-4" style="color: #e8f5e9; font-size: 1.1rem; max-width: 720px; margin: 0 auto;">
+            Track live crop prices, market trends, demand forecasts, and agricultural insights.
+        </p>
+
+        <!-- Stats Counters Row -->
+        <div class="row g-3 max-width-md mx-auto justify-content-center text-center mt-3" style="max-width: 800px;">
+            <div class="col-6 col-md-3 border-end border-light">
+                <span class="counter-value fw-extrabold fs-2 d-block text-warning" data-target="40">0</span>
+                <span class="small text-white-50">Active Crops</span>
+            </div>
+            <div class="col-6 col-md-3 border-end border-light">
+                <span class="counter-value fw-extrabold fs-2 d-block text-warning" data-target="12">0</span>
+                <span class="small text-white-50">Markets Tracked</span>
+            </div>
+            <div class="col-6 col-md-3 border-end border-light">
+                <span class="counter-value fw-extrabold fs-2 d-block text-warning" data-target="150">0</span>
+                <span class="small text-white-50">Daily Updates</span>
+            </div>
+            <div class="col-6 col-md-3">
+                <span class="fw-extrabold fs-2 d-block text-warning">+2.4%</span>
+                <span class="small text-white-50">Avg Price Change</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-3">
+    <div class="row g-4">
+        
+        <!-- Left: Search Filters & Market Trends Chart -->
+        <div class="col-lg-8">
+            
+            <!-- Live Market Trend Chart (Chart.js) -->
+            <div class="card-premium p-4 border border-success-subtle bg-white mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <div>
+                        <h4 class="fw-bold text-success mb-0"><i class="fa-solid fa-chart-area me-2"></i>Historical Price Trends</h4>
+                        <small class="text-muted">6-month average APMC market index comparison</small>
+                    </div>
+                    <div class="btn-group btn-group-sm border rounded-pill bg-light" role="group">
+                        <button type="button" class="btn btn-light border-0 active" onclick="updateChartRange('30')">30D</button>
+                        <button type="button" class="btn btn-light border-0" onclick="updateChartRange('90')">90D</button>
+                        <button type="button" class="btn btn-light border-0" onclick="updateChartRange('365')">Yearly</button>
+                    </div>
+                </div>
+                
+                <div style="height: 280px; position: relative;">
+                    <canvas id="marketIntelligenceChart" height="280"></canvas>
+                </div>
+            </div>
+
+            <!-- Search & Filter Systems -->
+            <div class="card-premium p-3 border border-success-subtle bg-white mb-4">
+                <form method="GET" action="{% url 'market_prices' %}" class="row g-2 align-items-center">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 text-success"><i class="fa-solid fa-magnifying-glass"></i></span>
+                            <input type="text" name="q" value="{{ q }}" class="form-control border-start-0" placeholder="Search Crop or Region...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="category" class="form-select">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if selected_category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="demand" class="form-select">
+                            <option value="">Demand</option>
+                            <option value="High" {% if selected_demand == 'High' %}selected{% endif %}>High</option>
+                            <option value="Medium" {% if selected_demand == 'Medium' %}selected{% endif %}>Medium</option>
+                            <option value="Low" {% if selected_demand == 'Low' %}selected{% endif %}>Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="sort" class="form-select">
+                            <option value="">Sort By</option>
+                            <option value="price_desc" {% if selected_sort == 'price_desc' %}selected{% endif %}>Price High-to-Low</option>
+                            <option value="price_asc" {% if selected_sort == 'price_asc' %}selected{% endif %}>Price Low-to-High</option>
+                            <option value="volume_desc" {% if selected_sort == 'volume_desc' %}selected{% endif %}>Market Volume</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-success w-100 p-2 text-white" style="background: var(--primary-color); border: none;"><i class="fa-solid fa-filter"></i></button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Live Market Price Cards Grid -->
+            <div class="row g-3">
+                {% for item in insights %}
+                    <div class="col-md-6">
+                        <div class="card h-100 border border-success-subtle bg-white shadow-sm hover-zoom-card overflow-hidden">
+                            <div class="p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-success-subtle text-success small rounded-pill">{{ item.category.name }}</span>
+                                    <span class="small text-muted"><i class="fa-solid fa-location-dot me-1 text-success"></i>{{ item.region }}</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h5 class="fw-bold text-dark mb-1">{{ item.crop_name }}</h5>
+                                        <div class="d-flex align-items-baseline gap-2">
+                                            <span class="fs-3 fw-bold text-success">₹{{ item.current_price }}</span>
+                                            <span class="small text-muted">/ kg</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <!-- Price change trend indicator badge -->
+                                        {% if item.price_change_percent > 0 %}
+                                            <span class="badge bg-success text-white px-2 py-1.5 rounded-pill fs-7 mb-1"><i class="fa-solid fa-caret-up me-1"></i>+{{ item.price_change_percent }}%</span>
+                                        {% else %}
+                                            <span class="badge bg-danger text-white px-2 py-1.5 rounded-pill fs-7 mb-1"><i class="fa-solid fa-caret-down me-1"></i>{{ item.price_change_percent }}%</span>
+                                        {% endif %}
+                                        
+                                        <!-- Demand indicator -->
+                                        <div class="small">
+                                            Demand: 
+                                            {% if item.demand_level == 'High' %}
+                                                <strong class="text-warning"><i class="fa-solid fa-circle-exclamation me-1"></i>High</strong>
+                                            {% elif item.demand_level == 'Medium' %}
+                                                <strong class="text-success"><i class="fa-solid fa-circle-check me-1"></i>Medium</strong>
+                                            {% else %}
+                                                <strong class="text-secondary"><i class="fa-solid fa-minus me-1"></i>Low</strong>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="border-top pt-2 mt-3 d-flex justify-content-between align-items-center small text-muted">
+                                    <span>Trading Volume: <strong>{{ item.volume_tonnes }} tonnes</strong></span>
+                                    <span>Forecast: <strong>{{ item.forecast_direction }} {% if item.forecast_direction == 'Up' %}📈{% elif item.forecast_direction == 'Down' %}📉{% else %}⚖️{% endif %}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="col-12 text-center py-4 text-muted">
+                        No active crops matching target filters.
+                    </div>
+                {% endfor %}
+            </div>
+            
+        </div>
+
+        <!-- Right: Market Gainers, Losers, Comparison, and Alert center -->
+        <div class="col-lg-4">
+            
+            <!-- Price Comparison Calculator -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-scale-balanced me-2"></i>Crop Comparison Tool</h5>
+                <p class="text-muted small">Select two crops to compare average price, market demand, and volume side-by-side.</p>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Crop A</label>
+                        <select id="compareA" class="form-select form-select-sm" onchange="runComparison()">
+                            {% for item in insights %}
+                                <option value="{{ item.current_price }}|{{ item.demand_level }}|{{ item.volume_tonnes }}">{{ item.crop_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Crop B</label>
+                        <select id="compareB" class="form-select form-select-sm" onchange="runComparison()">
+                            {% for item in insights %}
+                                <option value="{{ item.current_price }}|{{ item.demand_level }}|{{ item.volume_tonnes }}" {% if forloop.counter == 2 %}selected{% endif %}>{{ item.crop_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 small">
+                    <table class="table table-sm table-borderless mb-0 text-muted">
+                        <tbody>
+                            <tr>
+                                <td>Price Diff:</td>
+                                <td id="compPriceDiff" class="text-dark fw-bold text-end">₹0.00</td>
+                            </tr>
+                            <tr>
+                                <td>Demand Compare:</td>
+                                <td id="compDemand" class="text-dark fw-bold text-end">Medium vs High</td>
+                            </tr>
+                            <tr>
+                                <td>Volume Compare:</td>
+                                <td id="compVolume" class="text-dark fw-bold text-end">120T vs 180T</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Top Gainers & Losers -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-arrow-trend-up me-2"></i>Market Movers Today</h5>
+                
+                <h6 class="fw-bold text-success border-bottom pb-1 small text-uppercase">Top Gainers</h6>
+                <div class="d-flex flex-column gap-2 mb-4">
+                    {% for item in gainers %}
+                        <div class="d-flex justify-content-between align-items-center small">
+                            <span class="text-dark">{{ item.crop_name }}</span>
+                            <span class="badge bg-success-subtle text-success">+{{ item.price_change_percent }}%</span>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <h6 class="fw-bold text-danger border-bottom pb-1 small text-uppercase">Top Losers</h6>
+                <div class="d-flex flex-column gap-2">
+                    {% for item in losers %}
+                        <div class="d-flex justify-content-between align-items-center small">
+                            <span class="text-dark">{{ item.crop_name }}</span>
+                            <span class="badge bg-danger-subtle text-danger">{{ item.price_change_percent }}%</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Interactive Alert Notification Center -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-bell me-2"></i>Market Intelligence Alerts</h5>
+                <div class="d-flex flex-column gap-2">
+                    <div class="alert alert-warning border-0 py-2.5 px-3 rounded-3 small mb-0">
+                        <strong>Tomato Price Increased 10%</strong><br>
+                        Rajkot market experienced low arrival volumes today.
+                    </div>
+                    <div class="alert alert-info border-0 py-2.5 px-3 rounded-3 small mb-0">
+                        <strong>Potato Demand Rising</strong><br>
+                        Industrial buyers increasing bulk purchases.
+                    </div>
+                    <div class="alert alert-success border-0 py-2.5 px-3 rounded-3 small mb-0">
+                        <strong>Wheat Sowing Advisory</strong><br>
+                        Seeding matches optimal moisture forecasts.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Reports panel -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-file-export me-2"></i>Export Intelligence Reports</h5>
+                <p class="text-muted small">Export daily APMC crop prices and forecasts data instantly.</p>
+                <div class="row g-2">
+                    <div class="col-4">
+                        <button onclick="exportReport('PDF')" class="btn btn-outline-success btn-sm w-100 rounded-pill"><i class="fa-regular fa-file-pdf"></i> PDF</button>
+                    </div>
+                    <div class="col-4">
+                        <button onclick="exportReport('Excel')" class="btn btn-outline-success btn-sm w-100 rounded-pill"><i class="fa-regular fa-file-excel"></i> Excel</button>
+                    </div>
+                    <div class="col-4">
+                        <button onclick="exportReport('CSV')" class="btn btn-outline-success btn-sm w-100 rounded-pill"><i class="fa-regular fa-file-code"></i> CSV</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seasonal Recommendation System -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 border-top border-warning border-3">
+                <h5 class="fw-bold text-warning mb-2"><i class="fa-solid fa-lightbulb me-2"></i>Seasonal Insights</h5>
+                <p class="text-muted small mb-0">
+                    <strong>Best Crop to Harvest:</strong> Tomato & Green Peppers showing maximum price index yields. Schedule harvests before monsoon begins to lock in early buyer prices.
+                </p>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Seeding trends from views
+    const trendData = {
+        {% for name, spec in crop_trends.items %}
+            "{{ name }}": {
+                labels: {{ spec.dates|safe }},
+                data: {{ spec.prices|safe }}
+            },
+        {% endfor %}
+    };
+
+    let mainChart;
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const ctx = document.getElementById('marketIntelligenceChart').getContext('2d');
+        
+        // Grab the first crop trend if available
+        const defaultCrop = Object.keys(trendData)[0] || 'Tomato';
+        const labels = trendData[defaultCrop] ? trendData[defaultCrop].labels : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+        const data = trendData[defaultCrop] ? trendData[defaultCrop].data : [25, 30, 45, 28, 32, 35];
+
+        mainChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: defaultCrop + ' Index Price (₹)',
+                    data: data,
+                    borderColor: '#2E7D32',
+                    backgroundColor: 'rgba(46, 125, 50, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                },
+                scales: {
+                    y: { grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Initialize Comparison calculator
+        runComparison();
+    });
+
+    function updateChartRange(rangeDays) {
+        // Toggle display bounds on dates array
+        alert("Chart scale updated to last " + rangeDays + " days.");
+    }
+
+    function runComparison() {
+        const valA = document.getElementById('compareA').value.split('|');
+        const valB = document.getElementById('compareB').value.split('|');
+        
+        if (valA.length < 3 || valB.length < 3) return;
+
+        const priceA = parseFloat(valA[0]);
+        const priceB = parseFloat(valB[0]);
+        const demandA = valA[1];
+        const demandB = valB[1];
+        const volA = valA[2];
+        const volB = valB[2];
+
+        // Calc Difference
+        const diff = Math.abs(priceA - priceB).toFixed(2);
+        document.getElementById('compPriceDiff').innerText = '₹' + diff;
+        document.getElementById('compDemand').innerText = demandA + ' vs ' + demandB;
+        document.getElementById('compVolume').innerText = volA + 'T vs ' + volB + 'T';
+    }
+
+    // Serialized database insights for dynamic file exports
+    const insights = [
+        {% for item in insights %}
+        {
+            crop: "{{ item.crop_name|escapejs }}",
+            category: "{{ item.category.name|escapejs }}",
+            price: {{ item.current_price }},
+            change: "{% if item.price_change_percent > 0 %}+{% endif %}{{ item.price_change_percent }}%",
+            demand: "{{ item.demand_level|escapejs }}",
+            region: "{{ item.region|escapejs }}",
+            volume: "{{ item.volume_tonnes }}",
+            forecast: "{{ item.forecast_direction|escapejs }}"
+        },
+        {% endfor %}
+    ];
+
+    function exportReport(format) {
+        if (!insights.length) {
+            alert("No data available to export.");
+            return;
+        }
+
+        if (format === 'CSV') {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Crop Name,Category,Price (INR/kg),Price Change,Demand Level,Region,Volume (Tonnes),Forecast\n";
+            insights.forEach(item => {
+                csvContent += `"${item.crop}","${item.category}",${item.price},"${item.change}","${item.demand}","${item.region}","${item.volume}","${item.forecast}"\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "AgriConnect_Market_Intelligence_Report.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        else if (format === 'Excel') {
+            let xlsContent = "data:application/vnd.ms-excel;charset=utf-8,";
+            xlsContent += "Crop Name\tCategory\tPrice (INR/kg)\tPrice Change\tDemand Level\tRegion\tVolume (Tonnes)\tForecast\n";
+            insights.forEach(item => {
+                xlsContent += `${item.crop}\t${item.category}\t${item.price}\t${item.change}\t${item.demand}\t${item.region}\t${item.volume}\t${item.forecast}\n`;
+            });
+            const encodedUri = encodeURI(xlsContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "AgriConnect_Market_Intelligence_Report.xls");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        else if (format === 'PDF') {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>AgriConnect Market Intelligence Report</title>
+                        <style>
+                            body { font-family: sans-serif; padding: 25px; color: #333; }
+                            h1 { color: #2E7D32; border-bottom: 3px solid #2E7D32; padding-bottom: 12px; margin-bottom: 5px; }
+                            .meta { font-size: 0.9em; color: #666; margin-bottom: 25px; }
+                            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                            th, td { border: 1px solid #ddd; padding: 12px 10px; text-align: left; }
+                            th { background-color: #2E7D32; color: white; }
+                            tr:nth-child(even) { background-color: #f9f9f9; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>AgriConnect - Crop Market Intelligence Report</h1>
+                        <div class="meta">Generated on: ${new Date().toLocaleString()} &bull; Regional APMC Wholesale Index</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Crop Name</th>
+                                    <th>Category</th>
+                                    <th>Price (₹/kg)</th>
+                                    <th>Price Change</th>
+                                    <th>Demand Level</th>
+                                    <th>Region</th>
+                                    <th>Volume (Tonnes)</th>
+                                    <th>Forecast</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${insights.map(item => `
+                                    <tr>
+                                        <td><strong>${item.crop}</strong></td>
+                                        <td>${item.category}</td>
+                                        <td>₹${item.price.toFixed(2)}</td>
+                                        <td style="color: ${item.change.startsWith('-') ? '#c62828' : '#2e7d32'}; font-weight: bold;">${item.change}</td>
+                                        <td>${item.demand}</td>
+                                        <td>${item.region}</td>
+                                        <td>${item.volume} T</td>
+                                        <td>${item.forecast}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        <script>
+                            window.onload = function() {
+                                window.print();
+                                setTimeout(function() { window.close(); }, 500);
+                            }
+                        <\/script>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+    }
+</script>
+{% endblock %}

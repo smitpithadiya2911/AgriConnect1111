@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Chat Inbox – AgriConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5 animate-fade">
+    <div class="row">
+        <!-- Inbox / Active Threads -->
+        <div class="col-md-8 mb-4">
+            <div class="card-premium p-4 h-100">
+                <h3 class="fw-bold text-success mb-4"><i class="fa-solid fa-comments me-2"></i>My Messages</h3>
+                <hr>
+                
+                <div class="list-group list-group-flush">
+                    {% for contact in contacts %}
+                        <a href="{% url 'chat_detail' contact.user.username %}" class="list-group-item list-group-item-action border-0 rounded-3 mb-2 p-3 bg-light d-flex justify-content-between align-items-center" style="transition: var(--transition);">
+                            <div class="d-flex align-items-center">
+                                {% if contact.user.profile_picture %}
+                                    <img src="{{ contact.user.profile_picture.url }}" alt="Profile" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px; font-weight: bold; font-size: 1.25rem;">
+                                        {{ contact.user.username|slice:":1"|upper }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-1">{{ contact.user.username }}</h6>
+                                    <p class="mb-0 text-muted small text-truncate" style="max-width: 350px;">{{ contact.last_message }}</p>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="small text-muted d-block mb-1">{{ contact.timestamp|timesince }} ago</span>
+                                {% if contact.unread > 0 %}
+                                    <span class="badge bg-danger rounded-pill">{{ contact.unread }}</span>
+                                {% endif %}
+                            </div>
+                        </a>
+                    {% empty %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fa-regular fa-message fs-1 mb-3"></i>
+                            <h5>No active conversations</h5>
+                            <p class="small">Choose a user or crop listing to start chatting.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Suggestions Panel -->
+        <div class="col-md-4 mb-4">
+            <div class="card-premium p-4 h-100">
+                <h5 class="fw-bold text-success mb-3">
+                    {% if request.user.role == 'buyer' %}
+                        <i class="fa-solid fa-tractor me-2"></i>Contact Farmers
+                    {% else %}
+                        <i class="fa-solid fa-users me-2"></i>Contact Buyers
+                    {% endif %}
+                </h5>
+                <p class="text-muted small">Send direct inquiries or consult about active produce listings.</p>
+                <hr>
+
+                <div class="list-group list-group-flush">
+                    {% for suggestion in suggested_contacts %}
+                        <div class="list-group-item bg-transparent border-0 px-0 py-2 d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                {% if suggestion.profile_picture %}
+                                    <img src="{{ suggestion.profile_picture.url }}" alt="Profile" class="rounded-circle me-2" style="width: 35px; height: 35px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px; font-weight: bold; font-size: 0.9rem;">
+                                        {{ suggestion.username|slice:":1"|upper }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0 small">{{ suggestion.username }}</h6>
+                                    {% if suggestion.role == 'farmer' %}
+                                        <small class="text-muted text-success" style="font-size: 0.75rem;">{{ suggestion.farmer_profile.farm_name|default:"Local Farmer" }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <a href="{% url 'chat_detail' suggestion.username %}" class="btn btn-sm btn-outline-custom"><i class="fa-regular fa-paper-plane"></i></a>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted small text-center my-4">No other contacts found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

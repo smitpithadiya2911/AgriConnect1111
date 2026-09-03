@@ -1,0 +1,666 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AgriConnect – Smart Digital Agriculture Marketplace{% endblock %}
+
+{% block content %}
+<!-- 1. Hero Landing Section with Live Search -->
+<div class="position-relative overflow-hidden py-5 d-flex align-items-center" style="min-height: 90vh; background: linear-gradient(135deg, rgba(46, 125, 50, 0.95), rgba(76, 175, 80, 0.88)), url('{% static "images/crops/wheat.jpg" %}') no-repeat center center/cover;">
+    <div class="container py-5 text-white position-relative" style="z-index: 2;">
+        <div class="row align-items-center">
+            <!-- Headline Column -->
+            <div class="col-lg-7 text-start animate-fade">
+                <span class="badge bg-warning mb-3 px-3 py-2 text-uppercase fw-bold text-dark" style="letter-spacing: 1.5px;">⭐ Production-Ready AgriTech Startup</span>
+                <h1 class="hero-title fw-black text-white mb-3" style="font-size: 3.8rem; line-height: 1.1; font-weight: 800;">Fresh Produce Directly From Trusted Farmers</h1>
+                <p class="hero-subtitle mb-4" style="color: #e8f5e9; font-size: 1.2rem; max-width: 620px;">
+                    Connect farmers and buyers through a smart digital marketplace with weather insights, market prices, and AI-powered farming tools.
+                </p>
+                
+                <!-- Hero Search Bar -->
+                <form action="{% url 'crop_list' %}" method="GET" class="card-premium p-2 bg-white rounded-5 mb-4 shadow-lg border-0 d-flex flex-row align-items-center" style="max-width: 600px;">
+                    <div class="input-group text-dark">
+                        <span class="input-group-text bg-transparent border-0 text-success"><i class="fa-solid fa-magnifying-glass fs-5"></i></span>
+                        <input type="text" name="q" class="form-control border-0 text-dark" placeholder="Search vegetables, fruits, grains, dairy products..." style="box-shadow: none; font-size: 1rem;">
+                        <button type="submit" class="btn btn-success rounded-pill px-4 py-2 fw-bold" style="background: var(--primary-color); border: none;">Search</button>
+                    </div>
+                </form>
+
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'crop_list' %}" class="btn btn-warning btn-lg px-4 py-3 fw-bold text-dark rounded-4 shadow-sm"><i class="fa-solid fa-basket-shopping me-2"></i>Browse Products</a>
+                    {% if not request.user.is_authenticated %}
+                        <a href="{% url 'register' %}" class="btn btn-outline-light btn-lg px-4 py-3 fw-bold rounded-4"><i class="fa-solid fa-tractor me-2"></i>Become a Farmer</a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Floating Showcase Cards -->
+            <div class="col-lg-5 position-relative d-none d-lg-block" style="height: 420px;">
+                <!-- Card 1 -->
+                <div class="hero-float-card floating-item text-dark" style="top: 20px; right: 20px; animation-delay: 0s;">
+                    <div class="bg-success-subtle rounded-circle p-2 me-3 text-success d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fa-solid fa-check fs-5"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-0">🌱 100% Traceability</h6>
+                        <small class="text-muted">Zero brokers markup</small>
+                    </div>
+                </div>
+                <!-- Card 2 -->
+                <div class="hero-float-card floating-item text-dark" style="top: 150px; right: 80px; animation-delay: 1.5s;">
+                    <div class="bg-warning-subtle rounded-circle p-2 me-3 text-warning d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fa-solid fa-wheat-awn fs-5"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-0">🌾 Quality Assured</h6>
+                        <small class="text-muted">Verified farm grades</small>
+                    </div>
+                </div>
+                <!-- Card 3 -->
+                <div class="hero-float-card floating-item text-dark" style="top: 280px; right: 40px; animation-delay: 3s;">
+                    <div class="bg-info-subtle rounded-circle p-2 me-3 text-info d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fa-solid fa-bolt fs-5"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-0">⚡ Instant Logistics</h6>
+                        <small class="text-muted">Direct dispatch to retail</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Live Statistics Counters -->
+<div class="container" style="margin-top: -50px; position: relative; z-index: 10;">
+    <div class="card-premium p-4 rounded-4 shadow-lg bg-white border border-success-subtle">
+        <div class="row g-4 text-center">
+            <div class="col-6 col-md-3 border-end border-light">
+                <span class="counter-value fw-extrabold text-success fs-1 d-block" data-target="500" data-suffix="+">0</span>
+                <span class="text-muted small fw-medium">Active Indian Farmers</span>
+            </div>
+            <div class="col-6 col-md-3 border-end border-light">
+                <span class="counter-value fw-extrabold text-success fs-1 d-block" data-target="10000" data-suffix="+">0</span>
+                <span class="text-muted small fw-medium">Completed Orders</span>
+            </div>
+            <div class="col-6 col-md-3 border-end border-light">
+                <span class="counter-value fw-extrabold text-success fs-1 d-block" data-target="25" data-suffix="L+">0</span>
+                <span class="text-muted small fw-medium">Direct Trade Volume</span>
+            </div>
+            <div class="col-6 col-md-3">
+                <span class="counter-value fw-extrabold text-success fs-1 d-block" data-target="50" data-suffix="+">0</span>
+                <span class="text-muted small fw-medium">Connected Villages</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Featured Categories Grid -->
+<div class="container py-5 mt-4">
+    <div class="text-center mb-5">
+        <span class="badge bg-success-subtle text-success mb-2 px-3 py-2 text-uppercase fw-bold">Marketplace Categories</span>
+        <h2 class="fw-bold text-success">Browse Fresh Crop Listings</h2>
+        <p class="text-muted">Explore categories sourced directly from the fields</p>
+    </div>
+    
+    <div class="row g-3">
+        {% for category in categories %}
+            <div class="col-6 col-md-3">
+                <a href="{% url 'crop_list' %}?category={{ category.id }}" class="text-decoration-none">
+                    <div class="card-premium h-100 overflow-hidden p-0 border border-success-subtle hover-zoom-card bg-white">
+                        <div style="height: 160px; overflow: hidden; position: relative;">
+                            <img src="{% if category.name == 'Vegetables' %}/media/crops/tomato.jpg{% elif category.name == 'Fruits' %}/media/crops/mango.jpg{% elif category.name == 'Grains' %}/media/crops/wheat.jpg{% elif category.name == 'Pulses' %}/media/crops/chickpea.jpg{% elif category.name == 'Organic Products' %}/media/crops/organic_tomato.jpg{% elif category.name == 'Dairy Products' %}/media/crops/milk.jpg{% elif category.name == 'Spices' %}/media/crops/turmeric.jpg{% elif category.name == 'Seeds' %}/media/crops/wheat_seeds.jpg{% else %}/media/crops/wheat.jpg{% endif %}" 
+                                 class="w-100 h-100 object-fit-cover transition-img" alt="{{ category.name }}">
+                            <div class="position-absolute top-0 start-0 w-100 h-100 bg-dark opacity-25"></div>
+                            <span class="position-absolute bottom-0 start-0 m-3 badge bg-success">{{ category.crops.count }} Items</span>
+                        </div>
+                        <div class="p-3">
+                            <h5 class="fw-bold text-dark mb-1" style="font-size: 1.1rem;">{{ category.name }}</h5>
+                            <p class="text-muted small mb-0 text-truncate">{{ category.description }}</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 4. NEW SECTION: Live Market Prices -->
+<div class="container py-5" id="prices">
+    <div class="text-center mb-5">
+        <span class="badge bg-success-subtle text-success mb-2 px-3 py-2 text-uppercase fw-bold">Market price index</span>
+        <h2 class="fw-bold text-success">Live Crop Market Prices</h2>
+        <p class="text-muted">Today's wholesale prices across regional APMC centers</p>
+    </div>
+    
+    <div class="row g-3 justify-content-center">
+        <!-- Tomato -->
+        <div class="col-md-2-4 col-sm-6">
+            <div class="card-premium p-3 text-center border bg-white">
+                <span class="text-muted small text-uppercase fw-bold mb-2 d-block">Tomato</span>
+                <h3 class="fw-bold text-dark mb-1">₹35.00</h3>
+                <span class="small text-muted mb-2 d-block">/ kg</span>
+                <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-caret-up me-1"></i>+4.2% Today</span>
+            </div>
+        </div>
+        <!-- Potato -->
+        <div class="col-md-2-4 col-sm-6">
+            <div class="card-premium p-3 text-center border bg-white">
+                <span class="text-muted small text-uppercase fw-bold mb-2 d-block">Potato</span>
+                <h3 class="fw-bold text-dark mb-1">₹22.00</h3>
+                <span class="small text-muted mb-2 d-block">/ kg</span>
+                <span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-caret-down me-1"></i>-1.5% Today</span>
+            </div>
+        </div>
+        <!-- Onion -->
+        <div class="col-md-2-4 col-sm-6">
+            <div class="card-premium p-3 text-center border bg-white">
+                <span class="text-muted small text-uppercase fw-bold mb-2 d-block">Onion</span>
+                <h3 class="fw-bold text-dark mb-1">₹28.00</h3>
+                <span class="small text-muted mb-2 d-block">/ kg</span>
+                <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-caret-up me-1"></i>+2.8% Today</span>
+            </div>
+        </div>
+        <!-- Wheat -->
+        <div class="col-md-2-4 col-sm-6">
+            <div class="card-premium p-3 text-center border bg-white">
+                <span class="text-muted small text-uppercase fw-bold mb-2 d-block">Wheat</span>
+                <h3 class="fw-bold text-dark mb-1">₹38.00</h3>
+                <span class="small text-muted mb-2 d-block">/ kg</span>
+                <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-caret-up me-1"></i>+1.1% Today</span>
+            </div>
+        </div>
+        <!-- Rice -->
+        <div class="col-md-2-4 col-sm-6">
+            <div class="card-premium p-3 text-center border bg-white">
+                <span class="text-muted small text-uppercase fw-bold mb-2 d-block">Basmati Rice</span>
+                <h3 class="fw-bold text-dark mb-1">₹85.00</h3>
+                <span class="small text-muted mb-2 d-block">/ kg</span>
+                <span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-caret-down me-1"></i>-0.5% Today</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 5. Featured Crops Marketplace Section -->
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <span class="badge bg-success-subtle text-success mb-2 px-3 py-2 text-uppercase fw-bold">Live Catalog</span>
+            <h3 class="fw-bold text-success mb-0">Recently Listed Products</h3>
+        </div>
+        <a href="{% url 'crop_list' %}" class="text-success fw-bold text-decoration-none">Search all crops <i class="fa-solid fa-arrow-right ms-2"></i></a>
+    </div>
+    
+    <div class="row g-4">
+        {% for crop in featured_crops %}
+            <div class="col-md-3">
+                <div class="card-premium h-100 d-flex flex-column justify-content-between border border-success-subtle hover-zoom-card bg-white">
+                    <div>
+                        <!-- Crop Image and Badges -->
+                        <div class="position-relative">
+                            {% if crop.image %}
+                                <img src="{{ crop.image.url }}?v=1.4" class="card-img-top card-premium-img w-100 rounded-top-4 transition-img" alt="{{ crop.name }}" style="height: 200px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-success-subtle d-flex align-items-center justify-content-center text-success" style="height: 200px;">
+                                    <i class="fa-solid fa-wheat-awn fs-1"></i>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Wishlist Button -->
+                            <button class="btn btn-light btn-sm rounded-circle position-absolute top-0 start-0 m-3 border-0 shadow-sm text-danger d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; z-index: 10;" title="Add to Wishlist"><i class="fa-regular fa-heart"></i></button>
+                            
+                            <!-- Status Badges Overlay -->
+                            <div class="position-absolute top-0 end-0 m-3 d-flex flex-column gap-1 align-items-end">
+                                <span class="badge bg-success shadow-sm">{{ crop.get_availability_status_display }}</span>
+                                {% if "organic" in crop.category.name.lower or "organic" in crop.name.lower %}
+                                    <span class="badge bg-warning text-dark shadow-sm">🌿 Organic</span>
+                                {% endif %}
+                                <span class="badge bg-info text-dark shadow-sm">⚡ Fresh Harvest</span>
+                            </div>
+                        </div>
+                        
+                        <div class="card-body p-3 pb-0">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge-category">{{ crop.category.name }}</span>
+                                <div class="star-rating small"><i class="fa-solid fa-star text-warning"></i> 4.8</div>
+                            </div>
+                            <h5 class="card-title fw-bold text-dark mb-1" style="font-size: 1.15rem;">{{ crop.name }}</h5>
+                            <p class="text-muted small mb-2 text-truncate">{{ crop.description }}</p>
+                            
+                            <!-- Farmer and Location Tags -->
+                            <div class="d-flex align-items-center small text-secondary mb-1" style="font-size: 0.85rem;">
+                                <i class="fa-solid fa-tractor me-2 text-success"></i>{{ crop.farmer.farm_name|default:"Local Farm" }}
+                                <span class="badge bg-success-subtle text-success ms-2" style="font-size: 0.65rem;">Verified Farmer</span>
+                            </div>
+                            <div class="d-flex align-items-center small text-secondary mb-2" style="font-size: 0.85rem;">
+                                <i class="fa-solid fa-location-dot me-2 text-success"></i>{{ crop.farmer.farm_location|default:"Green Region" }}
+                            </div>
+                            <div class="d-flex align-items-center small text-secondary mb-3" style="font-size: 0.85rem;">
+                                <i class="fa-solid fa-box-open me-2 text-success"></i>Stock: {{ crop.quantity_available|floatformat:0 }} {{ crop.unit }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer bg-transparent border-0 p-3 pt-0">
+                        <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-3">
+                            <div>
+                                <span class="fs-4 fw-bold text-success">₹{{ crop.price_per_kg }}</span>
+                                <span class="small text-muted">/ {{ crop.get_unit_display }}</span>
+                            </div>
+                            <div class="d-flex gap-1 align-items-center">
+                                <a href="{% url 'crop_detail' crop.pk %}" class="btn btn-outline-custom btn-sm py-2 px-3 rounded-3" title="Details">Details</a>
+                                {% if request.user.is_authenticated and request.user.role == 'buyer' %}
+                                    <form action="{% url 'add_to_cart' crop.id %}" method="POST" class="d-inline mb-0">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="quantity" value="1">
+                                        <button type="submit" class="btn btn-primary-custom btn-sm py-2 px-3 rounded-3" title="Add to Cart"><i class="fa-solid fa-cart-plus"></i></button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-center text-muted py-5">
+                No crops listed right now. Check back soon!
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 6. NEW SECTION: Featured Farmers -->
+<div class="container py-5" id="farmers">
+    <div class="text-center mb-5">
+        <span class="badge bg-success-subtle text-success mb-2 px-3 py-2 text-uppercase fw-bold">Verified Profiles</span>
+        <h2 class="fw-bold text-success">Meet Our Verified Farmers</h2>
+        <p class="text-muted">Direct agricultural sellers supplying high-grade produce</p>
+    </div>
+    
+    <div class="row g-4">
+        <!-- Farmer 1: Ramesh Patel -->
+        <div class="col-md-3">
+            <div class="card-premium p-3 text-center border h-100 d-flex flex-column justify-content-between bg-white">
+                <div>
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold border border-3 border-success-subtle" style="width: 80px; height: 80px; font-size: 1.8rem;">RP</div>
+                    <h5 class="fw-bold text-dark mb-1">Ramesh Patel</h5>
+                    <span class="badge bg-success-subtle text-success mb-2"><i class="fa-solid fa-circle-check me-1"></i>Verified</span>
+                    <p class="text-muted small mb-3">Green Valley Farms<br><i class="fa-solid fa-location-dot me-1"></i>Rajkot, Gujarat</p>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between small text-muted px-2 py-1">
+                        <span>Rating</span><span class="fw-bold text-dark">4.8 ⭐</span>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted px-2 py-1">
+                        <span>Specialization</span><span class="fw-bold text-dark">Vegetables</span>
+                    </div>
+                </div>
+                <a href="{% url 'crop_list' %}?q=Patel" class="btn btn-outline-success btn-sm w-100 mt-3 rounded-pill">View Products</a>
+            </div>
+        </div>
+        
+        <!-- Farmer 2: Suresh Kumar -->
+        <div class="col-md-3">
+            <div class="card-premium p-3 text-center border h-100 d-flex flex-column justify-content-between bg-white">
+                <div>
+                    <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold border border-3 border-warning-subtle" style="width: 80px; height: 80px; font-size: 1.8rem;">SK</div>
+                    <h5 class="fw-bold text-dark mb-1">Suresh Kumar</h5>
+                    <span class="badge bg-success-subtle text-success mb-2"><i class="fa-solid fa-circle-check me-1"></i>Verified</span>
+                    <p class="text-muted small mb-3">Fresh Harvest Farm<br><i class="fa-solid fa-location-dot me-1"></i>Ludhiana, Punjab</p>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between small text-muted px-2 py-1">
+                        <span>Rating</span><span class="fw-bold text-dark">4.7 ⭐</span>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted px-2 py-1">
+                        <span>Specialization</span><span class="fw-bold text-dark">Grains</span>
+                    </div>
+                </div>
+                <a href="{% url 'crop_list' %}?q=Kumar" class="btn btn-outline-success btn-sm w-100 mt-3 rounded-pill">View Products</a>
+            </div>
+        </div>
+        
+        <!-- Farmer 3: Mahesh Singh -->
+        <div class="col-md-3">
+            <div class="card-premium p-3 text-center border h-100 d-flex flex-column justify-content-between bg-white">
+                <div>
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold border border-3 border-success-subtle" style="width: 80px; height: 80px; font-size: 1.8rem;">MS</div>
+                    <h5 class="fw-bold text-dark mb-1">Mahesh Singh</h5>
+                    <span class="badge bg-success-subtle text-success mb-2"><i class="fa-solid fa-circle-check me-1"></i>Verified</span>
+                    <p class="text-muted small mb-3">Organic Earth Farm<br><i class="fa-solid fa-location-dot me-1"></i>Jaipur, Rajasthan</p>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between small text-muted px-2 py-1">
+                        <span>Rating</span><span class="fw-bold text-dark">4.9 ⭐</span>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted px-2 py-1">
+                        <span>Specialization</span><span class="fw-bold text-dark">Organic Products</span>
+                    </div>
+                </div>
+                <a href="{% url 'crop_list' %}?q=Singh" class="btn btn-outline-success btn-sm w-100 mt-3 rounded-pill">View Products</a>
+            </div>
+        </div>
+        
+        <!-- Farmer 4: Rajesh Verma -->
+        <div class="col-md-3">
+            <div class="card-premium p-3 text-center border h-100 d-flex flex-column justify-content-between bg-white">
+                <div>
+                    <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold border border-3 border-danger-subtle" style="width: 80px; height: 80px; font-size: 1.8rem;">RV</div>
+                    <h5 class="fw-bold text-dark mb-1">Rajesh Verma</h5>
+                    <span class="badge bg-success-subtle text-success mb-2"><i class="fa-solid fa-circle-check me-1"></i>Verified</span>
+                    <p class="text-muted small mb-3">Sunrise Agriculture<br><i class="fa-solid fa-location-dot me-1"></i>Nashik, Maharashtra</p>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between small text-muted px-2 py-1">
+                        <span>Rating</span><span class="fw-bold text-dark">4.8 ⭐</span>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted px-2 py-1">
+                        <span>Specialization</span><span class="fw-bold text-dark">Fruits</span>
+                    </div>
+                </div>
+                <a href="{% url 'crop_list' %}?q=Verma" class="btn btn-outline-success btn-sm w-100 mt-3 rounded-pill">View Products</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 7. NEW SECTION: Weather Preview & AI Recommender -->
+<div class="container py-5">
+    <div class="row g-4">
+        <!-- Weather Widget Card -->
+        <div class="col-md-6">
+            <div class="card-premium p-4 border border-success-subtle h-100 d-flex flex-column justify-content-between bg-white">
+                <div>
+                    <span class="badge bg-warning text-dark mb-2 fw-bold text-uppercase" style="letter-spacing: 0.5px;">Weather Intelligence</span>
+                    <h3 class="fw-bold text-success mb-3">Smart Weather Intelligence</h3>
+                    <p class="text-muted small">Access hyper-local microclimate alerts, soil temperature tracking, and precipitation probabilities.</p>
+                    
+                    <div class="p-3 bg-light rounded-4 my-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-cloud-sun-rain fs-1 text-warning me-3"></i>
+                                <div>
+                                    <h4 class="mb-0 fw-bold">28°C</h4>
+                                    <small class="text-muted">Partly Cloudy, Ludhiana Rural</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-success">Optimal Farming</span>
+                        </div>
+                        <hr class="my-2 text-muted">
+                        <div class="row text-center mt-2 small text-secondary">
+                            <div class="col-4 border-end"><strong>65%</strong><br>Humidity</div>
+                            <div class="col-4 border-end"><strong>12 km/h</strong><br>Wind Speed</div>
+                            <div class="col-4"><strong>20%</strong><br>Precipitation</div>
+                        </div>
+                    </div>
+                </div>
+                <a href="{% url 'weather_dashboard' %}" class="btn btn-outline-success w-100 rounded-pill">View Full Forecast</a>
+            </div>
+        </div>
+
+        <!-- AI Crop Recommendation Preview -->
+        <div class="col-md-6">
+            <div class="card-premium p-4 border border-success-subtle h-100 d-flex flex-column justify-content-between bg-white">
+                <div>
+                    <span class="badge bg-success mb-2 fw-bold text-uppercase" style="letter-spacing: 0.5px;">AI Analytics</span>
+                    <h3 class="fw-bold text-success mb-3">NPK Soil Suitability Recommendations</h3>
+                    <p class="text-muted small">Enter soil Nitrogen, Phosphorus, Potassium, pH, and rainfall metrics to run our machine learning matching algorithm.</p>
+                    
+                    <div class="bg-success-subtle rounded-4 p-3 my-3 border border-success-subtle">
+                        <h6 class="fw-bold text-success mb-2"><i class="fa-solid fa-circle-check me-2"></i>Algorithmic crop suggestion</h6>
+                        <p class="mb-0 small text-dark">Suggested crop: <strong>Wheat / Barley</strong> based on loamy soil metrics with pH 6.5.</p>
+                    </div>
+                </div>
+                <a href="{% url 'smart_tools' %}" class="btn btn-success w-100 text-white rounded-pill" style="background: var(--primary-color); border: none;">Run AI Suitability Test</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 8. NEW SECTION: Success Stories -->
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <span class="badge bg-success-subtle text-success mb-2 px-3 py-2 text-uppercase fw-bold">Success Stories</span>
+        <h2 class="fw-bold text-success">Real Growth, Real Impact</h2>
+        <p class="text-muted">How digital marketplace trading boosts farmer livelihoods</p>
+    </div>
+    
+    <div class="row g-4">
+        <!-- Story 1 -->
+        <div class="col-md-4">
+            <div class="card-premium p-4 border text-center bg-white">
+                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold border border-3 border-success-subtle" style="width: 70px; height: 70px; font-size: 1.5rem;">RP</div>
+                <h5 class="fw-bold text-dark mb-1">Ramesh Patel</h5>
+                <small class="text-muted mb-3 d-block">Rajkot, Gujarat</small>
+                <p class="text-muted small mb-3">"Direct trading on AgriConnect completely eliminated middleman commission, doubling my monthly earnings!"</p>
+                <div class="bg-light rounded-3 p-3">
+                    <div class="row small">
+                        <div class="col-6 border-end text-muted">Before: <strong class="text-dark">₹40k/mo</strong></div>
+                        <div class="col-6 text-muted">After: <strong class="text-success">₹88k/mo</strong></div>
+                    </div>
+                    <span class="badge bg-success-subtle text-success mt-2 d-inline-block">+120% Income Growth</span>
+                </div>
+            </div>
+        </div>
+        <!-- Story 2 -->
+        <div class="col-md-4">
+            <div class="card-premium p-4 border text-center bg-white">
+                <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold border border-3 border-warning-subtle" style="width: 70px; height: 70px; font-size: 1.5rem;">SK</div>
+                <h5 class="fw-bold text-dark mb-1">Suresh Kumar</h5>
+                <small class="text-muted mb-3 d-block">Ludhiana, Punjab</small>
+                <p class="text-muted small mb-3">"Using weather insights let me schedule sowing perfectly, minimizing seasonal losses."</p>
+                <div class="bg-light rounded-3 p-3">
+                    <div class="row small">
+                        <div class="col-6 border-end text-muted">Before: <strong class="text-dark">₹60k/mo</strong></div>
+                        <div class="col-6 text-muted">After: <strong class="text-success">₹111k/mo</strong></div>
+                    </div>
+                    <span class="badge bg-success-subtle text-success mt-2 d-inline-block">+85% Profit Gain</span>
+                </div>
+            </div>
+        </div>
+        <!-- Story 3 -->
+        <div class="col-md-4">
+            <div class="card-premium p-4 border text-center bg-white">
+                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold border border-3 border-success-subtle" style="width: 70px; height: 70px; font-size: 1.5rem;">MS</div>
+                <h5 class="fw-bold text-dark mb-1">Mahesh Singh</h5>
+                <small class="text-muted mb-3 d-block">Jaipur, Rajasthan</small>
+                <p class="text-muted small mb-3">"Buyers from urban cities buy organic vegetables directly. Best price discovery."</p>
+                <div class="bg-light rounded-3 p-3">
+                    <div class="row small">
+                        <div class="col-6 border-end text-muted">Before: <strong class="text-dark">₹50k/mo</strong></div>
+                        <div class="col-6 text-muted">After: <strong class="text-success">₹125k/mo</strong></div>
+                    </div>
+                    <span class="badge bg-success-subtle text-success mt-2 d-inline-block">+150% Revenue Gain</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 9. How AgriConnect Works Section -->
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <span class="badge bg-success-subtle text-success mb-2 px-3 py-2 text-uppercase fw-bold">Trading Process</span>
+        <h2 class="fw-bold text-success">How AgriConnect Works</h2>
+        <p class="text-muted">A secure and transparent supply chain connection in 5 easy steps</p>
+    </div>
+    
+    <div class="row g-4 text-center justify-content-center position-relative">
+        <!-- Step 1 -->
+        <div class="col-md-2-4 col-sm-6 position-relative z-index-2">
+            <div class="card-premium p-4 border h-100 bg-white">
+                <div class="bg-success rounded-circle text-white d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold" style="width: 50px; height: 50px; background-color: var(--primary-color) !important;">1</div>
+                <h6 class="fw-bold text-dark mb-2">Register Account</h6>
+                <p class="text-muted small mb-0">Join as a verified farmer or enterprise buyer.</p>
+            </div>
+        </div>
+        <!-- Step 2 -->
+        <div class="col-md-2-4 col-sm-6 position-relative z-index-2">
+            <div class="card-premium p-4 border h-100 bg-white">
+                <div class="bg-success rounded-circle text-white d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold" style="width: 50px; height: 50px; background-color: var(--primary-color) !important;">2</div>
+                <h6 class="fw-bold text-dark mb-2">List Products</h6>
+                <p class="text-muted small mb-0">Farmers list active crop yields with pricing.</p>
+            </div>
+        </div>
+        <!-- Step 3 -->
+        <div class="col-md-2-4 col-sm-6 position-relative z-index-2">
+            <div class="card-premium p-4 border h-100 bg-white">
+                <div class="bg-success rounded-circle text-white d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold" style="width: 50px; height: 50px; background-color: var(--primary-color) !important;">3</div>
+                <h6 class="fw-bold text-dark mb-2">Place Order</h6>
+                <p class="text-muted small mb-0">Buyers select products and place orders.</p>
+            </div>
+        </div>
+        <!-- Step 4 -->
+        <div class="col-md-2-4 col-sm-6 position-relative z-index-2">
+            <div class="card-premium p-4 border h-100 bg-white">
+                <div class="bg-success rounded-circle text-white d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold" style="width: 50px; height: 50px; background-color: var(--primary-color) !important;">4</div>
+                <h6 class="fw-bold text-dark mb-2">Secure Payment</h6>
+                <p class="text-muted small mb-0">Transactions processed securely via gateway.</p>
+            </div>
+        </div>
+        <!-- Step 5 -->
+        <div class="col-md-2-4 col-sm-6 position-relative z-index-2">
+            <div class="card-premium p-4 border h-100 bg-white">
+                <div class="bg-success rounded-circle text-white d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold" style="width: 50px; height: 50px; background-color: var(--primary-color) !important;">5</div>
+                <h6 class="fw-bold text-dark mb-2">Direct Delivery</h6>
+                <p class="text-muted small mb-0">Products delivered directly to retail hubs.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 10. Smart Agriculture Section -->
+<div class="bg-success-subtle py-5 my-5 border-top border-bottom border-success-subtle">
+    <div class="container py-4">
+        <div class="text-center mb-5">
+            <span class="badge bg-success text-white mb-2 px-3 py-2 text-uppercase fw-bold" style="background: var(--primary-color) !important;">Smart Tools</span>
+            <h2 class="fw-bold text-success">AI & Smart Intelligence Tools</h2>
+            <p class="text-muted">Data-driven support algorithms for modern agricultural management</p>
+        </div>
+        
+        <div class="row g-4">
+            <!-- Tool 1 -->
+            <div class="col-md-3">
+                <div class="card-premium p-4 h-100 d-flex flex-column justify-content-between border bg-white">
+                    <div>
+                        <div class="text-success fs-3 mb-3"><i class="fa-solid fa-robot"></i></div>
+                        <h5 class="fw-bold text-dark mb-2">AI Soil Recommender</h5>
+                        <p class="text-muted small mb-0">ML matching system to recommend high-suitability crops for target fields based on soil chemistry metrics.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Tool 2 -->
+            <div class="col-md-3">
+                <div class="card-premium p-4 h-100 d-flex flex-column justify-content-between border bg-white">
+                    <div>
+                        <div class="text-warning fs-3 mb-3"><i class="fa-solid fa-cloud-sun"></i></div>
+                        <h5 class="fw-bold text-dark mb-2">Weather Intelligence</h5>
+                        <p class="text-muted small mb-0">Microclimate advisory reports providing weather patterns, rainfall warnings, and scheduling details.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Tool 3 -->
+            <div class="col-md-3">
+                <div class="card-premium p-4 h-100 d-flex flex-column justify-content-between border bg-white">
+                    <div>
+                        <div class="text-info fs-3 mb-3"><i class="fa-solid fa-chart-area"></i></div>
+                        <h5 class="fw-bold text-dark mb-2">Price Advisories</h5>
+                        <p class="text-muted small mb-0">Historical APMC market prices, 6-month historical graphs, and demand indexes for optimal price discovery.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Tool 4 -->
+            <div class="col-md-3">
+                <div class="card-premium p-4 h-100 d-flex flex-column justify-content-between border bg-white">
+                    <div>
+                        <div class="text-danger fs-3 mb-3"><i class="fa-regular fa-comment-dots"></i></div>
+                        <h5 class="fw-bold text-dark mb-2">Farmer-Buyer Chat</h5>
+                        <p class="text-muted small mb-0">Direct chat rooms with media attachments to discuss post-harvest details and packaging requirements.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 11. Trust Badges Section -->
+<div class="container py-5">
+    <div class="row g-4 text-center">
+        <div class="col-6 col-md-2-4">
+            <div class="p-3">
+                <i class="fa-solid fa-circle-check text-success fs-1 mb-3"></i>
+                <h6 class="fw-bold text-dark mb-1">Verified Farmers</h6>
+                <p class="text-muted small mb-0">100% credential verified</p>
+            </div>
+        </div>
+        <div class="col-6 col-md-2-4">
+            <div class="p-3">
+                <i class="fa-solid fa-shield-halved text-success fs-1 mb-3"></i>
+                <h6 class="fw-bold text-dark mb-1">Secure Payments</h6>
+                <p class="text-muted small mb-0">Escrow backed payments</p>
+            </div>
+        </div>
+        <div class="col-6 col-md-2-4">
+            <div class="p-3">
+                <i class="fa-solid fa-award text-success fs-1 mb-3"></i>
+                <h6 class="fw-bold text-dark mb-1">Quality Assurance</h6>
+                <p class="text-muted small mb-0">Strict sorting controls</p>
+            </div>
+        </div>
+        <div class="col-6 col-md-2-4">
+            <div class="p-3">
+                <i class="fa-solid fa-truck-fast text-success fs-1 mb-3"></i>
+                <h6 class="fw-bold text-dark mb-1">Fast Delivery</h6>
+                <p class="text-muted small mb-0">Immediate local shipping</p>
+            </div>
+        </div>
+        <div class="col-6 col-md-2-4">
+            <div class="p-3">
+                <i class="fa-solid fa-handshake text-success fs-1 mb-3"></i>
+                <h6 class="fw-bold text-dark mb-1">Direct Connection</h6>
+                <p class="text-muted small mb-0">No intermediaries involved</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 12. Testimonial Section Carousel -->
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <span class="badge bg-success-subtle text-success mb-2 px-3 py-2 text-uppercase fw-bold">Testimonials</span>
+        <h2 class="fw-bold text-success">What Our Users Say</h2>
+        <p class="text-muted">Join thousands of farmers and buyers trading successfully on AgriConnect</p>
+    </div>
+    
+    <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card-premium p-5 text-center border bg-white">
+                            <div class="star-rating text-warning mb-3">
+                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                            </div>
+                            <p class="fs-5 text-dark mb-4">"As a restaurant manager, sourcing directly from Ludhiana rural farms reduced our raw material costs by 20% while providing much crisper fresh vegetables for our kitchen. Highly recommended!"</p>
+                            <h6 class="fw-bold text-success mb-1">Aniket Mehta</h6>
+                            <small class="text-muted">Purchasing Manager, Green Bistro, Bangalore</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card-premium p-5 text-center border bg-white">
+                            <div class="star-rating text-warning mb-3">
+                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                            </div>
+                            <p class="fs-5 text-dark mb-4">"I sell wheat and basmati rice on AgriConnect. Payment is processed securely and directly to my bank account. The system is extremely easy to use even from my phone."</p>
+                            <h6 class="fw-bold text-success mb-1">Suresh Kumar</h6>
+                            <small class="text-muted">Grain Farmer, Fresh Harvest Farm, Punjab</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon bg-success rounded-circle p-3" aria-hidden="true" style="filter: invert(1);"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon bg-success rounded-circle p-3" aria-hidden="true" style="filter: invert(1);"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
+    </div>
+</div>
+{% endblock %}

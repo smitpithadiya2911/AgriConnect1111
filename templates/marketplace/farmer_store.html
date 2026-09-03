@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ farmer.user.first_name|default:farmer.user.username }}'s Storefront – AgriConnect{% endblock %}
+
+{% block content %}
+<!-- 1. Farmer Profile Hero Section with Cover Banner -->
+<div class="position-relative overflow-hidden mb-4" style="height: 320px;">
+    {% if farmer.cover_banner %}
+        <img src="{{ farmer.cover_banner.url }}" class="w-100 h-100 object-fit-cover" alt="Farm Cover Banner">
+    {% else %}
+        <div class="w-100 h-100 bg-success" style="background: linear-gradient(135deg, var(--primary-color), var(--primary-light));"></div>
+    {% endif %}
+    <div class="position-absolute top-0 start-0 w-100 h-100 bg-dark opacity-25"></div>
+</div>
+
+<!-- Profile Info Card overlap -->
+<div class="container" style="margin-top: -120px; position: relative; z-index: 10;">
+    <div class="card-premium p-4 rounded-4 shadow-lg bg-white border border-success-subtle mb-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center flex-wrap gap-3">
+                <!-- Farmer Avatar picture -->
+                {% if farmer.user.profile_picture %}
+                    <img src="{{ farmer.user.profile_picture.url }}" class="rounded-circle border border-4 border-white shadow object-fit-cover bg-white" style="width: 130px; height: 130px;" alt="{{ farmer.user.username }}">
+                {% else %}
+                    <div class="rounded-circle shadow d-flex align-items-center justify-content-center fw-bold text-white border border-4 border-white" 
+                         style="width: 130px; height: 130px; font-size: 3rem; background: var(--primary-color);">
+                        {{ farmer.user.username|slice:":2"|upper }}
+                    </div>
+                {% endif %}
+
+                <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <h2 class="fw-bold text-dark mb-0">{{ farmer.user.first_name|default:farmer.user.username }}</h2>
+                        {% if farmer.verification_status == 'approved' %}
+                            <span class="badge bg-success text-white px-2 py-1 small rounded-pill"><i class="fa-solid fa-circle-check me-1"></i>✓ Verified Farmer</span>
+                            <span class="badge bg-light text-success border px-2 py-1 small rounded-pill fw-bold"><i class="fa-solid fa-shield-halved me-1"></i>Trust Score: {{ farmer.trust_score }}%</span>
+                        {% else %}
+                            <span class="badge bg-secondary text-white px-2 py-1 small rounded-pill"><i class="fa-solid fa-circle-minus me-1"></i>Standard Seller</span>
+                        {% endif %}
+                        {% if "organic" in farmer.specialization.lower %}
+                            <span class="badge bg-warning text-dark px-2 py-1 rounded-pill small"><i class="fa-solid fa-leaf me-1"></i>Organic Certified</span>
+                        {% endif %}
+                    </div>
+                    <h5 class="text-success fw-semibold mb-1">{{ farmer.farm_name }}</h5>
+                    <p class="text-muted small mb-0"><i class="fa-solid fa-location-dot me-2 text-success"></i>{{ farmer.farm_location }} &bull; <i class="fa-solid fa-calendar me-2 text-success"></i>Verified Since: {{ farmer.verification_date|date:"F Y"|default:"Recently" }}</p>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="d-flex gap-2 align-items-center">
+                {% if request.user.is_authenticated and request.user.role == 'buyer' %}
+                    <a href="{% url 'farmer_follow' farmer.id %}" class="btn btn-outline-primary rounded-pill px-4"><i class="fa-solid fa-heart me-1"></i>Follow Grower</a>
+                    {% if has_purchased %}
+                        <a href="{% url 'farmer_rate' farmer.id %}" class="btn btn-outline-warning rounded-pill px-4 text-dark"><i class="fa-solid fa-star me-1"></i>Rate Seller</a>
+                    {% endif %}
+                {% endif %}
+                <a href="tel:{{ farmer.user.phone|default:'9876543210' }}" class="btn btn-outline-success rounded-pill px-4"><i class="fa-solid fa-phone me-2"></i>Call Seller</a>
+                <a href="{% url 'chat_detail' farmer.user.username %}" class="btn btn-success rounded-pill px-4" style="background: var(--primary-color); border: none;"><i class="fa-regular fa-comments me-2 text-white"></i>Chat Store</a>
+            </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- Farmer Statistics row -->
+        <div class="row g-3 text-center">
+            <div class="col-4 col-md-2 border-end">
+                <span class="counter-value fw-extrabold text-success fs-2 d-block" data-target="{{ crops.count }}">0</span>
+                <span class="text-muted small">Crops Listed</span>
+            </div>
+            <div class="col-4 col-md-2 border-end">
+                <span class="counter-value fw-extrabold text-success fs-2 d-block" data-target="{{ farmer.orders_completed }}">0</span>
+                <span class="text-muted small">Orders Done</span>
+            </div>
+            <div class="col-4 col-md-2 border-end">
+                <span class="fw-bold text-success fs-2 d-block">₹{{ farmer.orders_completed|add:"10" }}K+</span>
+                <span class="text-muted small">Total Revenue</span>
+            </div>
+            <div class="col-4 col-md-2 border-end">
+                <span class="fw-bold text-success fs-2 d-block">{{ farmer.store_rating }} ⭐</span>
+                <span class="text-muted small">Customer Rating</span>
+            </div>
+            <div class="col-4 col-md-2 border-end">
+                <span class="fw-bold text-success fs-2 d-block">{{ farmer.experience }}</span>
+                <span class="text-muted small">Experience</span>
+            </div>
+            <div class="col-4 col-md-2">
+                <span class="counter-value fw-extrabold text-success fs-2 d-block" data-target="{{ farmer.repeat_customers }}">0</span>
+                <span class="text-muted small">Repeat Buyers</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-3">
+    <div class="row g-4">
+        <!-- Left Column: About & Farm Info -->
+        <div class="col-lg-4">
+            <!-- About Info Card -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-info-circle me-2"></i>About the Farmer</h5>
+                <p class="text-muted small mb-0">
+                    {{ farmer.about|default:"Professional crop cultivation producing high-grade agricultural items securely distributed directly to buyers." }}
+                </p>
+                
+                <h6 class="fw-bold text-dark mt-4 mb-2">Farming Methods</h6>
+                <p class="text-muted small mb-0">Sustainable farming prioritizing biological soil nourishment, crop rotation, and natural pesticide integrations.</p>
+            </div>
+
+            <!-- Farm Specs Card -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-warehouse me-2"></i>Farm Details</h5>
+                <ul class="list-unstyled small text-muted mb-0">
+                    <li class="mb-2"><i class="fa-solid fa-maximize me-2 text-success"></i>Farm size: <strong>{{ farmer.farm_size|default:"5 Acres" }}</strong></li>
+                    <li class="mb-2"><i class="fa-solid fa-wheat-awn me-2 text-success"></i>Main crops: <strong>{{ farmer.specialization }}</strong></li>
+                    <li class="mb-2"><i class="fa-solid fa-certificate me-2 text-success"></i>Certifications: <strong>{{ farmer.certifications|default:"Verified Seller Status" }}</strong></li>
+                    <li class="mb-0"><i class="fa-solid fa-map me-2 text-success"></i>Region: <strong>{{ farmer.farm_location }}</strong></li>
+                </ul>
+
+                <!-- Map placeholder -->
+                <div class="bg-light border rounded-3 text-center mt-3 py-4 text-muted small">
+                    <i class="fa-regular fa-map fs-2 text-success mb-2"></i><br>
+                    Interactive location map placeholder
+                </div>
+            </div>
+
+            <!-- Store Performance card -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-circle-check me-2"></i>Store Performance</h5>
+                
+                <div class="mb-3 small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>On-time Delivery Rate</span>
+                        <strong class="text-success">{{ farmer.ontime_delivery }}%</strong>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: {{ farmer.ontime_delivery }}%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3 small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Customer Satisfaction</span>
+                        <strong class="text-success">{{ farmer.satisfaction_rate }}%</strong>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: {{ farmer.satisfaction_rate }}%"></div>
+                    </div>
+                </div>
+
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Response Time</span>
+                        <strong class="text-success">&lt; 2 Hours</strong>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: 95%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Achievements & Certifications Awards -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-trophy me-2"></i>Awards & Certificates</h5>
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="fa-solid fa-award text-warning fs-4"></i>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0 small">{{ farmer.awards|default:"Best Farm Practice Certificate" }}</h6>
+                            <small class="text-muted">Krishi Kendra, 2024</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="fa-solid fa-circle-check text-success fs-4"></i>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0 small">{{ farmer.certifications|default:"APMC Registered Grower Certificate" }}</h6>
+                            <small class="text-muted">Agriculture Board Approved</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Product Catalog & Reviews -->
+        <div class="col-lg-8">
+            
+            <!-- Dynamic Catalog Section -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <h4 class="fw-bold text-success mb-0"><i class="fa-solid fa-basket-shopping me-2"></i>Farmer's Crop Catalog</h4>
+                    
+                    <!-- Inline Search Filter -->
+                    <form method="GET" class="d-flex gap-2">
+                        <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm rounded-pill px-3" placeholder="Search in store..." style="width: 180px;">
+                        <button type="submit" class="btn btn-success btn-sm rounded-pill px-3">Filter</button>
+                    </form>
+                </div>
+
+                <div class="row g-3">
+                    {% for crop in crops %}
+                        <div class="col-md-6">
+                            <div class="card h-100 border rounded-4 bg-white shadow-sm hover-zoom-card overflow-hidden">
+                                <a href="{% url 'crop_detail' crop.id %}" class="text-decoration-none">
+                                    <div class="position-relative" style="height: 150px;">
+                                        <img src="{{ crop.image.url }}" class="w-100 h-100 object-fit-cover transition-img" alt="{{ crop.name }}">
+                                        <span class="position-absolute top-0 end-0 m-2 badge bg-success">{{ crop.get_availability_status_display }}</span>
+                                    </div>
+                                </a>
+                                <div class="p-3 d-flex flex-column justify-content-between" style="min-height: 120px;">
+                                    <div>
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="badge-category">{{ crop.category.name }}</span>
+                                            <span class="text-warning small"><i class="fa-solid fa-star"></i> 4.8</span>
+                                        </div>
+                                        <h6 class="fw-bold text-dark mb-1 text-truncate">{{ crop.name }}</h6>
+                                        <p class="text-muted small mb-2 text-truncate">{{ crop.description }}</p>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2">
+                                        <span class="text-success fw-bold fs-5">₹{{ crop.price_per_kg }}/{{ crop.unit }}</span>
+                                        <div class="d-flex gap-1">
+                                            <a href="{% url 'crop_detail' crop.id %}" class="btn btn-sm btn-outline-success rounded-pill px-3">Details</a>
+                                            {% if request.user.is_authenticated and request.user.role == 'buyer' %}
+                                                <form action="{% url 'add_to_cart' crop.id %}" method="POST" class="d-inline mb-0">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="quantity" value="1">
+                                                    <button type="submit" class="btn btn-sm btn-success rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;"><i class="fa-solid fa-cart-plus fs-6 text-white"></i></button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-12 text-center text-muted py-5">
+                            No active products found matching your search.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Customer Feedback Reviews list -->
+            <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
+                <h4 class="fw-bold text-success mb-4"><i class="fa-regular fa-star me-2"></i>Latest Customer Feedback</h4>
+                
+                <div class="review-list">
+                    {% for rev in reviews %}
+                        <div class="py-3 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold me-2" style="width: 36px; height: 36px; font-size: 0.95rem;">
+                                        {{ rev.buyer.username|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0 small">{{ rev.buyer.username }}</h6>
+                                        <span class="badge bg-success-subtle text-success" style="font-size: 0.6rem;"><i class="fa-solid fa-circle-check me-1"></i>Verified Purchase</span>
+                                    </div>
+                                </div>
+                                <span class="small text-muted" style="font-size: 0.75rem;">{{ rev.created_at|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="star-rating text-warning small mb-2">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= rev.rating %}
+                                        <i class="fa-solid fa-star"></i>
+                                    {% else %}
+                                        <i class="fa-regular fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <p class="text-muted small mb-1">Crop: <strong>{{ rev.crop.name }}</strong></p>
+                            <p class="text-muted small mb-0">{{ rev.comment }}</p>
+                        </div>
+                    {% empty %}
+                        <!-- Default placeholder reviews for trust metrics -->
+                        <div class="py-3 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-dark small">aniket_retailer</span>
+                                <span class="text-muted" style="font-size: 0.75rem;">12 days ago</span>
+                            </div>
+                            <div class="star-rating text-warning small mb-1"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                            <p class="text-muted small mb-0">High-grade crop, very fresh and nicely packed. Fast delivery.</p>
+                        </div>
+                        <div class="py-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-dark small">deepak_buyer</span>
+                                <span class="text-muted" style="font-size: 0.75rem;">1 month ago</span>
+                            </div>
+                            <div class="star-rating text-warning small mb-1"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i></div>
+                            <p class="text-muted small mb-0">Very cooperative seller. The grain moisture level was perfect.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -11,8 +11,7 @@ venv/
 # SQLite database
 db.sqlite3
 
-# Media uploads
-media/
+# Media uploads (tracked for crop images)
 
 # VS Code
 .vscode/

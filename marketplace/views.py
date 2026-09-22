@@ -3,7 +3,7 @@ import csv
 import random
 from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Count, Avg, Q, F
@@ -11,8 +11,14 @@ from django.utils import timezone
 from django.db import models
 
 from accounts.models import User, Farmer, Buyer
-from .models import Category, Crop, CartItem, Order, OrderItem, Payment, Review, Notification, Feedback, PriceTrend, ChatMessage, ReturnRequest, Wishlist, FavoriteFarmer, Report
+from .models import Category, Crop, CartItem, Order, OrderItem, Payment, Review, Notification, Feedback, PriceTrend, ChatMessage, ReturnRequest, Wishlist, Report
 from .forms import CropForm, ReviewForm, FeedbackForm, CheckoutForm, ChatMessageForm, AdvancedCropRecommendationForm
+from django.utils.crypto import get_random_string
+import json
+from django.core.mail import send_mail, EmailMessage
+from django.template.loader import render_to_string
+from django.conf import settings
+from .models import OrderOTP
 
 # --- Helper function for notifications ---
 def create_notification(user, message, n_type='system', priority='medium', link=None):
@@ -88,10 +94,12 @@ def submit_feedback_view(request):
 def crop_list_view(request):
     crops = Crop.objects.filter(is_approved=True)
     categories = Category.objects.annotate(crop_count=Count('crops', filter=Q(crops__is_approved=True)))
+    sellers = Farmer.objects.filter(crops__is_approved=True).select_related('user').distinct()
     
     # Search and Filters
     q = request.GET.get('q', '')
     category_id = request.GET.get('category', '')
+    seller_store = request.GET.get('seller_store', '')
     min_price = request.GET.get('min_price', '')
     max_price = request.GET.get('max_price', '')
     location = request.GET.get('location', '')
@@ -111,6 +119,15 @@ def crop_list_view(request):
         )
     if category_id:
         crops = crops.filter(category_id=category_id)
+    if seller_store:
+        if seller_store.isdigit():
+            crops = crops.filter(farmer_id=int(seller_store))
+        else:
+            crops = crops.filter(
+                Q(farmer__farm_name__icontains=seller_store) |
+                Q(farmer__user__username__icontains=seller_store) |
+                Q(farmer__user__first_name__icontains=seller_store)
+            )
     if min_price:
         crops = crops.filter(price_per_kg__gte=min_price)
     if max_price:
@@ -166,8 +183,10 @@ def crop_list_view(request):
     context = {
         'crops': page_obj,  # Pass the paginated page object as crops
         'categories': categories,
+        'sellers': sellers,
         'q': q,
         'selected_category': int(category_id) if category_id.isdigit() else '',
+        'selected_seller': int(seller_store) if seller_store.isdigit() else seller_store,
         'min_price': min_price,
         'max_price': max_price,
         'location': location,
@@ -266,6 +285,8 @@ def crop_detail_view(request, pk):
     if buyer_profile:
         estimated_days = crop.estimated_delivery_days(buyer_profile)
         is_eligible = crop.is_eligible_for_delivery(buyer_profile)
+        
+    total_orders = OrderItem.objects.filter(crop=crop).count()
 
     context = {
         'crop': crop,
@@ -285,6 +306,7 @@ def crop_detail_view(request, pk):
         'estimated_days': estimated_days,
         'is_eligible': is_eligible,
         'buyer_profile': buyer_profile,
+        'total_orders': total_orders,
     }
     return render(request, 'marketplace/crop_detail.html', context)
 
@@ -308,11 +330,18 @@ def farmer_dashboard_view(request):
     total_listings = crops.count()
     pending_orders = orders.filter(status__in=['Pending', 'Accepted', 'Packed', 'Out For Delivery']).count()
     completed_orders = orders.filter(status='Delivered')
+    
+    # Analytics Years
+    current_year = timezone.now().year
+    analytics_years_set = set(orders.dates('created_at', 'year').values_list('created_at__year', flat=True))
+    analytics_years_set.update(range(current_year - 4, current_year + 1))
+    analytics_years = sorted(list(analytics_years_set), reverse=True)
     total_earnings = completed_orders.aggregate(Sum('total_amount'))['total_amount__sum'] or 0.00
     
     # Extra Business Analytics
     low_stock = crops.filter(quantity_available__lt=20, quantity_available__gt=0)
     out_of_stock = crops.filter(quantity_available=0)
+    in_stock_count = crops.filter(quantity_available__gt=0).count()
     active_customers = orders.values('buyer').distinct().count()
     
     # Reviews
@@ -334,17 +363,23 @@ def farmer_dashboard_view(request):
     
     # Recent orders list
     recent_orders = orders[:5]
-    notifications = Notification.objects.filter(user=request.user, is_read=False)[:5]
+    
+    # Notifications for the dashboard tab
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')[:20]
+    unread_notif_count = Notification.objects.filter(user=request.user, is_read=False).count()
 
     context = {
         'farmer': farmer,
         'total_listings': total_listings,
+        'total_orders': orders.count(),
         'pending_orders': pending_orders,
         'total_earnings': total_earnings,
+        'in_stock_count': in_stock_count,
         'low_stock_count': low_stock.count(),
         'out_of_stock_count': out_of_stock.count(),
         'active_customers': active_customers,
         'farmer_reviews': farmer_reviews,
+        'all_reviews': Review.objects.filter(crop__farmer=farmer).order_by('-created_at'),
         'avg_rating': round(avg_rating, 1),
         'market_insights': market_insights,
         'temp': temp,
@@ -352,10 +387,14 @@ def farmer_dashboard_view(request):
         'rain': rain,
         'location': location,
         'recent_orders': recent_orders,
+        'all_orders': orders,
         'notifications': notifications,
+        'unread_notif_count': unread_notif_count,
         'chart_dates': chart_dates,
         'chart_earnings': chart_earnings,
-        'crops': crops[:5]
+        'analytics_years': analytics_years,
+        'crops': crops[:5],
+        'all_crops': crops,
     }
     return render(request, 'dashboards/farmer.html', context)
 
@@ -378,10 +417,9 @@ def buyer_dashboard_view(request):
     cart_items = CartItem.objects.filter(user=request.user)
     cart_items_count = cart_items.aggregate(Sum('quantity'))['quantity__sum'] or 0
     cart_total = sum(item.total_price() for item in cart_items)
+    wishlist_items_count = Wishlist.objects.filter(user=request.user).count()
     
-    # Favorite Farmers
-    favorite_farmers = Farmer.objects.all().order_by('?')[:3]
-    
+
     # Sowing weather variables & Market details
     market_insights = MarketInsight.objects.all()[:3]
     location = request.user.address.split(',')[0] if request.user.address else 'Rajkot'
@@ -399,14 +437,16 @@ def buyer_dashboard_view(request):
 
     # Quick recommendations based on previous orders or simple random approved crops
     recommended_crops = Crop.objects.filter(is_approved=True, availability_status='available').order_by('?')[:4]
+    ordered_farmers = Farmer.objects.filter(orders__buyer=request.user).distinct()[:6]
 
     context = {
         'total_spent': total_spent,
         'total_orders': total_orders,
         'pending_deliveries': pending_deliveries,
         'cart_items_count': int(cart_items_count),
+        'wishlist_items_count': wishlist_items_count,
         'cart_total': cart_total,
-        'favorite_farmers': favorite_farmers,
+
         'market_insights': market_insights,
         'temp': temp,
         'rain': rain,
@@ -414,6 +454,7 @@ def buyer_dashboard_view(request):
         'months': months,
         'spending_trend': spending_trend,
         'recent_orders': recent_orders,
+        'ordered_farmers': ordered_farmers,
         'notifications': notifications,
         'recommended_crops': recommended_crops,
         'my_reviews': my_reviews,
@@ -447,7 +488,7 @@ def admin_dashboard_view(request):
     buyers_list = Buyer.objects.all().select_related('user')
     products_list = Crop.objects.all().select_related('farmer__user', 'category')
     orders_list = Order.objects.all().select_related('buyer', 'farmer__user')
-    complaints_list = Feedback.objects.all().select_related('user')
+    reviews_list = Review.objects.all().select_related('buyer', 'crop').order_by('-created_at')
     
     # Lists for quick review on home overview tab
     pending_crops = Crop.objects.filter(is_approved=False).order_by('-created_at')[:5]
@@ -461,8 +502,71 @@ def admin_dashboard_view(request):
     # 4. Market & Weather widgets
     market_insights = MarketInsight.objects.all()[:4]
     
-    # 5. Admin Broadcast messages
-    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')[:5]
+    # 5. Admin Notifications — all system/platform events
+    admin_user = request.user
+
+    # Build dynamic context-based notification list
+    dynamic_notifications = []
+
+    # From DB: all notifications for admin user (all types)
+    db_notifications = list(Notification.objects.filter(user=admin_user).order_by('-created_at')[:50])
+
+    # Supplement with platform events as pseudo-notification dicts
+    now = timezone.now()
+
+    for farmer in Farmer.objects.filter(verification_status__in=['pending', 'unverified']).select_related('user').order_by('-user__date_joined')[:5]:
+        dynamic_notifications.append({
+            'title': 'Farmer Verification Pending',
+            'message': f"{farmer.user.get_full_name() or farmer.user.username} is awaiting farm verification.",
+            'created_at': farmer.user.date_joined,
+            'is_read': False,
+            'notification_type': 'system',
+        })
+
+    for crop in Crop.objects.filter(is_approved=False).order_by('-created_at')[:5]:
+        dynamic_notifications.append({
+            'title': 'New Product Pending Approval',
+            'message': f"{crop.name} submitted by {crop.farmer.user.username} awaits approval.",
+            'created_at': crop.created_at,
+            'is_read': False,
+            'notification_type': 'product',
+        })
+
+    for feedback in Feedback.objects.filter(is_resolved=False).order_by('-created_at')[:5]:
+        dynamic_notifications.append({
+            'title': 'Unresolved Feedback',
+            'message': f"{feedback.user.username}: {feedback.subject}",
+            'created_at': feedback.created_at,
+            'is_read': False,
+            'notification_type': 'system',
+        })
+
+    for order in Order.objects.filter(status='Pending').order_by('-created_at')[:5]:
+        dynamic_notifications.append({
+            'title': 'New Order Placed',
+            'message': f"Order #{order.id} placed by {order.buyer.username} — ₹{order.total_amount}.",
+            'created_at': order.created_at,
+            'is_read': False,
+            'notification_type': 'order',
+        })
+
+    for user in User.objects.order_by('-date_joined')[:5]:
+        dynamic_notifications.append({
+            'title': 'New User Registration',
+            'message': f"{user.get_full_name() or user.username} ({user.role}) joined the platform.",
+            'created_at': user.date_joined,
+            'is_read': False,
+            'notification_type': 'system',
+        })
+
+    # Sort combined list by created_at descending
+    dynamic_notifications.sort(key=lambda x: x['created_at'], reverse=True)
+
+    # Merge DB notifications + dynamic events
+    notifications = db_notifications + dynamic_notifications
+    notifications.sort(key=lambda x: x['created_at'] if isinstance(x, dict) else x.created_at, reverse=True)
+    notifications = notifications[:30]
+    unread_notif_count = sum(1 for n in notifications if (n['is_read'] if isinstance(n, dict) else not n.is_read))
 
     context = {
         'total_farmers': total_farmers,
@@ -480,7 +584,7 @@ def admin_dashboard_view(request):
         'buyers_list': buyers_list,
         'products_list': products_list,
         'orders_list': orders_list,
-        'complaints_list': complaints_list,
+        'reviews_list': reviews_list,
         
         'pending_crops': pending_crops,
         'recent_feedbacks': recent_feedbacks,
@@ -506,6 +610,13 @@ def crop_create_view(request):
             crop = form.save(commit=False)
             crop.farmer = farmer
             crop.is_approved = False  # requires admin approval
+            
+            # Handle preset image selection if no custom file was uploaded
+            preset_image = request.POST.get('preset_image', '').strip()
+            if not request.FILES.get('image') and preset_image:
+                if preset_image.startswith('crops/'):
+                    crop.image = preset_image
+                    
             crop.save()
             messages.success(request, f"Crop '{crop.name}' added successfully! It is pending administrator approval.")
             
@@ -529,7 +640,10 @@ def crop_update_view(request, pk):
         form = CropForm(request.POST, request.FILES, instance=crop)
         if form.is_valid():
             crop = form.save(commit=False)
-            # Re-verify if critical details changed
+            preset_image = request.POST.get('preset_image', '').strip()
+            if not request.FILES.get('image') and preset_image:
+                if preset_image.startswith('crops/'):
+                    crop.image = preset_image
             crop.save()
             messages.success(request, f"Crop '{crop.name}' updated successfully.")
             return redirect('farmer_dashboard')
@@ -594,13 +708,293 @@ def farmer_update_order_status_view(request, pk):
             
             # Update payment if delivered
             if new_status == 'Delivered':
-                payment = getattr(order, 'payment', None)
-                if payment:
-                    payment.status = 'Completed'
+                payment = Payment.objects.filter(order=order).first()
+                if payment and payment.payment_method == 'cod' and payment.status != 'completed':
+                    payment.status = 'completed'
                     payment.save()
-                    
-        return redirect('farmer_orders')
+            
+        return redirect(request.META.get('HTTP_REFERER', 'farmer_orders'))
     return redirect('farmer_dashboard')
+
+
+@login_required
+def farmer_update_inventory_stock_view(request, pk):
+    if not request.user.is_farmer():
+        return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        crop = get_object_or_404(Crop, pk=pk, farmer=request.user.farmer_profile)
+        try:
+            quantity = float(request.POST.get('quantity', 0))
+            if quantity < 0:
+                raise ValueError("Quantity cannot be negative")
+            
+            crop.quantity_available = quantity
+            crop.save()
+            
+            # Recalculate metrics
+            farmer = request.user.farmer_profile
+            crops = Crop.objects.filter(farmer=farmer)
+            in_stock_count = crops.filter(quantity_available__gt=0).count()
+            low_stock_count = crops.filter(quantity_available__lt=20, quantity_available__gt=0).count()
+            out_of_stock_count = crops.filter(quantity_available=0).count()
+            
+            return JsonResponse({
+                'success': True,
+                'in_stock_count': in_stock_count,
+                'low_stock_count': low_stock_count,
+                'out_of_stock_count': out_of_stock_count
+            })
+        except ValueError as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+@login_required
+def farmer_sales_analytics_api_view(request):
+    if not request.user.is_farmer():
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    year = int(request.GET.get('year', timezone.now().year))
+    farmer = request.user.farmer_profile
+    
+    # 1. Monthly Revenue (All non-cancelled orders)
+    completed_orders = Order.objects.filter(farmer=farmer, created_at__year=year).exclude(status='Cancelled')
+    monthly_revenue = [0] * 12
+    for order in completed_orders:
+        month_idx = order.created_at.month - 1
+        monthly_revenue[month_idx] += float(order.total_amount)
+        
+    # 2. Category-wise Sales (Doughnut)
+    # Get all non-cancelled order items for this farmer in this year
+    order_items = OrderItem.objects.filter(order__farmer=farmer, order__created_at__year=year).exclude(order__status='Cancelled')
+    category_sales = {}
+    for item in order_items:
+        cat_name = item.crop.category.name if item.crop.category else "Uncategorized"
+        # Calculate revenue for this item
+        item_total = float(item.price_per_unit * item.quantity)
+        category_sales[cat_name] = category_sales.get(cat_name, 0) + item_total
+        
+    cat_labels = list(category_sales.keys())
+    cat_data = list(category_sales.values())
+    
+    # 3. Orders Trend (All non-cancelled orders by month)
+    valid_orders = Order.objects.filter(farmer=farmer, created_at__year=year).exclude(status='Cancelled')
+    monthly_orders = [0] * 12
+    for order in valid_orders:
+        month_idx = order.created_at.month - 1
+        monthly_orders[month_idx] += 1
+        
+    return JsonResponse({
+        'monthly_revenue': monthly_revenue,
+        'category_sales': {'labels': cat_labels, 'data': cat_data},
+        'orders_trend': monthly_orders
+    })
+
+@login_required
+def farmer_sales_analytics_pdf_view(request):
+    if not hasattr(request.user, 'farmer_profile'):
+        return HttpResponse("Unauthorized", status=403)
+        
+    year = int(request.GET.get('year', timezone.now().year))
+    farmer = request.user.farmer_profile
+    
+    # Same queries as dashboard API to maintain consistency
+    completed_orders = Order.objects.filter(farmer=farmer, created_at__year=year).exclude(status='Cancelled').order_by('created_at')
+    order_items = OrderItem.objects.filter(order__farmer=farmer, order__created_at__year=year).exclude(order__status='Cancelled')
+    
+    # 1. Metrics & Monthly Revenue
+    monthly_revenue = [0] * 12
+    total_revenue = 0
+    for order in completed_orders:
+        month_idx = order.created_at.month - 1
+        amount = float(order.total_amount)
+        monthly_revenue[month_idx] += amount
+        total_revenue += amount
+        
+    total_orders = completed_orders.count()
+    
+    # 2. Category Sales & Products Sold
+    category_sales = {}
+    products_sold = 0
+    for item in order_items:
+        cat_name = item.crop.category.name if item.crop.category else "Uncategorized"
+        item_total = float(item.price_per_unit * item.quantity)
+        category_sales[cat_name] = category_sales.get(cat_name, 0) + item_total
+        products_sold += item.quantity
+        
+    avg_order_value = total_revenue / total_orders if total_orders > 0 else 0
+    
+    # Generate PDF
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Sales_Report_{year}_{farmer.user.username}.pdf"'
+    
+    doc = SimpleDocTemplate(response, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=30)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    title_style = styles['Heading1']
+    title_style.alignment = 1 # Center
+    
+    # Header
+    elements.append(Paragraph("Farmer Sales Analytics Report", title_style))
+    elements.append(Spacer(1, 10))
+    farm_name = farmer.farm_name if farmer.farm_name else "Not provided"
+    elements.append(Paragraph(f"<b>Farm:</b> {farm_name}", styles['Normal']))
+    elements.append(Paragraph(f"<b>Farmer:</b> {request.user.get_full_name() or request.user.username}", styles['Normal']))
+    elements.append(Paragraph(f"<b>Reporting Year:</b> {year}", styles['Normal']))
+    elements.append(Paragraph(f"<b>Generated On:</b> {timezone.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 20))
+    
+    # Summary Table
+    elements.append(Paragraph("<b>Performance Summary</b>", styles['Heading2']))
+    elements.append(Spacer(1, 5))
+    summary_data = [
+        ["Total Revenue", f"Rs. {total_revenue:,.2f}"],
+        ["Total Orders", str(total_orders)],
+        ["Products Sold", str(products_sold)],
+        ["Avg Order Value", f"Rs. {avg_order_value:,.2f}"]
+    ]
+    t_summary = Table(summary_data, colWidths=[200, 200])
+    t_summary.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey)
+    ]))
+    elements.append(t_summary)
+    elements.append(Spacer(1, 25))
+    
+    # Monthly Revenue Table
+    elements.append(Paragraph("<b>Monthly Revenue Breakdown</b>", styles['Heading2']))
+    elements.append(Spacer(1, 5))
+    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    monthly_data = [["Month", "Revenue (Rs)"]]
+    for i in range(12):
+        monthly_data.append([months[i], f"Rs. {monthly_revenue[i]:,.2f}"])
+        
+    t_monthly = Table(monthly_data, colWidths=[200, 200])
+    t_monthly.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#4CAF50")),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey)
+    ]))
+    elements.append(t_monthly)
+    elements.append(Spacer(1, 25))
+    
+    # Category Sales Table
+    elements.append(Paragraph("<b>Category-wise Sales</b>", styles['Heading2']))
+    elements.append(Spacer(1, 5))
+    cat_data = [["Category", "Sales Amount (Rs)"]]
+    for cat, amt in category_sales.items():
+        cat_data.append([cat, f"Rs. {amt:,.2f}"])
+    
+    if not category_sales:
+        cat_data.append(["No Data", "Rs. 0.00"])
+        
+    t_cat = Table(cat_data, colWidths=[200, 200])
+    t_cat.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#2E7D32")),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey)
+    ]))
+    elements.append(t_cat)
+    elements.append(Spacer(1, 25))
+    
+    # Orders Summary Table
+    elements.append(Paragraph("<b>Orders List</b>", styles['Heading2']))
+    elements.append(Spacer(1, 5))
+    order_data = [["Order ID", "Date", "Status", "Amount"]]
+    for order in completed_orders:
+        order_data.append([
+            f"#{order.id}",
+            order.created_at.strftime("%Y-%m-%d"),
+            order.status,
+            f"Rs. {order.total_amount:,.2f}"
+        ])
+        
+    if not completed_orders.exists():
+        order_data.append(["-", "No Orders Found", "-", "-"])
+        
+    t_orders = Table(order_data, colWidths=[80, 120, 100, 100])
+    t_orders.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#607D8B")),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey)
+    ]))
+    elements.append(t_orders)
+    
+    # Build PDF
+    doc.build(elements)
+    return response
+
+
+@login_required
+def farmer_notifications_api(request):
+    """Fetch notifications for the farmer dashboard via AJAX"""
+    if not hasattr(request.user, 'farmer_profile'):
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')[:50] # Limit to 50
+    
+    from django.utils.timesince import timesince
+    data = []
+    for n in notifications:
+        data.append({
+            'id': n.id,
+            'message': n.message,
+            'type': n.notification_type,
+            'is_read': n.is_read,
+            'time_ago': f"{timesince(n.created_at)} ago"
+        })
+        
+    unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+    return JsonResponse({'notifications': data, 'unread_count': unread_count})
+
+@login_required
+def farmer_mark_notification_read_api(request, pk):
+    """Mark a single notification as read via AJAX"""
+    if request.method == "POST":
+        notif = get_object_or_404(Notification, pk=pk, user=request.user)
+        notif.is_read = True
+        notif.save()
+        unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+        return JsonResponse({'success': True, 'unread_count': unread_count})
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@login_required
+def farmer_delete_notification_api(request, pk):
+    """Delete a single notification via AJAX"""
+    if request.method == "POST":
+        notif = get_object_or_404(Notification, pk=pk, user=request.user)
+        notif.delete()
+        unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+        return JsonResponse({'success': True, 'unread_count': unread_count})
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@login_required
+def farmer_mark_all_notifications_read_api(request):
+    """Mark all notifications as read via AJAX"""
+    if request.method == "POST":
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return JsonResponse({'success': True, 'unread_count': 0})
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
 # --- Buyer Actions (Cart, Checkout, Orders, Invoices) ---
@@ -699,6 +1093,69 @@ def checkout_view(request):
             shipping_address = form.cleaned_data['shipping_address']
             payment_method = form.cleaned_data['payment_method']
             
+            # Generate OTP instead of creating order immediately
+            otp_code = get_random_string(length=6, allowed_chars='0123456789')
+            expires_at = timezone.now() + datetime.timedelta(minutes=5)
+            
+            order_otp = OrderOTP.objects.create(
+                user=request.user,
+                otp_code=otp_code,
+                shipping_address=shipping_address,
+                payment_method=payment_method,
+                expires_at=expires_at
+            )
+            
+            # Send Email
+            html_message = render_to_string('emails/otp_email.html', {
+                'otp_code': otp_code,
+                'user': request.user
+            })
+            send_mail(
+                'Verify your AgriConnect Order',
+                f'Your Order Verification OTP is: {otp_code}',
+                settings.DEFAULT_FROM_EMAIL,
+                [request.user.email],
+                html_message=html_message,
+                fail_silently=True
+            )
+            
+            return redirect('order_otp_verify', pk=order_otp.pk)
+    else:
+        form = CheckoutForm(initial={'shipping_address': request.user.address})
+        
+    context = {
+        'cart_items': cart_items,
+        'total': total,
+        'form': form
+    }
+    return render(request, 'marketplace/checkout.html', context)
+
+
+@login_required
+def order_otp_verify_view(request, pk):
+    order_otp = get_object_or_404(OrderOTP, pk=pk, user=request.user)
+    
+    if order_otp.is_verified:
+        return redirect('buyer_orders')
+        
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_otp = data.get('otp_code', '').strip()
+            
+            if not order_otp.is_valid():
+                return JsonResponse({'success': False, 'message': 'OTP has expired. Please request a new one.'})
+                
+            if user_otp != order_otp.otp_code:
+                return JsonResponse({'success': False, 'message': 'Invalid OTP.'})
+                
+            # Valid OTP! Process Order
+            order_otp.is_verified = True
+            order_otp.save()
+            
+            cart_items = CartItem.objects.filter(user=request.user)
+            total = sum(item.total_price() for item in cart_items)
+            
             # Create orders grouped by farmer
             farmers_in_cart = set(item.crop.farmer for item in cart_items)
             created_orders = []
@@ -711,9 +1168,9 @@ def checkout_view(request):
                     buyer=request.user,
                     farmer=farmer,
                     total_amount=subtotal,
-                    payment_method=payment_method,
+                    payment_method=order_otp.payment_method,
                     status='Pending',
-                    shipping_address=shipping_address
+                    shipping_address=order_otp.shipping_address
                 )
                 
                 for item in farmer_items:
@@ -730,11 +1187,11 @@ def checkout_view(request):
                     item.crop.save()
 
                 # Setup Payment record
-                payment = Payment.objects.create(
+                Payment.objects.create(
                     order=order,
-                    payment_method=payment_method,
+                    payment_method=order_otp.payment_method,
                     transaction_id=f"TXN-{random.randint(100000, 999999)}",
-                    status='Completed' if payment_method == 'Online' else 'Pending',
+                    status='Completed' if order_otp.payment_method == 'Online' else 'Pending',
                     amount=subtotal
                 )
                 
@@ -749,17 +1206,66 @@ def checkout_view(request):
             # Clear cart
             cart_items.delete()
             
+            # Send confirmation emails with invoice
+            for order in created_orders:
+                try:
+                    pdf_bytes = generate_invoice_pdf_bytes(order)
+                    invoice_number = f"AC-{order.created_at.strftime('%Y%m%d')}-{order.id:04d}"
+                    email = EmailMessage(
+                        subject=f"AgriConnect: Order Confirmed - #{order.id}",
+                        body=f"Dear {request.user.username},\n\nYour order #{order.id} has been successfully placed.\n\nTotal Amount: ₹{order.total_amount}\nPayment Method: {order.payment_method}\n\nPlease find your invoice attached.\n\nThank you for choosing AgriConnect!",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        to=[request.user.email]
+                    )
+                    email.attach(f"Invoice_{invoice_number}.pdf", pdf_bytes, 'application/pdf')
+                    email.send(fail_silently=True)
+                except Exception as ex:
+                    print("Failed to send order email:", ex)
+
             messages.success(request, f"Order(s) placed successfully! Total Amount: ₹{total}.")
-            return redirect('buyer_orders')
-    else:
-        form = CheckoutForm(initial={'shipping_address': request.user.address})
-        
+            
+            return JsonResponse({'success': True, 'message': 'Order successfully placed!', 'redirect': '/orders/'})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+            
     context = {
-        'cart_items': cart_items,
-        'total': total,
-        'form': form
+        'order_otp': order_otp,
     }
-    return render(request, 'marketplace/checkout.html', context)
+    return render(request, 'marketplace/otp_verify.html', context)
+
+@login_required
+def resend_order_otp(request, pk):
+    order_otp = get_object_or_404(OrderOTP, pk=pk, user=request.user)
+    
+    if order_otp.is_verified:
+        return redirect('buyer_orders')
+        
+    if order_otp.resend_count >= 3:
+        messages.error(request, "Maximum resend attempts reached.")
+        return redirect('order_otp_verify', pk=pk)
+        
+    order_otp.otp_code = get_random_string(length=6, allowed_chars='0123456789')
+    order_otp.expires_at = timezone.now() + datetime.timedelta(minutes=5)
+    order_otp.resend_count += 1
+    order_otp.save()
+    
+    html_message = render_to_string('emails/otp_email.html', {
+        'otp_code': order_otp.otp_code,
+        'user': request.user
+    })
+    send_mail(
+        'Verify your AgriConnect Order (Resent)',
+        f'Your Order Verification OTP is: {order_otp.otp_code}',
+        settings.DEFAULT_FROM_EMAIL,
+        [request.user.email],
+        html_message=html_message,
+        fail_silently=True
+    )
+    
+    messages.success(request, "A new OTP has been sent to your email.")
+    return redirect('order_otp_verify', pk=pk)
+
 
 
 @login_required
@@ -799,6 +1305,13 @@ def order_invoice_view(request, pk):
 
 
 @login_required
+def order_detail_redirect_view(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    if request.user.is_farmer() and order.farmer.user == request.user:
+        return redirect('farmer_orders')
+    return redirect('order_tracking', pk=pk)
+
+@login_required
 def order_tracking_view(request, pk):
     order = get_object_or_404(Order, pk=pk)
     if order.buyer != request.user and order.farmer.user != request.user and not request.user.is_admin():
@@ -833,6 +1346,25 @@ def order_cancel_view(request, pk):
         f"Order #{order.id} has been cancelled by the buyer.",
         'order'
     )
+    
+    # Notify buyer via in-app notification
+    create_notification(
+        order.buyer,
+        f"You have successfully cancelled Order #{order.id}.",
+        'order'
+    )
+    
+    # Notify buyer via Email
+    try:
+        send_mail(
+            subject=f"AgriConnect: Order Cancelled - #{order.id}",
+            message=f"Dear {order.buyer.first_name or order.buyer.username},\n\nYour order #{order.id} has been successfully cancelled.\nYour payment (if any) will be processed according to our refund policy.\n\nThank you for using AgriConnect.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[order.buyer.email],
+            fail_silently=True,
+        )
+    except Exception as e:
+        print("Failed to send cancellation email:", e)
     
     messages.success(request, f"Order #{order.id} has been cancelled successfully.")
     return redirect('buyer_orders')
@@ -920,16 +1452,19 @@ def admin_reject_crop_view(request, pk):
     if not request.user.is_admin():
         return redirect('home')
     crop = get_object_or_404(Crop, pk=pk)
-    crop_name = crop.name
-    crop.delete()
-    messages.warning(request, f"Crop listing '{crop_name}' has been rejected and deleted.")
     
-    # Notify farmer
-    create_notification(
-        crop.farmer.user,
-        f"Your crop listing '{crop_name}' was rejected by the admin team.",
-        'system'
-    )
+    crop.is_approved = not crop.is_approved
+    crop.save()
+    
+    action = "approved" if crop.is_approved else "hidden/rejected"
+    messages.success(request, f"Crop listing '{crop.name}' has been {action}.")
+    
+    if not crop.is_approved:
+        create_notification(
+            crop.farmer.user,
+            f"Your crop listing '{crop.name}' was hidden by the admin team.",
+            'system'
+        )
     return redirect('admin_dashboard')
 
 
@@ -1059,84 +1594,14 @@ def smart_tools_view(request):
 
 @login_required
 def chat_list_view(request):
-    user = request.user
-    # Find all messages where user is sender or receiver
-    messages_query = ChatMessage.objects.filter(Q(sender=user) | Q(receiver=user)).order_by('-created_at')
-    
-    # Extract unique contacts
-    contacts = []
-    contact_ids = set()
-    for msg in messages_query:
-        other_user = msg.receiver if msg.sender == user else msg.sender
-        if other_user.id not in contact_ids:
-            contact_ids.add(other_user.id)
-            contacts.append({
-                'user': other_user,
-                'last_message': msg.message,
-                'timestamp': msg.created_at,
-                'unread': ChatMessage.objects.filter(sender=other_user, receiver=user, is_read=False).count()
-            })
-            
-    # Suggest other users to chat with
-    all_users = User.objects.exclude(id=user.id)
-    if user.role == 'buyer':
-        suggested_contacts = all_users.filter(role='farmer')
-    else:
-        suggested_contacts = all_users.filter(role='buyer')
-
-    return render(request, 'marketplace/chat_list.html', {
-        'contacts': contacts,
-        'suggested_contacts': suggested_contacts[:6]
-    })
+    messages.info(request, "The chat messaging system has been removed.")
+    return redirect('dashboard_redirect')
 
 
 @login_required
 def chat_detail_view(request, username):
-    user = request.user
-    other_user = get_object_or_404(User, username=username)
-    
-    # Mark messages as read
-    ChatMessage.objects.filter(sender=other_user, receiver=user, is_read=False).update(is_read=True)
-    
-    chat_messages = ChatMessage.objects.filter(
-        (Q(sender=user) & Q(receiver=other_user)) |
-        (Q(sender=other_user) & Q(receiver=user))
-    ).order_by('created_at')
-    
-    crop_id = request.GET.get('crop_id')
-    crop_context = None
-    if crop_id:
-        crop_context = Crop.objects.filter(id=crop_id).first()
-        
-    if request.method == 'POST':
-        form = ChatMessageForm(request.POST)
-        if form.is_valid():
-            msg_text = form.cleaned_data['message']
-            ChatMessage.objects.create(
-                sender=user,
-                receiver=other_user,
-                crop=crop_context,
-                message=msg_text
-            )
-            # Create system notification
-            create_notification(
-                other_user,
-                f"New chat message from {user.username}: '{msg_text[:30]}...'",
-                'system'
-            )
-            redirect_url = f"/chat/{username}/"
-            if crop_id:
-                redirect_url += f"?crop_id={crop_id}"
-            return redirect(redirect_url)
-    else:
-        form = ChatMessageForm()
-        
-    return render(request, 'marketplace/chat_detail.html', {
-        'other_user': other_user,
-        'chat_messages': chat_messages,
-        'form': form,
-        'crop_context': crop_context
-    })
+    messages.info(request, "The chat messaging system has been removed.")
+    return redirect('dashboard_redirect')
 
 
 def weather_dashboard_view(request):
@@ -1308,22 +1773,14 @@ def global_vars(request):
     }
 
 
-@login_required
-def download_invoice_pdf_view(request, pk):
-    order = get_object_or_404(Order, pk=pk)
-    
-    # Permission checks: only buyer, farmer of this order, or admin can download
-    if not (request.user.is_admin() or request.user == order.buyer or (request.user.role == 'farmer' and request.user.farmer_profile == order.farmer)):
-        messages.error(request, "Access Denied. You do not have permission to view this invoice.")
-        return redirect('home')
-        
+
+def generate_invoice_pdf_bytes(order):
     import io
     from reportlab.lib.pagesizes import A4
     from reportlab.lib import colors
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.graphics.shapes import Drawing, Rect, String
-    from django.http import HttpResponse
 
     # Setup unique invoice number
     invoice_number = f"AC-{order.created_at.strftime('%Y%m%d')}-{order.id:04d}"
@@ -1578,41 +2035,34 @@ def download_invoice_pdf_view(request, pk):
     doc.build(elements)
     
     buffer.seek(0)
-    response = HttpResponse(buffer, content_type='application/pdf')
+    return buffer.read()
+
+def download_invoice_pdf_view(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    
+    # Permission checks: only buyer, farmer of this order, or admin can download
+    if not (request.user.is_admin() or request.user == order.buyer or (request.user.role == 'farmer' and request.user.farmer_profile == order.farmer)):
+        messages.error(request, "Access Denied. You do not have permission to view this invoice.")
+        return redirect('home')
+        
+    pdf_bytes = generate_invoice_pdf_bytes(order)
+    invoice_number = f"AC-{order.created_at.strftime('%Y%m%d')}-{order.id:04d}"
+    
+    from django.http import HttpResponse
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice_number}.pdf"'
     return response
 
 
 @login_required
 def notifications_list_view(request):
-    notifications = Notification.objects.filter(user=request.user)
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
     
-    # Filtering
-    notif_type = request.GET.get('type', '')
-    priority = request.GET.get('priority', '')
-    
-    if notif_type:
-        notifications = notifications.filter(notification_type=notif_type)
-    if priority:
-        notifications = notifications.filter(priority=priority)
-        
     unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
-    read_count = Notification.objects.filter(user=request.user, is_read=True).count()
-    total_count = Notification.objects.filter(user=request.user).count()
     
-    # Types stats
-    type_counts = {}
-    for choice in Notification.TYPE_CHOICES:
-        type_counts[choice[0]] = Notification.objects.filter(user=request.user, notification_type=choice[0]).count()
-        
     context = {
         'notifications': notifications,
         'unread_count': unread_count,
-        'read_count': read_count,
-        'total_count': total_count,
-        'type_counts': type_counts,
-        'selected_type': notif_type,
-        'selected_priority': priority,
     }
     return render(request, 'marketplace/notifications.html', context)
 
@@ -1761,13 +2211,8 @@ def wishlist_view(request):
     if category_id:
         wishlist_items = wishlist_items.filter(crop__category_id=category_id)
         
-    # Recommendations: crops from user's favorite farmers, or simply other organic/popular crops
-    fav_farmers = FavoriteFarmer.objects.filter(buyer=request.user).values_list('farmer_id', flat=True)
-    recommended_crops = Crop.objects.filter(is_approved=True, availability_status='available')
-    if fav_farmers:
-        recommended_crops = recommended_crops.filter(farmer_id__in=fav_farmers)
-    else:
-        recommended_crops = recommended_crops.order_by('?')
+    # Recommendations: other available crops
+    recommended_crops = Crop.objects.filter(is_approved=True, availability_status='available').order_by('?')
     recommended_crops = recommended_crops.exclude(id__in=wishlist_items.values_list('crop_id', flat=True))[:4]
     
     categories = Category.objects.all()
@@ -1779,7 +2224,7 @@ def wishlist_view(request):
         'q': q,
         'selected_category': category_id,
         'wishlist_count': wishlist_items.count(),
-        'fav_farmers_count': len(fav_farmers),
+
     }
     return render(request, 'marketplace/wishlist.html', context)
 
@@ -1848,28 +2293,6 @@ def wishlist_move_to_cart_view(request, pk):
     messages.success(request, f"'{crop.name}' moved to shopping cart successfully.")
     return redirect('wishlist')
 
-
-@login_required
-def farmer_follow_view(request, farmer_id):
-    farmer = get_object_or_404(Farmer, id=farmer_id)
-    follow_rel = FavoriteFarmer.objects.filter(buyer=request.user, farmer=farmer)
-    
-    if follow_rel.exists():
-        follow_rel.delete()
-        messages.success(request, f"You have unfollowed {farmer.user.username}.")
-    else:
-        FavoriteFarmer.objects.create(buyer=request.user, farmer=farmer)
-        messages.success(request, f"You are now following {farmer.user.username}!")
-        
-        # Notify farmer about new follower
-        create_notification(
-            farmer.user,
-            f"Buyer {request.user.username} is now following your farm store updates!",
-            'review',
-            'medium'
-        )
-        
-    return redirect(request.META.get('HTTP_REFERER', 'home'))
 
 
 @login_required
@@ -1942,17 +2365,6 @@ def farmer_rate_view(request, farmer_id):
     from marketplace.forms import FarmerRatingForm
     from marketplace.models import FarmerRating
     
-    # Check if they've bought from this farmer
-    has_purchased = Order.objects.filter(
-        buyer=request.user,
-        farmer=farmer,
-        status='Delivered'
-    ).exists()
-    
-    if not has_purchased:
-        messages.error(request, "You can only rate farmers from whom you have received a delivered order.")
-        return redirect(request.META.get('HTTP_REFERER', 'home'))
-        
     # Check if already rated
     existing_rating = FarmerRating.objects.filter(buyer=request.user, farmer=farmer).first()
     
@@ -1967,11 +2379,11 @@ def farmer_rate_view(request, farmer_id):
             # Update farmer store rating
             all_ratings = FarmerRating.objects.filter(farmer=farmer)
             avg_rating = all_ratings.aggregate(Avg('rating'))['rating__avg'] or 5.0
-            farmer.store_rating = avg_rating
+            farmer.store_rating = round(avg_rating, 1)
             farmer.save()
             
-            messages.success(request, "Your rating for the farmer has been submitted successfully.")
-            return redirect('farmer_store', username=farmer.user.username)
+            messages.success(request, f"Thank you! Your rating for {farmer.farm_name or farmer.user.username} has been submitted successfully.")
+            return redirect('buyer_dashboard')
     else:
         form = FarmerRatingForm(instance=existing_rating)
         
@@ -2023,13 +2435,17 @@ def report_generate_view(request):
         name = f"{report_type.replace('_', ' ').title()} Report ({timezone.now().strftime('%Y-%m-%d')})"
         
         # Save to database
-        Report.objects.create(
+        report = Report.objects.create(
             name=name,
             report_type=report_type,
             generated_by=request.user,
             format=fmt,
             scheduled_interval=scheduled_interval if scheduled_interval else None
         )
+        
+        if request.POST.get('direct_download') == 'true':
+            return redirect('report_download', pk=report.pk)
+            
         messages.success(request, f"New report '{name}' has been generated and added to your export log.")
         return redirect('reports_dashboard')
     return redirect('reports_dashboard')
@@ -2047,7 +2463,7 @@ def report_download_view(request, pk):
     headers = []
     data_rows = []
     
-    if report.report_type == 'order':
+    if report.report_type in ('order', 'orders'):
         headers = ['Order ID', 'Buyer', 'Farmer', 'Total Amount (₹)', 'Payment Method', 'Status', 'Date']
         if request.user.role == 'admin':
             records = Order.objects.all()
@@ -2059,15 +2475,22 @@ def report_download_view(request, pk):
             data_rows.append([str(r.id), r.buyer.username, r.farmer.farm_name, f"₹{r.total_amount}", r.payment_method, r.status, r.created_at.strftime('%Y-%m-%d %H:%M')])
             
     elif report.report_type == 'revenue':
-        headers = ['Payment ID', 'Order ID', 'Amount (₹)', 'Method', 'Status', 'Date']
+        headers = ['Payment ID', 'Order ID', 'Buyer Name', 'Farmer Name', 'Order Status', 'Payment Method', 'Payment Status', 'Transaction Date', 'Platform Fee (5%) (₹)', 'Net Amount (₹)', 'Total Amount (₹)']
         if request.user.role == 'admin':
-            records = Payment.objects.all()
+            records = Payment.objects.all().select_related('order__buyer', 'order__farmer')
         elif request.user.role == 'farmer':
-            records = Payment.objects.filter(order__farmer=request.user.farmer_profile)
+            records = Payment.objects.filter(order__farmer=request.user.farmer_profile).select_related('order__buyer', 'order__farmer')
         else:
-            records = Payment.objects.filter(order__buyer=request.user)
+            records = Payment.objects.filter(order__buyer=request.user).select_related('order__buyer', 'order__farmer')
         for r in records:
-            data_rows.append([str(r.id), str(r.order.id), f"₹{r.amount}", r.payment_method, r.status, r.created_at.strftime('%Y-%m-%d %H:%M')])
+            total = float(r.amount)
+            fee = total * 0.05
+            net = total - fee
+            data_rows.append([
+                str(r.id), str(r.order.id), r.order.buyer.username, r.order.farmer.farm_name,
+                r.order.status, r.payment_method, r.status, r.created_at.strftime('%Y-%m-%d %H:%M'),
+                f"₹{fee:.2f}", f"₹{net:.2f}", f"₹{total:.2f}"
+            ])
             
     elif report.report_type == 'product':
         headers = ['Product ID', 'Name', 'Category', 'Price/Unit (₹)', 'Stock Available', 'Unit', 'Approved']
@@ -2080,14 +2503,80 @@ def report_download_view(request, pk):
         for r in records:
             data_rows.append([str(r.id), r.name, r.category.name, f"₹{r.price_per_kg}", str(r.quantity_available), r.unit, "Yes" if r.is_approved else "No"])
             
-    elif report.report_type == 'user':
-        headers = ['User ID', 'Username', 'Email', 'Role', 'Date Joined']
+    elif report.report_type in ('user', 'user_registration', 'farmers', 'buyers'):
+        headers = ['User ID', 'Username', 'Email', 'Role', 'Status', 'Date Joined', 'Total Orders/Sales', 'Total Transacted Value (₹)']
         if request.user.role == 'admin':
-            records = User.objects.all()
+            if report.report_type == 'farmers':
+                records = User.objects.filter(role='farmer')
+            elif report.report_type == 'buyers':
+                records = User.objects.filter(role='buyer')
+            else:
+                records = User.objects.all()
         else:
             records = [request.user]
         for r in records:
-            data_rows.append([str(r.id), r.username, r.email, r.role, r.date_joined.strftime('%Y-%m-%d %H:%M')])
+            status = 'Active' if r.is_active else 'Suspended'
+            total_transacted = 0
+            total_count = 0
+            if r.role == 'buyer':
+                buyer_orders = Order.objects.filter(buyer=r, status='Delivered')
+                total_count = buyer_orders.count()
+                total_transacted = buyer_orders.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+            elif r.role == 'farmer' and hasattr(r, 'farmer_profile'):
+                farmer_orders = Order.objects.filter(farmer=r.farmer_profile, status='Delivered')
+                total_count = farmer_orders.count()
+                total_transacted = farmer_orders.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+                
+            data_rows.append([
+                str(r.id), r.username, r.email, r.role.title(), status, r.date_joined.strftime('%Y-%m-%d %H:%M'),
+                str(total_count), f"₹{float(total_transacted):.2f}"
+            ])
+            
+    elif report.report_type == 'farmer_verification':
+        headers = ['User ID', 'Username', 'Farm Name', 'Location', 'Certification Status', 'Store Rating', 'Orders Completed']
+        if request.user.role == 'admin':
+            records = User.objects.filter(role='farmer').select_related('farmer_profile')
+        else:
+            records = [request.user] if request.user.role == 'farmer' else []
+        for r in records:
+            if hasattr(r, 'farmer_profile'):
+                p = r.farmer_profile
+                data_rows.append([
+                    str(r.id), r.username, p.farm_name or 'N/A', p.farm_location or 'N/A', 
+                    p.certification_status.title(), str(p.store_rating), str(p.orders_completed)
+                ])
+
+    elif report.report_type == 'sales':
+        headers = ['Item ID', 'Order ID', 'Crop Name', 'Quantity', 'Price/Unit (₹)', 'Total (₹)', 'Date']
+        if request.user.role == 'admin':
+            records = OrderItem.objects.all().select_related('order', 'crop')
+        elif request.user.role == 'farmer':
+            records = OrderItem.objects.filter(order__farmer=request.user.farmer_profile).select_related('order', 'crop')
+        else:
+            records = OrderItem.objects.filter(order__buyer=request.user).select_related('order', 'crop')
+            
+        for r in records:
+            crop_name = r.crop.name if r.crop else 'Deleted Crop'
+            total_item_price = float(r.price_per_unit) * float(r.quantity)
+            data_rows.append([
+                str(r.id), str(r.order.id), crop_name, str(r.quantity), 
+                f"₹{r.price_per_unit}", f"₹{total_item_price:.2f}", r.order.created_at.strftime('%Y-%m-%d %H:%M')
+            ])
+
+    elif report.report_type == 'top_selling':
+        headers = ['Crop ID', 'Name', 'Category', 'Total Units Sold', 'Total Revenue (₹)']
+        if request.user.role == 'admin':
+            crops = Crop.objects.annotate(total_sold=Sum('orderitem__quantity'), total_rev=Sum(F('orderitem__quantity') * F('orderitem__price_per_unit'))).filter(total_sold__isnull=False).order_by('-total_sold')
+        elif request.user.role == 'farmer':
+            crops = Crop.objects.filter(farmer=request.user.farmer_profile).annotate(total_sold=Sum('orderitem__quantity'), total_rev=Sum(F('orderitem__quantity') * F('orderitem__price_per_unit'))).filter(total_sold__isnull=False).order_by('-total_sold')
+        else:
+            crops = []
+            
+        for c in crops:
+            data_rows.append([
+                str(c.id), c.name, c.category.name if c.category else 'N/A', 
+                str(c.total_sold), f"₹{c.total_rev:.2f}" if c.total_rev else "₹0.00"
+            ])
             
     else: # default fallback
         headers = ['Record ID', 'Created At']
@@ -2238,3 +2727,187 @@ def report_delete_view(request, pk):
     report.delete()
     messages.success(request, f"Report '{name}' deleted successfully.")
     return redirect('reports_dashboard')
+
+
+@login_required
+def admin_suspend_user_view(request, pk):
+    if not request.user.is_admin():
+        messages.error(request, "Access Denied. Admins only.")
+        return redirect('home')
+        
+    user_to_toggle = get_object_or_404(User, pk=pk)
+    
+    if user_to_toggle == request.user:
+        messages.error(request, "You cannot suspend your own account.")
+        return redirect('admin_dashboard')
+        
+    user_to_toggle.is_active = not user_to_toggle.is_active
+    user_to_toggle.save()
+    
+    action = "activated" if user_to_toggle.is_active else "suspended"
+    messages.success(request, f"User {user_to_toggle.username} has been successfully {action}.")
+    return redirect('admin_dashboard')
+
+@login_required
+def admin_delete_user_view(request, pk):
+    if not request.user.is_admin():
+        messages.error(request, "Access Denied. Admins only.")
+        return redirect('home')
+        
+    if request.method == "POST":
+        user_to_delete = get_object_or_404(User, pk=pk)
+        
+        if user_to_delete == request.user:
+            messages.error(request, "You cannot delete your own account.")
+            return redirect('admin_dashboard')
+            
+        username = user_to_delete.username
+        user_to_delete.delete()
+        messages.success(request, f"User {username} has been permanently deleted.")
+        
+    return redirect('admin_dashboard')
+
+@login_required
+def admin_delete_order_view(request, pk):
+    if not request.user.is_admin():
+        messages.error(request, "Access Denied. Admins only.")
+        return redirect('home')
+        
+    order = get_object_or_404(Order, pk=pk)
+    order_id = order.id
+    order.delete()
+    messages.success(request, f"Order #{order_id} has been deleted.")
+    return redirect('admin_dashboard')
+
+@login_required
+def admin_delete_crop_view(request, pk):
+    if not request.user.is_admin():
+        messages.error(request, "Access Denied. Admins only.")
+        return redirect('home')
+        
+    crop = get_object_or_404(Crop, pk=pk)
+    crop_name = crop.name
+    crop.delete()
+    messages.success(request, f"Crop listing '{crop_name}' has been deleted.")
+    return redirect('admin_dashboard')
+
+@login_required
+def admin_edit_user_view(request, pk):
+    if not request.user.is_admin():
+        messages.error(request, "Access Denied. Admins only.")
+        return redirect('home')
+        
+    edit_user = get_object_or_404(User, pk=pk)
+    
+    farmer_profile = None
+    buyer_profile = None
+    
+    if edit_user.role == 'farmer' and hasattr(edit_user, 'farmer_profile'):
+        farmer_profile = edit_user.farmer_profile
+    elif edit_user.role == 'buyer' and hasattr(edit_user, 'buyer_profile'):
+        buyer_profile = edit_user.buyer_profile
+        
+    if request.method == "POST":
+        edit_user.first_name = request.POST.get('first_name', '')
+        edit_user.last_name = request.POST.get('last_name', '')
+        edit_user.email = request.POST.get('email', '')
+        edit_user.is_active = request.POST.get('is_active') == 'on'
+        edit_user.save()
+        
+        if farmer_profile:
+            farmer_profile.farm_name = request.POST.get('farm_name', '')
+            farmer_profile.farm_size = request.POST.get('farm_size', '')
+            farmer_profile.farm_location = request.POST.get('farm_location', '')
+            farmer_profile.certification_status = request.POST.get('certification_status', 'none')
+            farmer_profile.save()
+            
+        elif buyer_profile:
+            buyer_profile.contact_name = request.POST.get('contact_name', '')
+            buyer_profile.city = request.POST.get('city', '')
+            buyer_profile.state = request.POST.get('state', '')
+            buyer_profile.delivery_address = request.POST.get('delivery_address', '')
+            buyer_profile.save()
+            
+        messages.success(request, f"User {edit_user.username}'s profile has been updated.")
+        return redirect('admin_dashboard')
+        
+    context = {
+        'edit_user': edit_user,
+        'farmer_profile': farmer_profile,
+        'buyer_profile': buyer_profile,
+    }
+    return render(request, 'dashboards/admin_edit_user.html', context)
+
+@login_required
+def verify_order_otp_view(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    if request.method == 'POST':
+        import json
+        try:
+            data = json.loads(request.body)
+            otp = data.get('otp_code')
+        except json.JSONDecodeError:
+            otp = request.POST.get('otp_code')
+            
+        if order.otp_code == otp and timezone.now() < order.otp_expires_at:
+            order.is_otp_verified = True
+            order.status = 'Confirmed'
+            order.save()
+            
+            # --- Generate and Send Invoice PDF ---
+            import io
+            from marketplace.utils import send_html_email
+            from marketplace.utils import _generate_invoice_pdf
+            
+            buffer = io.BytesIO()
+            invoice_number = _generate_invoice_pdf(order, buffer)
+            pdf_content = buffer.getvalue()
+            
+            context = {'order': order}
+            send_html_email(
+                subject=f"AgriConnect - Order Confirmed (Invoice #{invoice_number})",
+                template_name="emails/order_confirmation.html",
+                context=context,
+                recipient_list=[order.buyer.email],
+                attachment_content=pdf_content,
+                attachment_filename=f"Invoice_{invoice_number}.pdf"
+            )
+            
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                from django.http import JsonResponse
+                from django.urls import reverse
+                return JsonResponse({'success': True, 'message': 'OTP Verified Successfully. Order Confirmed!', 'redirect': reverse('order_tracking', args=[order.pk])})
+                
+            messages.success(request, "OTP Verified Successfully. Order Confirmed!")
+            return redirect('order_tracking', pk=order.pk)
+        else:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                from django.http import JsonResponse
+                return JsonResponse({'success': False, 'message': 'Invalid or expired OTP.'})
+            messages.error(request, "Invalid or expired OTP.")
+    
+    return render(request, 'marketplace/otp_verify.html', {'order_otp': order})
+
+@login_required
+def resend_order_otp_view(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    import random
+    import datetime
+    from django.utils import timezone
+    order.otp_code = str(random.randint(100000, 999999))
+    order.otp_expires_at = timezone.now() + datetime.timedelta(minutes=10)
+    order.save()
+    
+    from marketplace.utils import send_html_email
+    send_html_email(
+        subject="AgriConnect - Your Resent Order Verification OTP",
+        template_name="emails/otp_email.html",
+        context={'user': request.user, 'otp_code': order.otp_code},
+        recipient_list=[request.user.email]
+    )
+    
+    from marketplace.utils import create_notification
+    create_notification(request.user, f"Your resent Order Verification OTP is: {order.otp_code}. It is valid for 10 minutes.", 'system')
+    messages.success(request, f"OTP Resent to {request.user.email}. Check your notifications as well.")
+    return redirect('verify_order_otp', pk=order.pk)
+

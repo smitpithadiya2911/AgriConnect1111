@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Email Tester - AgriConnect{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            
+            <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+                <div class="card-body p-4">
+                    <h3 class="fw-bold mb-3" style="color: var(--primary-green);">First Time Setup Guide</h3>
+                    <p class="text-muted">To send actual emails via Gmail SMTP, you must configure a Google App Password.</p>
+                    
+                    <ol class="list-group list-group-numbered list-group-flush mb-4">
+                        <li class="list-group-item">Login to the Google Account for the sender email.</li>
+                        <li class="list-group-item">Open Google Account <strong>Security Settings</strong>.</li>
+                        <li class="list-group-item">Enable <strong>Two-Step Verification</strong>.</li>
+                        <li class="list-group-item">Search for and open <strong>App Passwords</strong>.</li>
+                        <li class="list-group-item">Generate a new Gmail App Password (choose 'Other' or 'Mail').</li>
+                        <li class="list-group-item">Copy the 16-character password generated.</li>
+                        <li class="list-group-item">Paste it into your <code>.env</code> file: <code>EMAIL_HOST_PASSWORD=abcdefghijklmnop</code></li>
+                        <li class="list-group-item text-danger fw-bold">Restart the Django server in your terminal!</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0" style="border-radius: 12px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px);">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold text-center mb-4">SMTP Delivery Test</h4>
+                    
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Recipient Email Address</label>
+                            <input type="email" name="email" class="form-control form-control-lg" required placeholder="test@example.com">
+                        </div>
+                        <button type="submit" class="btn btn-success btn-lg w-100 fw-bold" style="background-color: var(--primary-green); border: none;">
+                            Send Test Email
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

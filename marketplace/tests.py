@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from accounts.models import Farmer
-from .models import Category, Crop, CartItem, Order, OrderItem, Notification, Wishlist, FavoriteFarmer, FarmerRating, Review, Report
+from .models import Category, Crop, CartItem, Order, OrderItem, Notification, Wishlist, Review, Report
 
 User = get_user_model()
 

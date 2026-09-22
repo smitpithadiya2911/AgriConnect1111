@@ -7,56 +7,51 @@
     <title>{% block title %}AgriConnect – Smart Farmer Marketplace{% endblock %}</title>
     <!-- Meta tags for SEO -->
     <meta name="description" content="AgriConnect links farmers directly with buyers without middle agencies, featuring smart weather analysis, crop recommendations, and market price trends.">
-    <!-- We will use standard bootstrap cdn -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.4">
+    <style>
+        /* Touch/Press Animation for Buttons */
+        .btn {
+            transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out, background-color 0.15s ease-in-out !important;
+        }
+        .btn:active {
+            transform: scale(0.92) !important;
+        }
+    </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
 
-    <!-- Main Navigation Bar -->
-    <nav class="navbar navbar-expand-lg sticky-top">
-        <div class="container">
-            <a class="navbar-brand fw-extrabold text-success d-flex align-items-center" href="{% url 'home' %}">
-                <i class="fa-solid fa-leaf me-2 brand-leaf"></i>AgriConnect
+        <!-- Main Navigation Bar -->
+    <nav class="custom-navbar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="{% url 'home' %}" class="text-decoration-none d-flex align-items-center gap-2">
+                <i class="fa-solid fa-leaf text-success fs-3"></i>
+                <div>
+                    <div class="fw-extrabold text-success fs-5 lh-1" style="color: var(--primary-green) !important;">AgriConnect</div>
+                    <div style="font-size: 0.65rem; color: var(--text-muted);">Smart Farmer Marketplace</div>
+                </div>
             </a>
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-1">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'home' and not request.path|slice:'1:' %}active{% endif %}" href="{% url 'home' %}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'crop_list' %}active{% endif %}" href="{% url 'crop_list' %}">Products</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}#farmers">Farmers</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'market_prices' %}active{% endif %}" href="{% url 'market_prices' %}">Market Prices</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'weather_dashboard' %}active{% endif %}" href="{% url 'weather_dashboard' %}">Weather</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'smart_tools' %}active{% endif %}" href="{% url 'smart_tools' %}">Smart Tools</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'contact' %}active{% endif %}" href="{% url 'contact' %}">Contact</a>
-                    </li>
-                </ul>
+            
+            <div class="d-none d-lg-flex gap-4">
+                <a class="nav-link {% if request.resolver_match.url_name == 'home' and not request.path|slice:'1:' %}active text-success fw-bold{% endif %}" href="{% url 'home' %}">Home</a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'crop_list' %}active text-success fw-bold{% endif %}" href="{% url 'crop_list' %}">Marketplace</a>
+                <a class="nav-link" href="{% url 'about' %}">About Us</a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'contact' %}active text-success fw-bold{% endif %}" href="{% url 'contact' %}">Contact Us</a>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <div class="input-group d-none d-md-flex" style="width: 250px;">
+                    <form action="{% url 'crop_list' %}" method="GET" class="d-flex w-100 m-0">
+                        <input type="text" name="q" class="form-control search-bar" placeholder="Search products..." style="border-radius: 50rem 0 0 50rem;">
+                        <button type="submit" class="btn search-btn" style="border-radius: 0 50rem 50rem 0;"><i class="fa-solid fa-magnifying-glass"></i></button>
+                    </form>
+                </div>
                 
-                <div class="d-flex align-items-center gap-3">
-                    {% if request.user.is_authenticated %}
-                        <!-- Direct Chat Link -->
-                        <a href="{% url 'chat_list' %}" class="btn btn-light rounded-circle p-2 d-flex align-items-center justify-content-center border-0 position-relative text-dark hover-lift" style="width: 42px; height: 42px;" title="Messages">
-                            <i class="fa-regular fa-comment-dots fs-5"></i>
-                        </a>
-                        
-                        <!-- Notification Hub -->
+                {% if request.user.is_authenticated %}
+                    <!-- Notification Hub -->
                         <div class="dropdown">
                             <a href="#" class="btn btn-light rounded-circle p-2 d-flex align-items-center justify-content-center border-0 position-relative text-dark" style="width: 42px; height: 42px;" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fa-regular fa-bell fs-5"></i>
@@ -89,7 +84,7 @@
                             </ul>
                         </div>
 
-                        <!-- Buyer Shopping Cart -->
+                    <!-- Buyer Shopping Cart -->
                         {% if request.user.role == 'buyer' %}
                             <a href="{% url 'view_cart' %}" class="btn btn-light rounded-circle p-2 d-flex align-items-center justify-content-center border-0 position-relative text-dark" style="width: 42px; height: 42px;" title="Shopping Cart">
                                 <i class="fa-solid fa-basket-shopping fs-5"></i>
@@ -104,7 +99,9 @@
                             </a>
                         {% endif %}
 
-                        <!-- User Profile Menu -->
+                        
+                    
+                    <!-- User Profile Menu -->
                         <div class="dropdown">
                             <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle border-0 bg-transparent p-0" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 {% if request.user.profile_picture %}
@@ -122,36 +119,29 @@
                                 </li>
                                 <li><a class="dropdown-item py-2 rounded" href="{% url 'dashboard_redirect' %}"><i class="fa-solid fa-gauge me-2 text-success"></i>My Dashboard</a></li>
                                 <li><a class="dropdown-item py-2 rounded" href="{% url 'profile' %}"><i class="fa-solid fa-user-gear me-2 text-success"></i>My Profile</a></li>
-                                <li><a class="dropdown-item py-2 rounded" href="{% url 'reports_dashboard' %}"><i class="fa-solid fa-chart-line me-2 text-success"></i>Reports & Analytics</a></li>
-                                {% if request.user.role == 'buyer' %}
-                                    <li><a class="dropdown-item py-2 rounded" href="{% url 'buyer_orders' %}"><i class="fa-solid fa-box-open me-2 text-success"></i>My Orders</a></li>
-                                    <li><a class="dropdown-item py-2 rounded" href="{% url 'wishlist' %}"><i class="fa-solid fa-heart me-2 text-success"></i>My Wishlist</a></li>
-                                {% elif request.user.role == 'farmer' %}
-                                    <li><a class="dropdown-item py-2 rounded" href="{% url 'farmer_orders' %}"><i class="fa-solid fa-receipt me-2 text-success"></i>Farm Orders</a></li>
-                                {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item py-2 text-danger rounded" href="{% url 'logout' %}"><i class="fa-solid fa-sign-out me-2"></i>Logout</a></li>
                             </ul>
                         </div>
-                    {% else %}
-                        <a href="{% url 'login' %}" class="btn btn-link text-decoration-none text-dark fw-bold me-1">Login</a>
-                        <a href="{% url 'register' %}" class="btn btn-primary-custom px-4 py-2">Join Startup</a>
-                    {% endif %}
-                </div>
+
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-outline-success rounded-pill px-4 fw-bold ms-2">Login</a>
+                    <a href="{% url 'register' %}" class="btn btn-success rounded-pill px-4 fw-bold">Register</a>
+                {% endif %}
             </div>
         </div>
     </nav>
 
-    <!-- Global Alerts Section -->
-    <div class="container mt-4">
+    <!-- Global Alerts Section (Floating Toast Style) -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055; margin-top: 70px;">
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show card-premium py-3 px-4" role="alert">
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show card-premium py-3 px-4 shadow-lg animated-toast auto-dismiss-alert" role="alert" style="min-width: 320px; border-left: 5px solid {% if message.tags == 'success' %}var(--primary-green){% elif message.tags == 'danger' %}#dc3545{% elif message.tags == 'warning' %}#ff9800{% else %}#17a2b8{% endif %};">
                     <div class="d-flex align-items-center">
-                        {% if message.tags == 'success' %}<i class="fa-solid fa-circle-check text-success fs-4 me-3"></i>
-                        {% elif message.tags == 'danger' %}<i class="fa-solid fa-circle-xmark text-danger fs-4 me-3"></i>
-                        {% elif message.tags == 'warning' %}<i class="fa-solid fa-circle-exclamation text-warning fs-4 me-3"></i>
-                        {% else %}<i class="fa-solid fa-circle-info text-info fs-4 me-3"></i>{% endif %}
+                        {% if message.tags == 'success' %}<i class="fa-solid fa-circle-check text-success fs-4 me-3 bounce-icon"></i>
+                        {% elif message.tags == 'danger' %}<i class="fa-solid fa-circle-xmark text-danger fs-4 me-3 bounce-icon"></i>
+                        {% elif message.tags == 'warning' %}<i class="fa-solid fa-circle-exclamation text-warning fs-4 me-3 bounce-icon"></i>
+                        {% else %}<i class="fa-solid fa-circle-info text-info fs-4 me-3 bounce-icon"></i>{% endif %}
                         <div class="fw-semibold text-dark">{{ message }}</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -165,69 +155,65 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-4 mb-4">
-                    <h4 class="fw-bold mb-3 text-white"><i class="fa-solid fa-leaf me-2 text-success"></i>AgriConnect</h4>
-                    <p class="small text-light-green mb-4" style="color: #a5d6a7; max-width: 320px;">
-                        A pioneering digital agriculture startup connecting organic growers directly with retail consumers. Our smart tools maximize farm efficiency.
-                    </p>
-                    <div class="d-flex gap-2">
-                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;"><i class="fa-brands fa-facebook-f"></i></a>
-                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;"><i class="fa-brands fa-x-twitter"></i></a>
-                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;"><i class="fa-brands fa-linkedin-in"></i></a>
-                        <a href="#" class="btn btn-outline-light btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;"><i class="fa-brands fa-instagram"></i></a>
+        <!-- Exact Matching Footer -->
+    <footer class="exact-footer">
+        <div class="container pb-4 border-bottom border-light border-opacity-10">
+            <div class="row g-4">
+                <div class="col-lg-3">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="fa-solid fa-leaf text-success fs-3"></i>
+                        <div>
+                            <div class="fw-extrabold text-white fs-5 lh-1">AgriConnect</div>
+                            <div style="font-size: 0.65rem; color: #A5D6A7;">Smart Farmer Marketplace</div>
+                        </div>
                     </div>
+                    <p class="small text-white-50 lh-lg">We connect farmers directly with buyers to assure fair pricing, fresh produce and sustainable agriculture.</p>
                 </div>
-                <div class="col-lg-2 col-md-4 mb-4">
-                    <h6 class="fw-bold text-white mb-3 text-uppercase" style="letter-spacing: 0.5px;">Navigation</h6>
-                    <ul class="list-unstyled small">
-                        <li class="mb-2"><a href="{% url 'home' %}">Home Page</a></li>
-                        <li class="mb-2"><a href="{% url 'crop_list' %}">Products Catalog</a></li>
-                        <li class="mb-2"><a href="{% url 'home' %}#farmers">Featured Farmers</a></li>
-                        <li class="mb-2"><a href="{% url 'home' %}#prices">Market Prices</a></li>
-                        <li class="mb-2"><a href="{% url 'weather_dashboard' %}">Weather Hub</a></li>
-                        <li class="mb-2"><a href="{% url 'about' %}">About Us</a></li>
-                        <li class="mb-2"><a href="{% url 'contact' %}">Contact Us</a></li>
-                    </ul>
+                <div class="col-lg-2">
+                    <h5 class="footer-title">Quick Links</h5>
+                    <a href="#">Home</a>
+                    <a href="#">Marketplace</a>
+                    <a href="{% url 'about' %}">About Us</a>
+                    <a href="#">Contact Us</a>
                 </div>
-                <div class="col-lg-3 col-md-4 mb-4">
-                    <h6 class="fw-bold text-white mb-3 text-uppercase" style="letter-spacing: 0.5px;">Contact Info</h6>
-                    <ul class="list-unstyled small text-light-green" style="color: #a5d6a7;">
-                        <li class="mb-2"><i class="fa-solid fa-location-dot me-2 text-success"></i>AgriConnect Campus, Main St</li>
-                        <li class="mb-2"><i class="fa-solid fa-phone me-2 text-success"></i>+91 98765 43210</li>
-                        <li class="mb-2"><i class="fa-solid fa-envelope me-2 text-success"></i>info@agriconnect.org</li>
-                    </ul>
+                <div class="col-lg-2">
+                    <h5 class="footer-title">Categories</h5>
+                    <a href="#">Grains</a>
+                    <a href="#">Vegetables</a>
+                    <a href="#">Fruits</a>
+                    <a href="#">Dairy Products</a>
+                    <a href="#">Organic Products</a>
+                    <a href="#">Spices</a>
                 </div>
-                <div class="col-lg-3 col-md-4 mb-4">
-                    <h6 class="fw-bold text-white mb-3 text-uppercase" style="letter-spacing: 0.5px;">Newsletter</h6>
-                    <p class="small text-muted mb-3" style="color: #a5d6a7 !important;">Subscribe to get market price advisories.</p>
-                    <div class="input-group">
-                        <input type="email" class="form-control rounded-start-pill border-0" placeholder="Enter email" style="padding: 10px 16px;">
-                        <button class="btn btn-primary-custom rounded-end-pill px-3" type="button"><i class="fa-solid fa-paper-plane"></i></button>
+                <div class="col-lg-3">
+                    <h5 class="footer-title">Contact Information</h5>
+                    <a href="#"><i class="fa-solid fa-phone me-2 text-success"></i> +91 98765 43210</a>
+                    <a href="#"><i class="fa-solid fa-envelope me-2 text-success"></i> support@agriconnect.com</a>
+                    <a href="#" class="d-flex align-items-start gap-2 mt-2">
+                        <i class="fa-solid fa-location-dot mt-1 text-success"></i>
+                        <span>Pune, Maharashtra - 411001</span>
+                    </a>
+                </div>
+                <div class="col-lg-2">
+                    <h5 class="footer-title">Follow Us</h5>
+                    <div class="social-icons">
+                        <a href="#"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="#"><i class="fa-brands fa-twitter"></i></a>
+                        <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="#"><i class="fa-brands fa-linkedin-in"></i></a>
                     </div>
-                </div>
-            </div>
-            <hr style="background-color: rgba(255,255,255,0.1);">
-            <div class="row small mt-4">
-                <div class="col-md-6 text-center text-md-start">
-                    &copy; 2026 AgriConnect Corporation. All Rights Reserved.
-                </div>
-                <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
-                    <a href="{% url 'about' %}" class="me-3">FAQ</a>
-                    <a href="{% url 'about' %}" class="me-3">Privacy Policy</a>
-                    <a href="{% url 'about' %}">Terms & Conditions</a>
                 </div>
             </div>
         </div>
+        <div class="container text-center pt-3 d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <span class="small text-white-50">&copy; 2026 AgriConnect. All rights reserved.</span>
+            <div class="small mt-2 mt-md-0">
+                <a href="#" class="d-inline text-white-50 me-3">Privacy Policy</a>
+                <a href="#" class="d-inline text-white-50 me-3">Terms & Conditions</a>
+                <a href="#" class="d-inline text-white-50">Help</a>
+            </div>
+        </div>
     </footer>
-
-    <!-- Floating Support/Chat Button -->
-    <a href="{% url 'chat_list' %}" class="btn btn-success rounded-circle shadow-lg p-0 d-flex align-items-center justify-content-center hover-lift" style="position: fixed; bottom: 30px; left: 30px; width: 56px; height: 56px; z-index: 999; background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); border: none;" title="Chat Support">
-        <i class="fa-regular fa-comments fs-4 text-white"></i>
-    </a>
 
     <!-- Back to Top Button -->
     <button onclick="scrollToTop()" id="backToTopBtn" class="btn btn-primary-custom rounded-circle p-0" style="position: fixed; bottom: 30px; right: 30px; width: 48px; height: 48px; display: none; z-index: 999; justify-content: center; align-items: center; box-shadow: var(--hover-shadow); transition: var(--transition);">
@@ -284,6 +270,59 @@
             }, { threshold: 0.1 });
             
             counters.forEach(c => observer.observe(c));
+        });
+    </script>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof AOS !== 'undefined') {
+                AOS.init({
+                    duration: 800,
+                    once: true,
+                    offset: 50,
+                });
+            }
+        });
+    </script>
+    <style>
+        /* Toast Alert Animations */
+        .animated-toast {
+            animation: slideInRight 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+        @keyframes slideInRight {
+            0% { transform: translateX(120%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        .animated-toast.hiding {
+            animation: fadeOutRight 0.5s ease-in forwards !important;
+        }
+        @keyframes fadeOutRight {
+            0% { transform: translateX(0); opacity: 1; height: auto; margin-bottom: 1rem; padding: 1rem; border-width: 1px; }
+            100% { transform: translateX(120%); opacity: 0; height: 0; margin-bottom: 0; padding: 0; border-width: 0; }
+        }
+        .bounce-icon {
+            animation: bounceIn 1s cubic-bezier(0.28, 0.84, 0.42, 1) forwards;
+            animation-delay: 0.2s;
+            opacity: 0;
+            transform: scale(0);
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+    <script>
+        // Auto-dismiss Alerts after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.auto-dismiss-alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.classList.add('hiding');
+                    setTimeout(() => alert.remove(), 500); // Remove from DOM after animation completes
+                }, 5000); // 5000 milliseconds = 5 seconds
+            });
         });
     </script>
 

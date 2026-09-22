@@ -2,6 +2,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Developer setup / testing
+    
     # General Pages
     path('', views.home_view, name='home'),
     path('about/', views.about_view, name='about'),
@@ -30,7 +32,10 @@ urlpatterns = [
     path('cart/update/<int:pk>/', views.update_cart_view, name='update_cart'),
     path('cart/remove/<int:pk>/', views.remove_from_cart_view, name='remove_from_cart'),
     path('checkout/', views.checkout_view, name='checkout'),
+    path('checkout/verify-otp/<int:pk>/', views.order_otp_verify_view, name='order_otp_verify'),
+    path('checkout/resend-otp/<int:pk>/', views.resend_order_otp, name='resend_order_otp'),
     path('orders/', views.buyer_orders_view, name='buyer_orders'),
+    path('orders/<int:pk>/', views.order_detail_redirect_view, name='order_detail'),
     path('orders/<int:pk>/invoice/', views.order_invoice_view, name='order_invoice'),
     path('orders/<int:pk>/invoice/pdf/', views.download_invoice_pdf_view, name='download_invoice_pdf'),
     path('orders/<int:pk>/track/', views.order_tracking_view, name='order_tracking'),
@@ -41,9 +46,14 @@ urlpatterns = [
     # Admin Controls
     path('admin/crops/<int:pk>/approve/', views.admin_approve_crop_view, name='admin_approve_crop'),
     path('admin/crops/<int:pk>/reject/', views.admin_reject_crop_view, name='admin_reject_crop'),
+    path('admin/crops/<int:pk>/delete/', views.admin_delete_crop_view, name='admin_delete_crop'),
     path('admin/feedback/<int:pk>/resolve/', views.admin_resolve_feedback_view, name='admin_resolve_feedback'),
     path('admin/reports/', views.admin_reports_view, name='admin_reports'),
     path('admin/farmers/<int:pk>/verify/', views.admin_farmer_verify_view, name='admin_farmer_verify'),
+    path('admin/users/<int:pk>/suspend/', views.admin_suspend_user_view, name='admin_suspend_user'),
+    path('admin/users/<int:pk>/edit/', views.admin_edit_user_view, name='admin_edit_user'),
+    path('admin/users/<int:pk>/delete/', views.admin_delete_user_view, name='admin_delete_user'),
+    path('admin/orders/<int:pk>/delete/', views.admin_delete_order_view, name='admin_delete_order'),
     path('farmer/verify/', views.farmer_verification_submit_view, name='farmer_verification_submit'),
     
     # Smart Tools
@@ -54,7 +64,13 @@ urlpatterns = [
     path('chat/', views.chat_list_view, name='chat_list'),
     path('chat/<str:username>/', views.chat_detail_view, name='chat_detail'),
     
-    # Public Farmer Profile/Storefront
+    # Farmer API & Storefront
+    path('farmer/analytics-api/', views.farmer_sales_analytics_api_view, name='farmer_sales_analytics_api'),
+    path('farmer/analytics-pdf/', views.farmer_sales_analytics_pdf_view, name='farmer_sales_analytics_pdf'),
+    path('farmer/notifications-api/', views.farmer_notifications_api, name='farmer_notifications_api'),
+    path('farmer/notifications-api/<int:pk>/read/', views.farmer_mark_notification_read_api, name='farmer_mark_notification_read_api'),
+    path('farmer/notifications-api/<int:pk>/delete/', views.farmer_delete_notification_api, name='farmer_delete_notification_api'),
+    path('farmer/notifications-api/read-all/', views.farmer_mark_all_notifications_read_api, name='farmer_mark_all_notifications_read_api'),
     path('farmer/<str:username>/', views.farmer_store_view, name='farmer_store'),
     
     # Agricultural Market Intelligence Dashboard
@@ -71,13 +87,14 @@ urlpatterns = [
     path('wishlist/toggle/<int:crop_id>/', views.wishlist_toggle_view, name='wishlist_toggle'),
     path('wishlist/remove/<int:pk>/', views.wishlist_remove_view, name='wishlist_remove'),
     path('wishlist/move-to-cart/<int:pk>/', views.wishlist_move_to_cart_view, name='wishlist_move_to_cart'),
-    path('farmers/follow/<int:farmer_id>/', views.farmer_follow_view, name='farmer_follow'),
+
 
     # Reviews and Ratings System URLs
     path('reviews/<int:pk>/helpful/', views.review_helpful_toggle_view, name='review_helpful_toggle'),
     path('reviews/<int:pk>/reply/', views.farmer_review_reply_view, name='farmer_review_reply'),
     path('reviews/<int:pk>/edit/', views.review_edit_view, name='review_edit'),
     path('reviews/<int:pk>/delete/', views.review_delete_view, name='review_delete'),
+    path('farmer/inventory/<int:pk>/update-stock/', views.farmer_update_inventory_stock_view, name='farmer_update_inventory_stock'),
     path('farmer/<int:farmer_id>/rate/', views.farmer_rate_view, name='farmer_rate'),
 
     # Reports and Export Center URLs

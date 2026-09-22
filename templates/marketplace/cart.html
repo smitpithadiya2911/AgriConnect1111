@@ -14,7 +14,7 @@
                     <div class="table-responsive">
                         <table class="table align-middle">
                             <thead>
-                                <tr>
+                                <tr id="cart-row-{{ item.id }}">
                                     <th>Product</th>
                                     <th>Price</th>
                                     <th>Quantity</th>
@@ -24,7 +24,7 @@
                             </thead>
                             <tbody>
                                 {% for item in cart_items %}
-                                    <tr>
+                                    <tr id="cart-row-{{ item.id }}">
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 {% if item.crop.image %}
@@ -95,4 +95,61 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // AJAX Update Cart
+    document.querySelectorAll('.update-cart-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-id');
+            const qty = document.getElementById(`qty-${itemId}`).value;
+            fetch(`/cart/update/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ quantity: qty })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    document.getElementById(`item-total-${itemId}`).innerText = '₹' + parseFloat(data.item_total).toFixed(2);
+                    document.getElementById('cart-subtotal').innerText = '₹' + parseFloat(data.cart_total).toFixed(2);
+                    document.getElementById('cart-grand-total').innerText = '₹' + parseFloat(data.cart_total).toFixed(2);
+                    alert("Cart updated successfully!");
+                } else {
+                    alert(data.message);
+                }
+            });
+        });
+    });
+
+    // AJAX Remove
+    document.querySelectorAll('.remove-cart-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if(!confirm("Remove this item?")) return;
+            const itemId = this.getAttribute('data-id');
+            fetch(`/cart/remove/${itemId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    document.getElementById(`cart-row-${itemId}`).remove();
+                    document.getElementById('cart-subtotal').innerText = '₹' + parseFloat(data.cart_total).toFixed(2);
+                    document.getElementById('cart-grand-total').innerText = '₹' + parseFloat(data.cart_total).toFixed(2);
+                }
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

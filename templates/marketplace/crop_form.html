@@ -1,31 +1,291 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ title }} – AgriConnect{% endblock %}
 
 {% block content %}
-<div class="container py-5 animate-fade" style="max-width: 700px;">
-    <div class="card-premium p-4">
-        <h2 class="fw-bold text-success mb-2 text-center"><i class="fa-solid fa-wheat-awn me-2"></i>{{ title }}</h2>
-        <p class="text-muted text-center mb-4">Please specify detailed specifications, pricing, stock levels, and upload quality produce images.</p>
-        
-        <form method="POST" enctype="multipart/form-data">
+<div class="container py-5 animate-fade" style="max-width: 860px;">
+    <div class="card-premium p-4 p-md-5 shadow-sm">
+        <div class="text-center mb-4">
+            <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill fw-semibold mb-2">
+                <i class="fa-solid fa-wheat-awn me-1"></i> Farmer Marketplace
+            </span>
+            <h2 class="fw-bold text-success mb-2">{{ title }}</h2>
+            <p class="text-muted mb-0">Fill in the crop details below and upload a high-quality product photo.</p>
+        </div>
+
+        {% if form.errors %}
+            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> Please correct the errors highlighted below.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data" id="cropForm">
             {% csrf_token %}
             
-            {% for field in form %}
-                <div class="mb-3">
-                    <label class="form-label fw-bold small">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.errors %}
-                        <div class="text-danger small mt-1">
-                            {{ field.errors|striptags }}
-                        </div>
+            <!-- Hidden input for 1-click preset sample photo -->
+            <input type="hidden" name="preset_image" id="preset_image_input" value="">
+
+            <!-- General Details -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label for="{{ form.category.id_for_label }}" class="form-label fw-bold small text-secondary">
+                        <i class="fa-solid fa-shapes text-success me-1"></i> Category <span class="text-danger">*</span>
+                    </label>
+                    {{ form.category }}
+                    {% if form.category.errors %}
+                        <div class="text-danger small mt-1">{{ form.category.errors|striptags }}</div>
                     {% endif %}
                 </div>
-            {% endfor %}
-            
-            <button type="submit" class="btn btn-primary-custom w-100 py-2 mt-3"><i class="fa-solid fa-cloud-arrow-up me-2"></i>Save Listing</button>
-            <a href="{% url 'farmer_dashboard' %}" class="btn btn-outline-secondary w-100 mt-2 py-2 border-2 text-decoration-none text-center">Cancel</a>
+
+                <div class="col-md-6">
+                    <label for="{{ form.name.id_for_label }}" class="form-label fw-bold small text-secondary">
+                        <i class="fa-solid fa-tag text-success me-1"></i> Crop / Product Name <span class="text-danger">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="text-danger small mt-1">{{ form.name.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ form.description.id_for_label }}" class="form-label fw-bold small text-secondary">
+                    <i class="fa-solid fa-align-left text-success me-1"></i> Description <span class="text-danger">*</span>
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <div class="text-danger small mt-1">{{ form.description.errors|striptags }}</div>
+                {% endif %}
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label for="{{ form.price_per_kg.id_for_label }}" class="form-label fw-bold small text-secondary">
+                        <i class="fa-solid fa-indian-rupee-sign text-success me-1"></i> Price per Unit (₹) <span class="text-danger">*</span>
+                    </label>
+                    {{ form.price_per_kg }}
+                    {% if form.price_per_kg.errors %}
+                        <div class="text-danger small mt-1">{{ form.price_per_kg.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label for="{{ form.quantity_available.id_for_label }}" class="form-label fw-bold small text-secondary">
+                        <i class="fa-solid fa-boxes-stacked text-success me-1"></i> Quantity Available <span class="text-danger">*</span>
+                    </label>
+                    {{ form.quantity_available }}
+                    {% if form.quantity_available.errors %}
+                        <div class="text-danger small mt-1">{{ form.quantity_available.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label for="{{ form.unit.id_for_label }}" class="form-label fw-bold small text-secondary">
+                        <i class="fa-solid fa-scale-balanced text-success me-1"></i> Unit <span class="text-danger">*</span>
+                    </label>
+                    {{ form.unit }}
+                    {% if form.unit.errors %}
+                        <div class="text-danger small mt-1">{{ form.unit.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label for="{{ form.rating.id_for_label }}" class="form-label fw-bold small text-secondary">
+                        <i class="fa-solid fa-star text-warning me-1"></i> Product Quality Rating
+                    </label>
+                    {{ form.rating }}
+                    {% if form.rating.errors %}
+                        <div class="text-danger small mt-1">{{ form.rating.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label for="{{ form.availability_status.id_for_label }}" class="form-label fw-bold small text-secondary">
+                        <i class="fa-solid fa-circle-check text-success me-1"></i> Availability Status
+                    </label>
+                    {{ form.availability_status }}
+                    {% if form.availability_status.errors %}
+                        <div class="text-danger small mt-1">{{ form.availability_status.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label for="{{ form.shelf_life_days.id_for_label }}" class="form-label fw-bold small text-secondary">
+                        <i class="fa-solid fa-hourglass-half text-success me-1"></i> Shelf Life (Days)
+                    </label>
+                    {{ form.shelf_life_days }}
+                    {% if form.shelf_life_days.errors %}
+                        <div class="text-danger small mt-1">{{ form.shelf_life_days.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label for="{{ form.harvest_date.id_for_label }}" class="form-label fw-bold small text-secondary">
+                        <i class="fa-solid fa-calendar-day text-success me-1"></i> Harvest Date
+                    </label>
+                    {{ form.harvest_date }}
+                    {% if form.harvest_date.errors %}
+                        <div class="text-danger small mt-1">{{ form.harvest_date.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- PRODUCT IMAGE UPLOAD SECTION -->
+            <div class="p-3 p-md-4 mb-4 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1">
+                            <i class="fa-solid fa-image text-success me-2"></i>Product Photo
+                        </h5>
+                        <p class="text-muted small mb-0">Upload a high-quality product photo from your device.</p>
+                    </div>
+                </div>
+
+                <!-- Live Selected Preview Box -->
+                <div id="livePreviewContainer" class="mb-3 {% if not form.instance.image %}d-none{% endif %}">
+                    <div class="p-3 bg-white rounded-3 border d-flex align-items-center justify-content-between shadow-sm flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width: 72px; height: 72px; border-radius: 8px; overflow: hidden; border: 2px solid #10b981;" class="flex-shrink-0">
+                                <img id="livePreviewImg" 
+                                     src="{% if form.instance.image %}{{ form.instance.image.url }}{% endif %}" 
+                                     alt="Preview" 
+                                     style="width: 100%; height: 100%; object-fit: cover;">
+                            </div>
+                            <div>
+                                <span class="badge bg-success text-white mb-1"><i class="fa-solid fa-circle-check me-1"></i>Photo Ready</span>
+                                <h6 class="fw-bold text-dark mb-0" id="livePreviewTitle">
+                                    {% if form.instance.image %}Current Saved Photo{% else %}Selected Image{% endif %}
+                                </h6>
+                                <small class="text-muted" id="livePreviewSource">
+                                    {% if form.instance.image %}{{ form.instance.image.name }}{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="btnRemoveImage">
+                            <i class="fa-solid fa-trash-can me-1"></i> Change / Clear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Drag & Drop Upload Zone -->
+                <div id="uploadDropzone" class="p-4 text-center rounded-3 mb-2" 
+                     style="border: 2px dashed #10b981; background: #ffffff; cursor: pointer; transition: all 0.2s ease;">
+                    <div class="mb-2">
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success-subtle text-success mb-2" style="width: 54px; height: 54px;">
+                            <i class="fa-solid fa-cloud-arrow-up fs-4"></i>
+                        </div>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">Click to browse or drag & drop photo here</h6>
+                    <p class="text-muted small mb-2">Supports JPG, PNG, WEBP high-resolution crop photos</p>
+                    <button type="button" class="btn btn-sm btn-outline-success px-3 fw-semibold">
+                        <i class="fa-solid fa-folder-open me-1"></i> Choose from Computer/Mobile
+                    </button>
+                    <!-- Actual Django File Input (hidden visually, triggered by dropzone) -->
+                    <div class="d-none">
+                        {{ form.image }}
+                    </div>
+                </div>
+                {% if form.image.errors %}
+                    <div class="text-danger small mt-1 mb-3">{{ form.image.errors|striptags }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Submit buttons -->
+            <div class="d-flex flex-column gap-2 mt-4">
+                <button type="submit" class="btn btn-primary-custom btn-lg w-100 py-3 fw-bold">
+                    <i class="fa-solid fa-cloud-arrow-up me-2"></i>Save Listing
+                </button>
+                <a href="{% url 'farmer_dashboard' %}" class="btn btn-outline-secondary w-100 py-2 border-2 text-decoration-none text-center">
+                    Cancel
+                </a>
+            </div>
         </form>
     </div>
 </div>
+
+<style>
+#uploadDropzone:hover {
+    border-color: #059669 !important;
+    background-color: #f0fdf4 !important;
+}
+#uploadDropzone.dragover {
+    background-color: #ecfdf5 !important;
+    border-color: #059669 !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropzone = document.getElementById('uploadDropzone');
+    const fileInput = document.querySelector('#id_image');
+    const livePreviewContainer = document.getElementById('livePreviewContainer');
+    const livePreviewImg = document.getElementById('livePreviewImg');
+    const livePreviewTitle = document.getElementById('livePreviewTitle');
+    const livePreviewSource = document.getElementById('livePreviewSource');
+    const btnRemoveImage = document.getElementById('btnRemoveImage');
+
+    // Make dropzone clickable
+    if (dropzone && fileInput) {
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        // Drag & Drop effects
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('dragover');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('dragover');
+            });
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                handleFileSelect(this.files[0]);
+            }
+        });
+    }
+
+    function handleFileSelect(file) {
+        // Show live preview from file
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            livePreviewImg.src = e.target.result;
+            livePreviewTitle.textContent = file.name;
+            livePreviewSource.textContent = `${(file.size / 1024).toFixed(1)} KB (Custom Upload)`;
+            livePreviewContainer.classList.remove('d-none');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Remove / Clear button
+    if (btnRemoveImage) {
+        btnRemoveImage.addEventListener('click', function() {
+            if (fileInput) fileInput.value = '';
+            livePreviewContainer.classList.add('d-none');
+            livePreviewImg.src = '';
+        });
+    }
+});
+</script>
 {% endblock %}

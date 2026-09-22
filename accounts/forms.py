@@ -2,38 +2,43 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import User, Farmer, Buyer
 
-class CustomUserCreationForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'}))
-    confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Confirm Password'}))
+class StyledModelForm(forms.ModelForm):
+    """Base form to automatically apply Bootstrap classes."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-select' if isinstance(field.widget, forms.Select) else 'form-control')
+
+class CustomUserCreationForm(StyledModelForm):
+    password = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': 'Password'}))
+    confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': 'Confirm Password'}))
     
     # Common location details
-    city = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'City'}))
-    state = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'State'}))
-    pincode = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Pincode'}))
+    city = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'City'}))
+    state = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'State'}))
+    pincode = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Pincode'}))
 
     # Farmer specific fields
-    farm_name = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Farm Name'}))
-    farm_location = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Farm Address'}))
-    farm_size = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Farm Size (e.g. 5 Acres)'}))
-    village = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Village'}))
-    farming_experience = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Farming Experience (e.g. 5 Years)'}))
-    crops_grown = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Main Crops Grown (e.g. Tomato, Rice)'}))
+    farm_name = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Farm Name'}))
+    farm_location = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Farm Address'}))
+    farm_size = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Farm Size (e.g. 5 Acres)'}))
+    village = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Village'}))
+    farming_experience = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Farming Experience (e.g. 5 Years)'}))
+    crops_grown = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Main Crops Grown (e.g. Tomato, Rice)'}))
     
     # Document uploads
-    aadhaar_document = forms.FileField(required=False, widget=forms.FileInput(attrs={'class': 'form-control'}))
-    farm_certificate = forms.FileField(required=False, widget=forms.FileInput(attrs={'class': 'form-control'}))
-    organic_certificate = forms.FileField(required=False, widget=forms.FileInput(attrs={'class': 'form-control'}))
+    aadhaar_document = forms.FileField(required=False)
+    farm_certificate = forms.FileField(required=False)
+    organic_certificate = forms.FileField(required=False)
     
     class Meta:
         model = User
         fields = ['username', 'email', 'role', 'phone', 'address', 'profile_picture']
         widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email Address'}),
-            'role': forms.Select(attrs={'class': 'form-select'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number'}),
-            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Full Address'}),
-            'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
+            'username': forms.TextInput(attrs={'placeholder': 'Username'}),
+            'email': forms.EmailInput(attrs={'placeholder': 'Email Address'}),
+            'phone': forms.TextInput(attrs={'placeholder': 'Phone Number'}),
+            'address': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Full Address'}),
         }
 
     def clean(self):
@@ -88,34 +93,25 @@ class CustomUserCreationForm(forms.ModelForm):
         return user
 
 
-class UserUpdateForm(forms.ModelForm):
+class UserUpdateForm(StyledModelForm):
     class Meta:
         model = User
         fields = ['email', 'phone', 'address', 'profile_picture']
         widgets = {
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
-            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
+            'address': forms.Textarea(attrs={'rows': 3}),
         }
 
 
-class FarmerProfileUpdateForm(forms.ModelForm):
+class FarmerProfileUpdateForm(StyledModelForm):
     class Meta:
         model = Farmer
         fields = ['farm_name', 'farm_location', 'farm_size']
-        widgets = {
-            'farm_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'farm_location': forms.TextInput(attrs={'class': 'form-control'}),
-            'farm_size': forms.TextInput(attrs={'class': 'form-control'}),
-        }
 
 
-class BuyerProfileUpdateForm(forms.ModelForm):
+class BuyerProfileUpdateForm(StyledModelForm):
     class Meta:
         model = Buyer
         fields = ['delivery_address', 'contact_name']
         widgets = {
-            'delivery_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'contact_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'delivery_address': forms.Textarea(attrs={'rows': 3}),
         }

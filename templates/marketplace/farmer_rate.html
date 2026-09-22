@@ -4,13 +4,17 @@
 <div class="container py-5" style="max-width: 650px;">
     <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
         <div class="d-flex align-items-center mb-3">
-            <i class="fa-solid fa-star-half-stroke text-success fs-2 me-3"></i>
+            <div class="rounded-circle bg-warning-subtle text-warning d-flex align-items-center justify-content-center me-3" style="width: 54px; height: 54px; font-size: 1.6rem;">
+                <i class="fa-solid fa-star"></i>
+            </div>
             <div>
                 <h3 class="fw-bold text-success mb-0">Rate Farm Grower</h3>
-                <p class="text-muted small mb-0">Farmer: <span class="fw-semibold text-dark">{{ farmer.farm_name }}</span> ({{ farmer.user.username }})</p>
+                <p class="text-muted small mb-0">Farmer: <span class="fw-semibold text-dark">{{ farmer.farm_name|default:farmer.user.username }}</span> ({{ farmer.user.username }})</p>
             </div>
         </div>
-        <p class="text-muted small">Provide feedback on your overall experience, produce quality, communication responsiveness, delivery punctuality, and packaging robustness.</p>
+        <div class="alert alert-success bg-success-subtle border-0 rounded-3 py-2 px-3 small text-success-emphasis mb-3">
+            <i class="fa-solid fa-thumbs-up me-1"></i> Loved the produce or service? Your rating helps fellow buyers find great farmers and supports grower quality!
+        </div>
         <hr class="text-muted">
         <form method="POST">
             {% csrf_token %}
@@ -24,8 +28,8 @@
                 </div>
             {% endfor %}
             <div class="d-flex gap-2 justify-content-end mt-4">
-                <a href="{% url 'farmer_store' farmer.user.username %}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
-                <button type="submit" class="btn btn-success rounded-pill px-4 text-white" style="background: var(--primary-color); border: none;">Submit Rating</button>
+                <a href="{% url 'buyer_dashboard' %}" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                <button type="submit" class="btn btn-warning rounded-pill px-4 text-dark fw-bold shadow-sm"><i class="fa-solid fa-star me-1"></i>Submit Rating</button>
             </div>
         </form>
     </div>

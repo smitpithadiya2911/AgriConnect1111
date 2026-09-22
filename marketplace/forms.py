@@ -1,10 +1,10 @@
 from django import forms
-from .models import Crop, Review, Feedback, Order, FarmerRating
+from .models import Crop, Review, Order, FarmerRating
 
 class CropForm(forms.ModelForm):
     class Meta:
         model = Crop
-        fields = ['category', 'name', 'description', 'price_per_kg', 'quantity_available', 'unit', 'image', 'availability_status', 'harvest_date', 'shelf_life_days']
+        fields = ['category', 'name', 'description', 'price_per_kg', 'quantity_available', 'unit', 'rating', 'image', 'availability_status', 'harvest_date', 'shelf_life_days']
         widgets = {
             'category': forms.Select(attrs={'class': 'form-select'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Crop Name'}),
@@ -12,6 +12,17 @@ class CropForm(forms.ModelForm):
             'price_per_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Price per unit'}),
             'quantity_available': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Quantity available'}),
             'unit': forms.Select(attrs={'class': 'form-select'}),
+            'rating': forms.Select(
+                choices=[
+                    (5.0, '5.0 ⭐ (Excellent / Premium Quality)'),
+                    (4.8, '4.8 ⭐ (Superior)'),
+                    (4.5, '4.5 ⭐ (Very Good)'),
+                    (4.0, '4.0 ⭐ (Good Quality)'),
+                    (3.5, '3.5 ⭐ (Standard)'),
+                    (3.0, '3.0 ⭐ (Fair)'),
+                ],
+                attrs={'class': 'form-select'}
+            ),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
             'availability_status': forms.Select(attrs={'class': 'form-select'}),
             'harvest_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -45,14 +56,15 @@ class FarmerRatingForm(forms.ModelForm):
         }
 
 
-class FeedbackForm(forms.ModelForm):
-    class Meta:
-        model = Feedback
-        fields = ['subject', 'message']
-        widgets = {
-            'subject': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Subject of Complaint/Feedback'}),
-            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Describe your issue or feedback in detail...'}),
-        }
+class FeedbackForm(forms.Form):
+    subject = forms.CharField(
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Subject of Complaint/Feedback'}),
+        required=True
+    )
+    message = forms.CharField(
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Describe your issue or feedback in detail...'}),
+        required=True
+    )
 
 
 class CheckoutForm(forms.Form):

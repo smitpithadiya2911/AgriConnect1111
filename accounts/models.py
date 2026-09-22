@@ -1,13 +1,21 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 class User(AbstractUser):
+    """
+    Extends Django's default AbstractUser to include role-based access 
+    and shared profile fields (phone, address, profile_picture).
+    """
+    # --- Role Definition ---
     ROLE_CHOICES = (
         ('admin', 'Admin'),
         ('farmer', 'Farmer'),
         ('buyer', 'Buyer'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='buyer')
+    
+    # --- Shared Profile Fields ---
     phone = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
@@ -26,6 +34,11 @@ class User(AbstractUser):
 
 
 class Farmer(models.Model):
+    """
+    Detailed profile for Farmer users, storing farm information, performance metrics, 
+    and verification workflow status. Linked 1-to-1 with User.
+    """
+    # --- Core & Status ---
     CERTIFICATION_CHOICES = (
         ('verified', 'Verified'),
         ('pending', 'Pending'),
@@ -36,6 +49,8 @@ class Farmer(models.Model):
     farm_location = models.CharField(max_length=255, blank=True, null=True)
     farm_size = models.CharField(max_length=50, blank=True, null=True)  # e.g., "5 Acres"
     certification_status = models.CharField(max_length=50, choices=CERTIFICATION_CHOICES, default='pending')
+    
+    # --- Performance Metrics ---
     experience = models.CharField(max_length=50, default='5 Years')
     orders_completed = models.IntegerField(default=50)
     store_rating = models.FloatField(default=4.5)
@@ -48,6 +63,7 @@ class Farmer(models.Model):
     ontime_delivery = models.IntegerField(default=98)
     satisfaction_rate = models.IntegerField(default=97)
 
+    # --- Location Details ---
     village = models.CharField(max_length=100, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     state = models.CharField(max_length=100, blank=True, null=True)
@@ -79,12 +95,44 @@ class Farmer(models.Model):
 
 
 class Buyer(models.Model):
+    """
+    Detailed profile for Buyer users, storing delivery preferences and favorited farmers. 
+    Linked 1-to-1 with User.
+    """
+    # --- Core Profile ---
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='buyer_profile')
     delivery_address = models.TextField(blank=True, null=True)
     contact_name = models.CharField(max_length=100, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     state = models.CharField(max_length=100, blank=True, null=True)
     pincode = models.CharField(max_length=10, blank=True, null=True)
+    favorite_farmers = models.ManyToManyField(Farmer, related_name='favorited_by', blank=True)
 
     def __str__(self):
-        return f"Buyer Profile: {self.user.username}"
+        return f"Buyer Profile for {self.user.username}"
+
+
+class AuthOTP(models.Model):
+    """
+    Stores One-Time Passwords for user registration and password resets.
+    """
+    # --- OTP Configuration ---
+    OTP_TYPE_CHOICES = (
+        ('registration', 'Registration'),
+        ('password_reset', 'Password Reset'),
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='auth_otps', null=True, blank=True)
+    email = models.EmailField(blank=True, null=True) # Used if user is not yet created
+    otp_code = models.CharField(max_length=6)
+    otp_type = models.CharField(max_length=20, choices=OTP_TYPE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_verified = models.BooleanField(default=False)
+    attempts = models.IntegerField(default=0)
+    resend_count = models.IntegerField(default=0)
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"{self.otp_type} OTP for {self.user.username if self.user else self.email}"

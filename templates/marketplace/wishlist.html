@@ -132,36 +132,7 @@
                 {% endfor %}
             </div>
 
-            <!-- Recommendations Grid -->
-            {% if recommended_crops %}
-                <div class="mt-5">
-                    <h5 class="fw-bold text-success mb-4"><i class="fa-regular fa-thumbs-up me-2"></i>Recommended Just For You</h5>
-                    <div class="row g-4">
-                        {% for crop in recommended_crops %}
-                            <div class="col-md-6 col-lg-4">
-                                <div class="card border-0 rounded-4 shadow-sm bg-white p-3 h-100 d-flex flex-column justify-content-between">
-                                    <div>
-                                        <div class="position-relative rounded-3 overflow-hidden mb-3" style="height: 140px;">
-                                            {% if crop.image %}
-                                                <img src="{{ crop.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ crop.name }}">
-                                            {% else %}
-                                                <div class="bg-success-subtle text-success d-flex align-items-center justify-content-center h-100 w-100">
-                                                    <i class="fa-solid fa-wheat-awn fs-2"></i>
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                        <h6 class="fw-bold text-dark mb-1 text-truncate">{{ crop.name }}</h6>
-                                        <p class="text-success fw-bold mb-1">₹{{ crop.price_per_kg }} <small class="text-muted">/ {{ crop.unit }}</small></p>
-                                    </div>
-                                    <div class="mt-2.5">
-                                        <a href="{% url 'crop_detail' crop.id %}" class="btn btn-xs btn-outline-success w-100 rounded-pill py-1.5" style="font-size: 0.75rem;">View Yield</a>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
+
 
         </div>
     </div>

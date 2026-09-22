@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5 mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white border-0 pt-4 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="fw-bold mb-0">Edit User: {{ edit_user.username }}</h4>
+                        <a href="{% url 'admin_dashboard' %}" class="btn btn-sm btn-outline-secondary">Back to Dashboard</a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <h5 class="fw-bold mb-3 text-success border-bottom pb-2">Basic Information</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small fw-bold">First Name</label>
+                                <input type="text" name="first_name" class="form-control bg-light border-0" value="{{ edit_user.first_name }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small fw-bold">Last Name</label>
+                                <input type="text" name="last_name" class="form-control bg-light border-0" value="{{ edit_user.last_name }}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-muted small fw-bold">Email Address</label>
+                                <input type="email" name="email" class="form-control bg-light border-0" value="{{ edit_user.email }}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-muted small fw-bold">Role</label>
+                                <input type="text" class="form-control bg-light border-0 text-capitalize" value="{{ edit_user.role }}" disabled>
+                            </div>
+                        </div>
+
+                        {% if edit_user.role == 'farmer' and farmer_profile %}
+                        <h5 class="fw-bold mb-3 text-success border-bottom pb-2">Farmer Profile</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small fw-bold">Farm Name</label>
+                                <input type="text" name="farm_name" class="form-control bg-light border-0" value="{{ farmer_profile.farm_name|default_if_none:'' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small fw-bold">Farm Size</label>
+                                <input type="text" name="farm_size" class="form-control bg-light border-0" value="{{ farmer_profile.farm_size|default_if_none:'' }}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-muted small fw-bold">Farm Location</label>
+                                <input type="text" name="farm_location" class="form-control bg-light border-0" value="{{ farmer_profile.farm_location|default_if_none:'' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small fw-bold">Certification Status</label>
+                                <select name="certification_status" class="form-select bg-light border-0">
+                                    <option value="verified" {% if farmer_profile.certification_status == 'verified' %}selected{% endif %}>Verified</option>
+                                    <option value="pending" {% if farmer_profile.certification_status == 'pending' %}selected{% endif %}>Pending</option>
+                                    <option value="none" {% if farmer_profile.certification_status == 'none' %}selected{% endif %}>None</option>
+                                </select>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if edit_user.role == 'buyer' and buyer_profile %}
+                        <h5 class="fw-bold mb-3 text-success border-bottom pb-2">Buyer Profile</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small fw-bold">Contact Name</label>
+                                <input type="text" name="contact_name" class="form-control bg-light border-0" value="{{ buyer_profile.contact_name|default_if_none:'' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small fw-bold">City</label>
+                                <input type="text" name="city" class="form-control bg-light border-0" value="{{ buyer_profile.city|default_if_none:'' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-muted small fw-bold">State</label>
+                                <input type="text" name="state" class="form-control bg-light border-0" value="{{ buyer_profile.state|default_if_none:'' }}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-muted small fw-bold">Delivery Address</label>
+                                <textarea name="delivery_address" class="form-control bg-light border-0" rows="2">{{ buyer_profile.delivery_address|default_if_none:'' }}</textarea>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="col-12 mt-4">
+                            <div class="form-check form-switch form-check-lg">
+                                <input class="form-check-input" type="checkbox" role="switch" name="is_active" id="isActiveSwitch" {% if edit_user.is_active %}checked{% endif %}>
+                                <label class="form-check-label fw-bold ms-2" for="isActiveSwitch">Account Active</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 mt-4">
+                            <button type="submit" class="btn btn-success btn-lg w-100 rounded-pill shadow-sm">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

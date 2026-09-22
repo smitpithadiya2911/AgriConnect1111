@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Edit User - AgriConnect Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-container { max-width: 600px; margin: 50px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .form-control { padding: 12px 15px; border-radius: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="edit-container">
+        <h3 class="fw-bold mb-4">Edit User: {{ edit_user.username }}</h3>
+        
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">First Name</label>
+                <input type="text" name="first_name" class="form-control" value="{{ edit_user.first_name }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">Last Name</label>
+                <input type="text" name="last_name" class="form-control" value="{{ edit_user.last_name }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">Email Address</label>
+                <input type="email" name="email" class="form-control" value="{{ edit_user.email }}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label text-muted small fw-bold">Phone Number</label>
+                <input type="text" name="phone_number" class="form-control" value="{{ edit_user.phone|default:'' }}">
+            </div>
+            <div class="mb-4">
+                <label class="form-label text-muted small fw-bold">New Password (Leave blank to keep current)</label>
+                <div class="input-group">
+                    <input type="password" name="new_password" id="new_password" class="form-control" placeholder="Enter new password">
+                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                        <i class="fa-regular fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <script>
+                document.getElementById('togglePassword').addEventListener('click', function (e) {
+                    const password = document.getElementById('new_password');
+                    const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                    password.setAttribute('type', type);
+                    
+                    const icon = this.querySelector('i');
+                    if(type === 'password') {
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    } else {
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    }
+                });
+            </script>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'admin_dashboard' %}" class="btn btn-light px-4">Cancel</a>
+                <button type="submit" class="btn btn-success px-4"><i class="fa-solid fa-save me-2"></i>Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

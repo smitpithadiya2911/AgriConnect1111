@@ -1,398 +1,938 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Farmer Business Management Hub – AgriConnect{% endblock %}
+{% block title %}Farmer Dashboard – AgriConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary: #2E7D32;
+        --secondary: #4CAF50;
+        --accent: #FF9800;
+        --background: #F8FFF8;
+        --glass-bg: rgba(255, 255, 255, 0.85);
+        --glass-border: rgba(255, 255, 255, 0.5);
+        --glass-shadow: 0 8px 32px 0 rgba(46, 125, 50, 0.08);
+    }
+
+    body {
+        background-color: var(--background);
+        scroll-behavior: smooth;
+    }
+
+    /* Glassmorphism Cards */
+    .glass-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+        border-radius: 1.25rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .glass-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px 0 rgba(46, 125, 50, 0.15);
+    }
+
+    /* Sidebar Navigation */
+    .dash-sidebar {
+        position: sticky;
+        top: 80px;
+        height: calc(100vh - 100px);
+        overflow-y: auto;
+    }
+    .dash-sidebar::-webkit-scrollbar { width: 4px; }
+    .dash-sidebar::-webkit-scrollbar-thumb { background-color: var(--secondary); border-radius: 10px; }
+
+    .nav-pills .nav-link {
+        color: #495057;
+        font-weight: 500;
+        padding: 0.8rem 1.2rem;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+        margin-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .nav-pills .nav-link:hover {
+        background-color: rgba(76, 175, 80, 0.1);
+        color: var(--primary);
+    }
+
+    .nav-pills .nav-link.active {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+    }
+
+    /* Welcome Banner */
+    .hero-banner {
+        background: linear-gradient(135deg, rgba(46, 125, 50, 0.85), rgba(76, 175, 80, 0.7)), url('https://images.unsplash.com/photo-1592982537447-6f2e964b3017?auto=format&fit=crop&w=1200&q=80') center/cover;
+        border-radius: 1.25rem;
+        color: white;
+        padding: 3rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(46, 125, 50, 0.2);
+    }
+    .hero-banner::after {
+        content: '';
+        position: absolute;
+        bottom: -50px;
+        right: -50px;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+        border-radius: 50%;
+    }
+
+    .highlight-pill {
+        background: rgba(255,255,255,0.2);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 50rem;
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Stat Cards */
+    .stat-card {
+        padding: 1.5rem;
+        border-radius: 1.25rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .stat-card .icon-bg {
+        position: absolute;
+        right: -10px;
+        bottom: -15px;
+        font-size: 5rem;
+        opacity: 0.15;
+        transform: rotate(-15deg);
+        transition: transform 0.3s ease;
+    }
+    .stat-card:hover { transform: translateY(-8px); }
+    .stat-card:hover .icon-bg { transform: rotate(0) scale(1.1); }
+    
+    .bg-gradient-1 { background: linear-gradient(135deg, #2E7D32, #4CAF50); }
+    .bg-gradient-2 { background: linear-gradient(135deg, #FF9800, #F57C00); }
+    .bg-gradient-3 { background: linear-gradient(135deg, #0288D1, #03A9F4); }
+    .bg-gradient-4 { background: linear-gradient(135deg, #673AB7, #9C27B0); }
+
+    /* Custom Tables */
+    .table-custom { border-collapse: separate; border-spacing: 0 0.5rem; }
+    .table-custom tr { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02); transition: transform 0.2s; }
+    .table-custom tr:hover { transform: scale(1.01); }
+    .table-custom th { background: transparent; color: var(--primary); font-weight: 600; border: none; padding: 1rem; }
+    .table-custom td { border: none; padding: 1rem; vertical-align: middle; }
+    .table-custom td:first-child { border-top-left-radius: 0.75rem; border-bottom-left-radius: 0.75rem; }
+    .table-custom td:last-child { border-top-right-radius: 0.75rem; border-bottom-right-radius: 0.75rem; }
+
+    /* Timeline UI */
+    .tracking-timeline { position: relative; padding-left: 30px; list-style: none; margin: 0; }
+    .tracking-timeline::before { content: ''; position: absolute; left: 11px; top: 10px; bottom: 10px; width: 2px; background: #e0e0e0; }
+    .timeline-item { position: relative; margin-bottom: 1.5rem; }
+    .timeline-item::before { content: ''; position: absolute; left: -24px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: white; border: 2px solid #e0e0e0; z-index: 1; }
+    .timeline-item.completed::before { background: var(--primary); border-color: var(--primary); }
+    .timeline-item.active::before { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 4px rgba(255, 152, 0, 0.2); }
+
+    /* Promo Banner */
+    .promo-banner {
+        background: linear-gradient(135deg, var(--accent), #F57C00);
+        border-radius: 1.25rem;
+        color: white;
+        padding: 3rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .promo-banner::before {
+        content: '\f4d8';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        position: absolute;
+        right: 5%;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 10rem;
+        opacity: 0.1;
+    }
+
+    /* Badges */
+    .badge-soft-success { background-color: #E8F5E9; color: #2E7D32; }
+    .badge-soft-warning { background-color: #FFF3E0; color: #E65100; }
+    .badge-soft-danger { background-color: #FFEBEE; color: #C62828; }
+    .badge-soft-info { background-color: #E1F5FE; color: #0277BD; }
+
+    /* Animations */
+    .fade-in-up { animation: fadeInUp 0.5s ease-out forwards; opacity: 0; transform: translateY(20px); }
+    @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+
+    /* Skeleton Loading effect */
+    .skeleton {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 4px;
+    }
+    @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Custom Avatar Group */
+    .avatar-group { display: flex; }
+    .avatar-group img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; margin-left: -10px; transition: transform 0.2s; }
+    .avatar-group img:hover { transform: scale(1.1); z-index: 10; }
+    .avatar-group img:first-child { margin-left: 0; }
+    
+    .status-dropdown {
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .status-dropdown:focus { box-shadow: none; border-color: var(--primary); }
+</style>
+<script>
+    function updateOrderStatus(selectElement) {
+        const orderId = selectElement.getAttribute('data-order-id');
+        const newStatus = selectElement.value;
+        const originalColor = selectElement.style.backgroundColor;
+        
+        selectElement.disabled = true;
+        selectElement.style.opacity = '0.5';
+        
+        fetch(`/farmer/orders/${orderId}/status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `status=${encodeURIComponent(newStatus)}`
+        })
+        .then(response => {
+            selectElement.disabled = false;
+            selectElement.style.opacity = '1';
+            if (response.ok) {
+                // Success styling flash
+                selectElement.style.backgroundColor = '#d4edda';
+                setTimeout(() => selectElement.style.backgroundColor = originalColor, 1000);
+            } else {
+                alert('Failed to update status. Please try again.');
+            }
+        })
+        .catch(error => {
+            selectElement.disabled = false;
+            selectElement.style.opacity = '1';
+            alert('Error updating status.');
+        });
+    }
+
+    function updateCropStock(cropId) {
+        const stockInput = document.getElementById(`quick-stock-${cropId}`);
+        const newStock = stockInput.value;
+        const btn = stockInput.nextElementSibling;
+        
+        if (newStock < 0 || newStock === '') {
+            alert('Please enter a valid stock quantity.');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+        fetch(`/farmer/inventory/${cropId}/update-stock/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `quantity=${encodeURIComponent(newStock)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            if (data.success) {
+                // Flash success
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-info');
+                setTimeout(() => {
+                    btn.classList.remove('btn-info');
+                    btn.classList.add('btn-success');
+                }, 1000);
+
+                // Update row values
+                const stockDisplay = document.getElementById(`stock-display-${cropId}`);
+                stockDisplay.textContent = newStock;
+                
+                // Update badge and text colors dynamically
+                const qty = parseFloat(newStock);
+                let badgeHTML = '';
+                
+                stockDisplay.className = 'fs-5 fw-bold';
+                
+                if (qty === 0) {
+                    stockDisplay.classList.add('text-danger');
+                    badgeHTML = '<span class="badge bg-danger text-white px-3 py-2 rounded-pill">Out of Stock</span>';
+                } else if (qty < 20) {
+                    stockDisplay.classList.add('text-warning');
+                    badgeHTML = '<span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fa-solid fa-triangle-exclamation"></i> Low Stock</span>';
+                } else {
+                    badgeHTML = '<span class="badge badge-soft-success px-3 py-2 rounded-pill">In Stock</span>';
+                }
+                
+                document.getElementById(`status-cell-${cropId}`).innerHTML = badgeHTML;
+
+                // Update summary counters
+                document.getElementById('in-stock-count').textContent = data.in_stock_count;
+                document.getElementById('low-stock-count').textContent = data.low_stock_count;
+                document.getElementById('out-of-stock-count').textContent = data.out_of_stock_count;
+            } else {
+                alert(data.error || 'Failed to update stock.');
+            }
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            alert('Error communicating with server.');
+        });
+    }
+</script>
+{% endblock %}
 
 {% block content %}
-<div class="container py-5 animate-fade">
+<!-- Top Navbar embedded inside dashboard layout for fixed sidebar styling -->
+<div class="container-fluid py-4" style="max-width: 1600px;">
+    
     <div class="row">
-        <!-- Sidebar Navigation -->
-        <div class="col-md-3 mb-4">
-            <div class="dashboard-sidebar bg-white border border-success-subtle rounded-4 p-3 shadow-sm">
-                <div class="text-center mb-4">
-                    {% if request.user.profile_picture %}
-                        <img src="{{ request.user.profile_picture.url }}" alt="Farmer" class="rounded-circle mb-2 border border-success border-2" style="width: 80px; height: 80px; object-fit: cover;">
-                    {% else %}
-                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 80px; height: 80px; font-size: 2rem; font-weight: bold; border: 3px solid #e8f5e9;">
-                            {{ request.user.username|slice:":1"|upper }}
-                        </div>
-                    {% endif %}
-                    <h5 class="fw-bold mb-0 text-dark">{{ request.user.username }}</h5>
-                    <span class="badge bg-success-subtle text-success px-3 py-1.5 rounded-pill small mt-1 fw-bold text-uppercase" style="font-size: 0.7rem;"><i class="fa-solid fa-tractor me-1"></i>Farmer Partner</span>
+        <!-- Fixed Left Sidebar -->
+        <div class="col-xl-2 col-lg-3 mb-4">
+            <div class="glass-card p-3 dash-sidebar fade-in-up">
+                
+                <div class="text-center mb-4 p-3 bg-light rounded-3 border">
+                    <img src="{% if request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}https://ui-avatars.com/api/?name={{ request.user.first_name|default:request.user.username }}&background=2E7D32&color=fff{% endif %}" alt="Profile" class="rounded-circle mb-2 border border-success border-2 shadow-sm" style="width: 70px; height: 70px; object-fit: cover;">
+                    <h6 class="fw-bold text-dark mb-0">{{ request.user.first_name|default:request.user.username }}</h6>
+                    <span class="badge bg-success mt-1"><i class="fa-solid fa-certificate me-1"></i>Verified Farmer</span>
                 </div>
-                <hr>
-                <div class="list-group list-group-flush small">
-                    <a href="{% url 'farmer_dashboard' %}" class="sidebar-menu-item active"><i class="fa-solid fa-gauge"></i>Dashboard Overview</a>
-                    <a href="{% url 'farmer_store' request.user.username %}" target="_blank" class="sidebar-menu-item text-primary fw-bold"><i class="fa-solid fa-store"></i>View Public Store ↗</a>
-                    <a href="{% url 'crop_create' %}" class="sidebar-menu-item"><i class="fa-solid fa-circle-plus"></i>Add Crop Listing</a>
-                    <a href="{% url 'farmer_orders' %}" class="sidebar-menu-item d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-receipt"></i>Manage Orders</span>
-                        {% if pending_orders > 0 %}
-                            <span class="badge bg-warning text-dark rounded-pill">{{ pending_orders }}</span>
-                        {% endif %}
-                    </a>
-                    <a href="{% url 'market_prices' %}" class="sidebar-menu-item"><i class="fa-solid fa-chart-line"></i>Market Intelligence</a>
-                    <a href="{% url 'weather_dashboard' %}" class="sidebar-menu-item"><i class="fa-solid fa-cloud-sun"></i>Weather Advisory</a>
-                    <a href="{% url 'notifications_list' %}" class="sidebar-menu-item"><i class="fa-solid fa-bell"></i>Notification Center</a>
-                    <a href="{% url 'profile' %}" class="sidebar-menu-item"><i class="fa-solid fa-user-gear"></i>Settings & Profile</a>
-                    <a href="{% url 'submit_feedback' %}" class="sidebar-menu-item"><i class="fa-solid fa-comment-dots"></i>Submit Complaint</a>
+
+                <div class="nav flex-column nav-pills" id="dashboard-tabs" role="tablist" aria-orientation="vertical">
+                    <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-dashboard" type="button" role="tab"><i class="fa-solid fa-gauge w-20px"></i> Dashboard</button>
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-products" type="button" role="tab"><i class="fa-solid fa-wheat-awn w-20px"></i> My Products</button>
+                    <a href="{% url 'crop_create' %}" class="nav-link"><i class="fa-solid fa-plus w-20px"></i> Add Product</a>
+                    <a href="{% url 'farmer_orders' %}" class="nav-link"><i class="fa-solid fa-receipt w-20px"></i> Orders</a>
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-inventory" type="button" role="tab"><i class="fa-solid fa-boxes-stacked w-20px"></i> Inventory</button>
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-analytics" type="button" role="tab"><i class="fa-solid fa-chart-pie w-20px"></i> Sales Analytics</button>
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-reviews" type="button" role="tab"><i class="fa-solid fa-star w-20px text-warning"></i> Customer Reviews</button>
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-profile" type="button" role="tab"><i class="fa-solid fa-tractor w-20px"></i> Farm Profile</button>
+                    <hr class="my-2 text-muted">
+                    <h6 class="text-uppercase text-muted fw-bold small px-3 mt-2 mb-2" style="font-size: 0.7rem;">Farm Tools</h6>
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-weather" type="button" role="tab"><i class="fa-solid fa-cloud-sun w-20px text-info"></i> Weather</button>
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-notifications" type="button" role="tab" onclick="fetchFarmerNotifications()">
+                        <i class="fa-solid fa-bell w-20px"></i> Notifications
+                        <span id="sidebar-unread-badge" class="badge bg-danger rounded-pill ms-2 {% if unread_notif_count == 0 %}d-none{% endif %}">{{ unread_notif_count }}</span>
+                    </button>
+                    <a href="{% url 'logout' %}" class="nav-link text-danger mt-3"><i class="fa-solid fa-arrow-right-from-bracket w-20px"></i> Logout</a>
                 </div>
             </div>
         </div>
 
-        <!-- Main Dashboard Content -->
-        <div class="col-md-9">
-            <!-- Header greeting -->
-            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <span class="text-muted small uppercase fw-bold mb-1 d-block"><i class="fa-regular fa-calendar me-1"></i>{% now "l, F d, Y" %}</span>
-                        <h2 class="fw-bold text-success mb-1">Welcome back, {{ request.user.first_name|default:request.user.username }}!</h2>
-                        <h6 class="text-muted mb-0"><i class="fa-solid fa-tractor me-2 text-success"></i>Farm Location: <strong>{{ location }}</strong> &bull; Operating direct trading console.</h6>
+        <!-- Main Content Area -->
+        <div class="col-xl-10 col-lg-9">
+            
+            <!-- Dashboard Overview Navbar (Mobile/Search) -->
+            <div class="glass-card mb-4 p-3 d-flex justify-content-between align-items-center fade-in-up delay-1">
+                <div class="input-group" style="max-width: 400px;">
+                    <span class="input-group-text bg-transparent border-end-0 text-success"><i class="fa-solid fa-search"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0 bg-transparent" placeholder="Search orders, products, customers...">
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <a href="{% url 'crop_create' %}" class="btn btn-success rounded-pill px-4 shadow-sm fw-bold d-none d-md-inline-block"><i class="fa-solid fa-plus me-2"></i>Add Product</a>
+                    <div class="position-relative cursor-pointer" onclick="document.querySelector('[data-bs-target=\'#tab-notifications\']').click()">
+                        <i class="fa-solid fa-bell fs-5 text-dark"></i>
+                        <span id="topbar-unread-dot" class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle {% if unread_notif_count == 0 %}d-none{% endif %}"></span>
                     </div>
-                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                        <a href="{% url 'crop_create' %}" class="btn btn-success rounded-pill px-4" style="background: var(--primary-color); border: none;"><i class="fa-solid fa-plus me-2 text-white"></i>New Crop Listing</a>
-                    </div>
+                    <i class="fa-solid fa-envelope fs-5 text-dark cursor-pointer ms-2"></i>
                 </div>
             </div>
 
-            <!-- Verification & Trust Status Alert -->
-            <div class="card border-0 rounded-4 shadow-sm bg-white p-3 mb-4">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <div class="d-flex align-items-center gap-2.5">
-                        {% if request.user.farmer_profile.verification_status == 'approved' %}
-                            <i class="fa-solid fa-circle-check text-success fs-4"></i>
-                            <div>
-                                <span class="fw-bold text-dark d-block">✓ Account Verified Supplier</span>
-                                <small class="text-muted">Direct trade active. Verified badge live with trust rating <b>{{ request.user.farmer_profile.trust_score }}%</b></small>
-                            </div>
-                        {% elif request.user.farmer_profile.verification_status == 'review' %}
-                            <i class="fa-solid fa-clock text-warning fs-4"></i>
-                            <div>
-                                <span class="fw-bold text-dark d-block">Under Review</span>
-                                <small class="text-muted">Submitted documents are being evaluated by compliance admins.</small>
-                            </div>
-                        {% elif request.user.farmer_profile.verification_status == 'resubmit' or request.user.farmer_profile.verification_status == 'rejected' %}
-                            <i class="fa-solid fa-triangle-exclamation text-danger fs-4"></i>
-                            <div>
-                                <span class="fw-bold text-dark d-block">Action Required: Documents Status</span>
-                                <small class="text-muted">Admin Note: {{ request.user.farmer_profile.admin_notes }}</small>
-                            </div>
-                        {% else %}
-                            <i class="fa-solid fa-shield-halved text-secondary fs-4"></i>
-                            <div>
-                                <span class="fw-bold text-dark d-block">Account Verification Status</span>
-                                <small class="text-muted">Submit document credentials to activate Verified Farmer trust badge.</small>
-                            </div>
-                        {% endif %}
-                    </div>
-                    {% if request.user.farmer_profile.verification_status != 'approved' and request.user.farmer_profile.verification_status != 'review' %}
-                        <a href="{% url 'farmer_verification_submit' %}" class="btn btn-sm btn-outline-success rounded-pill px-3">Manage Verification</a>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Stats Row -->
-            <div class="row g-3 mb-4 text-center">
-                <div class="col-6 col-md-3">
-                    <div class="card-premium p-3 bg-white border border-success-subtle">
-                        <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem;">Total Revenue</span>
-                        <h3 class="fw-extrabold text-success mb-0">₹{{ total_earnings }}</h3>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card-premium p-3 bg-white border border-success-subtle">
-                        <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem;">Pending Orders</span>
-                        <h3 class="fw-extrabold text-warning mb-0">{{ pending_orders }}</h3>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card-premium p-3 bg-white border border-success-subtle">
-                        <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem;">Active Listings</span>
-                        <h3 class="fw-extrabold text-success mb-0">{{ total_listings }}</h3>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card-premium p-3 bg-white border border-success-subtle">
-                        <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem;">Store Rating</span>
-                        <h3 class="fw-extrabold text-success mb-0">★ {{ avg_rating }}</h3>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Low Stock Alerts Center (if any crops are low stock or out of stock) -->
-            {% if low_stock_count > 0 or out_of_stock_count > 0 %}
-                <div class="alert alert-warning border-0 rounded-4 shadow-sm p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <div class="d-flex align-items-center gap-3">
-                        <i class="fa-solid fa-triangle-exclamation fs-3 text-warning"></i>
+            <div class="tab-content" id="dashboard-tabContent">
+                
+                <!-- ================= TAB: DASHBOARD OVERVIEW ================= -->
+                <div class="tab-pane fade show active fade-in-up delay-2" id="tab-dashboard" role="tabpanel">
+                    
+                    <!-- Welcome Header -->
+                    <div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
-                            <h6 class="fw-bold text-dark mb-0">Inventory stock Warning</h6>
-                            <small class="text-muted">You have <strong>{{ low_stock_count }}</strong> items running low on stock and <strong>{{ out_of_stock_count }}</strong> items out of stock.</small>
+                            <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill fw-semibold small mb-1">
+                                <i class="fa-solid fa-wheat-awn me-1"></i> Farmer Hub
+                            </span>
+                            <h2 class="fw-bold text-dark mb-0">Good Morning, {{ request.user.first_name|default:request.user.username }} 👋</h2>
+                            <p class="text-muted small mb-0">Monitor crop performance, inventory health, market demand, and recent customer reviews.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'crop_create' %}" class="btn btn-agri-primary shadow-sm">
+                                <i class="fa-solid fa-plus me-1"></i>Add Product
+                            </a>
+                            <a href="{% url 'farmer_orders' %}" class="btn btn-outline-success rounded-pill px-3 fw-semibold">
+                                <i class="fa-solid fa-receipt me-1"></i>Orders ({{ total_orders|default:"0" }})
+                            </a>
                         </div>
                     </div>
-                    <a href="{% url 'farmer_orders' %}" class="btn btn-warning btn-sm rounded-pill px-3 text-dark">Update Stock</a>
-                </div>
-            {% endif %}
 
-            <!-- Analytics Graph & Weather Panel Row -->
-            <div class="row g-4 mb-4">
-                <!-- Sales Trend -->
-                <div class="col-lg-8">
-                    <div class="card-premium p-4 bg-white border border-success-subtle h-100">
-                        <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-chart-line me-2"></i>Direct Sales Trend</h5>
-                        <div style="height: 220px; position: relative;">
-                            <canvas id="salesTrendChart" height="220"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Weather widget -->
-                <div class="col-lg-4">
-                    <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100">
-                        <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-cloud-sun me-2"></i>Weather Advisory</h5>
-                        
-                        <div class="text-center mb-3">
-                            <span class="text-muted small uppercase fw-bold d-block">{{ location }}</span>
-                            <div class="fs-1 text-warning my-2">
-                                {% if temp > 30 %}<i class="fa-solid fa-sun animate-pulse text-warning"></i>
-                                {% else %}<i class="fa-solid fa-cloud-sun text-success"></i>{% endif %}
-                            </div>
-                            <h3 class="fw-extrabold text-success mb-0">{{ temp }}&deg;C</h3>
-                            <small class="text-muted">Precipitation: {{ rain }}%</small>
-                        </div>
-
-                        <div class="p-2.5 bg-light rounded-3 small">
-                            <strong>Recommendation:</strong>
-                            <p class="text-muted mb-0 mt-1" style="font-size: 0.75rem;">
-                                {% if rain > 40 %}
-                                    Heavy precipitation expected. Cover grain storage and pause pesticide spraying.
-                                {% else %}
-                                    Weather conditions are optimal for sowing, spraying, and harvesting tasks.
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Market Intelligence & Action Shortcuts Row -->
-            <div class="row g-4 mb-4">
-                <!-- Market intelligence -->
-                <div class="col-lg-6">
-                    <div class="card-premium p-4 bg-white border border-success-subtle h-100">
-                        <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-chart-area me-2"></i>APMC Price Analytics</h5>
-                        <div class="d-flex flex-column gap-3">
-                            {% for insight in market_insights %}
-                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
+                    <!-- 4 TOP STATISTICS CARDS -->
+                    <div class="row g-3 mb-3">
+                        <!-- 1. Total Sales / Revenue -->
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="saas-stat-card">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div>
-                                        <h6 class="fw-bold text-dark mb-0">{{ insight.crop_name }}</h6>
-                                        <small class="text-muted">{{ insight.region }} &bull; Vol: {{ insight.volume_tonnes }}T</small>
+                                        <span class="text-muted small fw-bold text-uppercase d-block mb-1">Total Sales</span>
+                                        <h3 class="fw-bold text-success mb-0">₹<span class="counter-val" data-target="{{ total_earnings }}">{{ total_earnings }}</span></h3>
                                     </div>
-                                    <div class="text-end">
-                                        <strong class="text-success d-block">₹{{ insight.current_price }}/kg</strong>
-                                        <span class="badge bg-success-subtle text-success small">+{{ insight.price_change_percent }}%</span>
+                                    <div class="saas-icon-bubble saas-icon-green">
+                                        <i class="fa-solid fa-indian-rupee-sign"></i>
                                     </div>
                                 </div>
-                            {% empty %}
-                                <p class="text-muted small text-center my-4">No price trends indexes available.</p>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Shortcuts Actions -->
-                <div class="col-lg-6">
-                    <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100">
-                        <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-sliders me-2"></i>Quick Actions</h5>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <a href="{% url 'crop_create' %}" class="btn btn-outline-success btn-sm w-100 py-3 rounded-3 text-center"><i class="fa-solid fa-circle-plus d-block fs-4 mb-2"></i>Add Listing</a>
-                            </div>
-                            <div class="col-6">
-                                <a href="{% url 'farmer_orders' %}" class="btn btn-outline-success btn-sm w-100 py-3 rounded-3 text-center"><i class="fa-solid fa-receipt d-block fs-4 mb-2"></i>View Orders</a>
-                            </div>
-                            <div class="col-6">
-                                <a href="{% url 'market_prices' %}" class="btn btn-outline-success btn-sm w-100 py-3 rounded-3 text-center"><i class="fa-solid fa-chart-line d-block fs-4 mb-2"></i>Market Prices</a>
-                            </div>
-                            <div class="col-6">
-                                <a href="{% url 'weather_dashboard' %}" class="btn btn-outline-success btn-sm w-100 py-3 rounded-3 text-center"><i class="fa-solid fa-cloud-sun d-block fs-4 mb-2"></i>Weather Center</a>
+                                <div class="d-flex align-items-center gap-1 text-success small fw-semibold">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    <span>Delivered Revenue</span>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- 2. Active Products -->
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="saas-stat-card cursor-pointer" onclick="document.querySelector('[data-bs-target=\'#tab-products\']').click();">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <span class="text-muted small fw-bold text-uppercase d-block mb-1">Active Products</span>
+                                        <h3 class="fw-bold text-dark mb-0 counter-val" data-target="{{ total_listings }}">{{ total_listings }}</h3>
+                                    </div>
+                                    <div class="saas-icon-bubble saas-icon-blue">
+                                        <i class="fa-solid fa-wheat-awn"></i>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-1 text-primary small fw-semibold">
+                                    <i class="fa-solid fa-boxes-stacked"></i>
+                                    <span>Live Listings Online</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. New / Total Orders -->
+                        <div class="col-sm-6 col-xl-3">
+                            <a href="{% url 'farmer_orders' %}" class="text-decoration-none">
+                                <div class="saas-stat-card">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div>
+                                            <span class="text-muted small fw-bold text-uppercase d-block mb-1">Total Orders</span>
+                                            <h3 class="fw-bold text-dark mb-0 counter-val" data-target="{{ total_orders|default:'0' }}">{{ total_orders|default:"0" }}</h3>
+                                        </div>
+                                        <div class="saas-icon-bubble saas-icon-orange">
+                                            <i class="fa-solid fa-cart-shopping"></i>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between text-warning small fw-semibold">
+                                        <span><i class="fa-solid fa-truck-fast me-1"></i>Manage Orders</span>
+                                        <span class="text-success small">View →</span>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+
+                        <!-- 4. Store Rating -->
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="saas-stat-card cursor-pointer" onclick="document.querySelector('[data-bs-target=\'#tab-reviews\']').click();">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <span class="text-muted small fw-bold text-uppercase d-block mb-1">Store Rating</span>
+                                        <h3 class="fw-bold text-dark mb-0">{{ avg_rating }} <small class="text-muted fs-6">/ 5</small></h3>
+                                    </div>
+                                    <div class="saas-icon-bubble saas-icon-purple">
+                                        <i class="fa-solid fa-star"></i>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-1 text-warning small fw-semibold">
+                                    <i class="fa-solid fa-certificate text-success"></i>
+                                    <span>Quality Verified Farm</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Recent Orders log list -->
-            <div class="card-premium p-4 bg-white border border-success-subtle mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold text-success mb-0"><i class="fa-solid fa-clock-rotate-left me-2"></i>Pending Shipments</h5>
-                    <a href="{% url 'farmer_orders' %}" class="small text-success text-decoration-none">View All orders</a>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr class="bg-light">
-                                <th>Order ID</th>
-                                <th>Buyer Username</th>
-                                <th>Total Bill (₹)</th>
-                                <th>Payment Method</th>
-                                <th>Shipment Status</th>
-                                <th>Invoice</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for order in recent_orders %}
-                                <tr>
-                                    <td class="fw-bold">#{{ order.id }}</td>
-                                    <td>{{ order.buyer.username }}</td>
-                                    <td class="fw-bold text-success">₹{{ order.total_amount }}</td>
-                                    <td>Cash On Delivery</td>
-                                    <td>
-                                        <span class="badge {% if order.status == 'Pending' %}bg-secondary{% elif order.status == 'Delivered' %}bg-success{% else %}bg-info{% endif %}" style="font-size: 0.72rem;">
-                                            {{ order.status }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'order_invoice' order.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="fa-solid fa-file-invoice"></i></a>
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">No recent orders yet.</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Active Crop Listings Card -->
-            <div class="card-premium p-4 bg-white border border-success-subtle mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold text-success mb-0"><i class="fa-solid fa-wheat-awn me-2"></i>Active Crop Listings</h5>
-                    <a href="{% url 'crop_create' %}" class="btn btn-sm btn-success rounded-pill px-3"><i class="fa-solid fa-plus me-1 text-white"></i>Add Crop</a>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr class="bg-light">
-                                <th>Crop</th>
-                                <th>Category</th>
-                                <th>Price</th>
-                                <th>Stock Status</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for crop in crops %}
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-3">
-                                            {% if crop.image %}
-                                                <img src="{{ crop.image.url }}" class="rounded border object-fit-cover" style="width: 48px; height: 48px;" alt="{{ crop.name }}">
-                                            {% else %}
-                                                <div class="bg-success-subtle text-success rounded d-flex align-items-center justify-content-center border" style="width: 48px; height: 48px;"><i class="fa-solid fa-wheat-awn"></i></div>
-                                            {% endif %}
-                                            <div>
-                                                <strong class="text-dark d-block">{{ crop.name }}</strong>
-                                                {% if crop.is_approved %}
-                                                    <span class="badge bg-success-subtle text-success" style="font-size: 0.65rem;">Approved</span>
-                                                {% else %}
-                                                    <span class="badge bg-warning-subtle text-warning text-dark" style="font-size: 0.65rem;">Pending Approval</span>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>{{ crop.category.name }}</td>
-                                    <td class="fw-bold text-success">₹{{ crop.price_per_kg }}/{{ crop.get_unit_display }}</td>
-                                    <td>
-                                        {% if crop.quantity_available == 0 %}
-                                            <span class="badge bg-danger">Out of Stock</span>
-                                        {% elif crop.quantity_available < 20 %}
-                                            <span class="badge bg-warning text-dark">Low Stock ({{ crop.quantity_available|floatformat:0 }} kg)</span>
-                                        {% else %}
-                                            <span class="badge bg-success">In Stock ({{ crop.quantity_available|floatformat:0 }} kg)</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-end">
-                                        <div class="d-inline-flex gap-1">
-                                            <a href="{% url 'crop_update' crop.id %}" class="btn btn-sm btn-outline-success rounded-pill px-3"><i class="fa-solid fa-pen"></i></a>
-                                            <form action="{% url 'crop_delete' crop.id %}" method="POST" class="mb-0" onsubmit="return confirm('Are you sure you want to delete this listing?');">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3"><i class="fa-solid fa-trash"></i></button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">No crops listed yet. Click "Add Crop" to publish your first offer.</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Reviews feedback list -->
-            <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
-                <h5 class="fw-bold text-success mb-3"><i class="fa-regular fa-star me-2"></i>Recent Customer Reviews</h5>
-                <div class="d-flex flex-column gap-3">
-                    {% for rev in farmer_reviews %}
-                        <div class="border-bottom pb-3">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <h6 class="fw-bold text-dark mb-0">
-                                    {{ rev.buyer.username }} &bull; 
-                                    <small class="text-muted">Crop: <strong>{{ rev.crop.name }}</strong></small>
-                                    {% if rev.is_verified_purchase %}
-                                        <span class="badge bg-success-subtle text-success ms-1" style="font-size: 0.55rem;"><i class="fa-solid fa-circle-check"></i> Verified</span>
-                                    {% endif %}
-                                </h6>
-                                <span class="text-warning">
-                                    {% for i in "12345" %}
-                                        {% if forloop.counter <= rev.rating %}
-                                            ★
-                                        {% else %}
-                                            ☆
-                                        {% endif %}
-                                    {% endfor %}
+                    <!-- INVENTORY STATUS QUICK STRIP -->
+                    <div class="glass-card p-3 mb-4 bg-white border-0 shadow-sm">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-bold text-dark small text-uppercase">
+                                    <i class="fa-solid fa-layer-group text-success me-1"></i>Inventory Status:
+                                </span>
+                                <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 fw-semibold">
+                                    <i class="fa-solid fa-circle-check me-1"></i>In Stock: {{ in_stock_count }}
+                                </span>
+                                <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-1 fw-semibold">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>Low Stock: {{ low_stock_count }}
+                                </span>
+                                <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1 fw-semibold">
+                                    <i class="fa-solid fa-circle-xmark me-1"></i>Out of Stock: {{ out_of_stock_count }}
                                 </span>
                             </div>
-                            {% if rev.title %}
-                                <strong class="d-block text-dark small mb-1">{{ rev.title }}</strong>
-                            {% endif %}
-                            <p class="text-muted small mb-2">"{{ rev.comment }}"</p>
-                            
-                            {% if rev.image %}
-                                <div class="mb-2">
-                                    <img src="{{ rev.image.url }}" class="img-thumbnail" style="max-height: 80px;" alt="Review photo">
-                                </div>
-                            {% endif %}
-
-                            <!-- Reply logic nested -->
-                            {% if rev.reply %}
-                                <div class="bg-light rounded-3 p-2.5 mt-2 border-start border-success border-3 ms-3">
-                                    <div class="d-flex align-items-center mb-1">
-                                        <span class="badge bg-success text-white me-2" style="font-size: 0.55rem;"><i class="fa-solid fa-reply"></i> Your Response</span>
-                                        <small class="text-muted" style="font-size: 0.6rem;">{{ rev.reply_at|date:"M d, Y" }}</small>
-                                    </div>
-                                    <p class="small text-muted mb-0" style="font-size: 0.72rem;">{{ rev.reply }}</p>
-                                </div>
-                            {% else %}
-                                <form method="POST" action="{% url 'farmer_review_reply' rev.id %}" class="mt-2 ms-3">
-                                    {% csrf_token %}
-                                    <div class="input-group input-group-sm">
-                                        <input type="text" name="reply" class="form-control form-control-sm" placeholder="Write response to this review...">
-                                        <button type="submit" class="btn btn-success btn-sm text-white">Reply</button>
-                                    </div>
-                                </form>
-                            {% endif %}
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small fw-semibold">
+                                    <i class="fa-solid fa-users text-primary me-1"></i>Customers Served: <strong>{{ active_customers }}</strong>
+                                </span>
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-0" onclick="document.querySelector('[data-bs-target=\'#tab-inventory\']').click();" title="Adjust Stock">
+                                    Adjust Stock <i class="fa-solid fa-arrow-right ms-1"></i>
+                                </button>
+                            </div>
                         </div>
-                    {% empty %}
-                        <p class="text-muted small text-center py-3 mb-0">No buyer reviews left on your crop listings yet.</p>
-                    {% endfor %}
+                    </div>
+
+                    <!-- Row: Weather & Orders Portal -->
+                    <div class="row g-4 mb-4">
+                        <!-- Quick Orders Portal Card -->
+                        <div class="col-xl-6">
+                            <div class="glass-card p-4 border-0 shadow-sm h-100 d-flex flex-column" style="background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); border-left: 4px solid #10b981 !important;">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                            <i class="fa-solid fa-receipt"></i>
+                                        </div>
+                                        <h6 class="fw-bold text-dark mb-0">Order Management</h6>
+                                    </div>
+                                    <span class="badge bg-success rounded-pill">{{ total_orders|default:"0" }} Orders</span>
+                                </div>
+                                <p class="text-muted small mb-3">All buyer orders, delivery statuses, tracking, and invoices are managed in the dedicated Orders page.</p>
+                                <a href="{% url 'farmer_orders' %}" class="btn btn-success btn-sm w-100 rounded-pill py-2 fw-semibold shadow-sm mt-auto">
+                                    <i class="fa-solid fa-box-open me-2"></i>Go to Orders
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Weather Card -->
+                        <div class="col-xl-6">
+                            <div class="glass-card p-0 border-0 shadow-sm h-100 d-flex flex-column" style="background: #fff; overflow: hidden;">
+                                <div class="p-4 border-bottom bg-light bg-opacity-50">
+                                    <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-cloud-sun text-info me-2"></i>Today's Weather</h6>
+                                </div>
+                                <div class="p-4 d-flex flex-column align-items-center justify-content-center text-center flex-grow-1">
+                                    <div class="d-flex align-items-center gap-4">
+                                        <i class="fa-solid fa-cloud-sun text-warning" style="font-size: 3.5rem; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));"></i>
+                                        <div class="text-start">
+                                            <h2 class="display-6 fw-bold text-dark mb-0">{{ temp }}°C</h2>
+                                            <p class="text-muted fw-medium fs-6 mb-0">{{ location }}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex w-100 justify-content-around mt-4 border-top pt-3">
+                                        <div>
+                                            <p class="text-muted small text-uppercase mb-1 fw-bold">Humidity</p>
+                                            <h5 class="text-dark fw-bold mb-0"><i class="fa-solid fa-droplet text-info me-1"></i>{{ humidity }}%</h5>
+                                        </div>
+                                        <div class="border-start"></div>
+                                        <div>
+                                            <p class="text-muted small text-uppercase mb-1 fw-bold">Rain</p>
+                                            <h5 class="text-dark fw-bold mb-0"><i class="fa-solid fa-cloud-rain text-primary me-1"></i>{{ rain }}%</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RECENT CUSTOMER REVIEWS SPOTLIGHT -->
+                    {% if farmer_reviews %}
+                    <div class="glass-card p-4 bg-white border-0 shadow-sm mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="saas-icon-bubble saas-icon-orange" style="width: 34px; height: 34px; font-size: 0.95rem;">
+                                    <i class="fa-solid fa-star"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-0">Recent Customer Ratings & Appreciation</h6>
+                            </div>
+                            <button class="btn btn-sm btn-link text-success text-decoration-none fw-semibold p-0" onclick="document.querySelector('[data-bs-target=\'#tab-reviews\']').click();">
+                                View All Reviews <i class="fa-solid fa-chevron-right ms-1"></i>
+                            </button>
+                        </div>
+                        <div class="row g-3">
+                            {% for review in farmer_reviews %}
+                                <div class="col-md-4">
+                                    <div class="p-3 rounded-3 bg-light border h-100 d-flex flex-column justify-content-between">
+                                        <div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-2 py-1 small">
+                                                    <i class="fa-solid fa-star text-warning"></i> {{ review.rating }}/5
+                                                </span>
+                                                <small class="text-muted">{{ review.created_at|date:"M d" }}</small>
+                                            </div>
+                                            <p class="small text-dark mb-2 fst-italic">"{{ review.comment|default:review.title|truncatechars:80 }}"</p>
+                                        </div>
+                                        <small class="text-success fw-semibold">
+                                            <i class="fa-solid fa-circle-user me-1"></i>{{ review.buyer.username }}
+                                        </small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                </div>
+
+                  <!-- ================= TAB: MY PRODUCTS ================= -->
+                <div class="tab-pane fade" id="tab-products" role="tabpanel">
+                    <div class="glass-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-bold text-success mb-0">My Products</h5>
+                            <a href="{% url 'crop_create' %}" class="btn btn-success rounded-pill shadow-sm px-4"><i class="fa-solid fa-plus me-2"></i>Add Product</a>
+                        </div>
+                        <div class="row g-4">
+{% for crop in farmer.crops.all %}
+<div class="col-lg-3 col-md-4 col-sm-6">
+    <div class="card h-100 border-0 shadow-sm rounded-4 hover-zoom-card overflow-hidden">
+        <img src="{% if crop.image %}{{ crop.image.url }}{% else %}https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=300&q=80{% endif %}" class="card-img-top object-fit-cover" style="height: 180px;" alt="{{ crop.name }}">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge {% if crop.quantity_available > 0 %}badge-soft-success{% else %}badge-soft-danger{% endif %}">{% if crop.quantity_available > 0 %}Active{% else %}Out of Stock{% endif %}</span>
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1"><i class="fa-solid fa-star text-warning me-1"></i>{{ crop.rating|default:"5.0" }}</span>
+            </div>
+            <h6 class="fw-bold text-dark mb-1">{{ crop.name }}</h6>
+            <span class="text-muted small d-block mb-2">Stock: {{ crop.quantity_available }} {{ crop.unit }}</span>
+            <h5 class="fw-bold text-success mb-3">₹{{ crop.price_per_kg }} <small class="text-muted fs-6">/{{ crop.unit }}</small></h5>
+            <div class="d-flex gap-2">
+                <a href="/crops/{{ crop.id }}/edit/" class="btn btn-sm btn-outline-primary flex-grow-1 rounded-pill"><i class="fa-solid fa-pen"></i> Edit</a>
+                <form action="/crops/{{ crop.id }}/delete/" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="return confirm('Delete this product?');"><i class="fa-solid fa-trash"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="col-12"><p class="text-muted text-center py-5">No products listed yet.</p></div>
+{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB: SALES ANALYTICS ================= -->
+                <div class="tab-pane fade" id="tab-analytics" role="tabpanel">
+                    <div class="row g-4">
+                        <!-- Revenue Bar Chart -->
+                        <div class="col-xl-8">
+                            <div class="glass-card p-4 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h5 class="fw-bold text-dark mb-0">Monthly Revenue</h5>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-outline-success btn-sm rounded-pill d-flex align-items-center gap-1" onclick="window.location.href='/farmer/analytics-pdf/?year=' + document.getElementById('analyticsYearSelect').value">
+                                            <i class="fas fa-file-pdf"></i> Export PDF
+                                        </button>
+                                        <select id="analyticsYearSelect" class="form-select form-select-sm w-auto rounded-pill" onchange="loadAnalytics(this.value)">
+                                            {% for year in analytics_years %}
+                                                <option value="{{ year }}">{{ year }}</option>
+                                            {% empty %}
+                                                <option value="{% now 'Y' %}">{% now 'Y' %}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style="height: 300px;">
+                                    <canvas id="monthlyRevenueChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Category Doughnut -->
+                        <div class="col-xl-4">
+                            <div class="glass-card p-4 h-100">
+                                <h5 class="fw-bold text-dark mb-4">Category-wise Sales</h5>
+                                <div style="height: 250px; display: flex; justify-content: center;">
+                                    <canvas id="categorySalesChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Orders Trend Line Chart -->
+                        <div class="col-xl-12">
+                            <div class="glass-card p-4">
+                                <h5 class="fw-bold text-dark mb-4">Orders Trend Graph</h5>
+                                <div style="height: 300px;">
+                                    <canvas id="ordersTrendChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB: CUSTOMER REVIEWS ================= -->
+                <div class="tab-pane fade" id="tab-reviews" role="tabpanel">
+                    <div class="glass-card p-4">
+                        <h5 class="fw-bold text-success mb-4"><i class="fa-solid fa-star me-2 text-warning"></i>Customer Reviews</h5>
+                        <div class="row g-4">
+{% for review in all_reviews %}
+<div class="col-md-6">
+    <div class="card border-0 bg-light p-4 rounded-4 h-100">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="d-flex gap-3 align-items-center">
+                <img src="{% if review.buyer.profile_picture %}{{ review.buyer.profile_picture.url }}{% else %}https://ui-avatars.com/api/?name={{ review.buyer.username }}&background=random{% endif %}" class="rounded-circle" width="50">
+                <div>
+                    <h6 class="fw-bold mb-0">{{ review.buyer.first_name|default:review.buyer.username }}</h6>
+                    <small class="text-muted">{{ review.crop.name }}</small>
                 </div>
             </div>
+            <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+        </div>
+        <div class="text-warning mb-2">
+            {% for i in "12345"|make_list %}
+                <i class="fa-solid fa-star{% if forloop.counter > review.rating %} text-muted{% endif %}"></i>
+            {% endfor %}
+        </div>
+        <p class="text-muted small mb-0">"{{ review.comment }}"</p>
+        <button class="btn btn-sm btn-outline-success rounded-pill mt-3"><i class="fa-solid fa-reply"></i> Reply</button>
+    </div>
+</div>
+{% empty %}
+<div class="col-12"><p class="text-muted text-center py-5">No reviews yet.</p></div>
+{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- ================= TAB: ORDERS ================= -->
+                <!-- ================= TAB: INVENTORY ================= -->
+                <div class="tab-pane fade" id="tab-inventory" role="tabpanel">
+                    <div class="glass-card p-4">
+                        <h5 class="fw-bold text-dark mb-4">Inventory Management</h5>
+                        <div class="row g-4 mb-4">
+                            <div class="col-md-4">
+                                <div class="bg-light p-3 rounded-4 border text-center">
+                                    <h3 id="in-stock-count" class="fw-bold text-success mb-0">{{ in_stock_count }}</h3>
+                                    <small class="text-muted text-uppercase fw-bold">In Stock Products</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="bg-light p-3 rounded-4 border border-warning-subtle text-center">
+                                    <h3 id="low-stock-count" class="fw-bold text-warning mb-0">{{ low_stock_count }}</h3>
+                                    <small class="text-muted text-uppercase fw-bold">Low Stock Alerts</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="bg-light p-3 rounded-4 border border-danger-subtle text-center">
+                                    <h3 id="out-of-stock-count" class="fw-bold text-danger mb-0">{{ out_of_stock_count }}</h3>
+                                    <small class="text-muted text-uppercase fw-bold">Out of Stock</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-custom align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Product Name</th>
+                                        <th>SKU / Category</th>
+                                        <th>Current Stock</th>
+                                        <th>Status</th>
+                                        <th>Quick Update</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+{% for crop in all_crops %}
+<tr id="crop-row-{{ crop.id }}">
+    <td class="fw-bold text-dark">{{ crop.name }}</td>
+    <td class="text-muted small">SKU-{{ crop.id }} <br> {{ crop.category.name|default:"Uncategorized" }}</td>
+    <td><span id="stock-display-{{ crop.id }}" class="fs-5 fw-bold {% if crop.quantity_available == 0 %}text-danger{% elif crop.quantity_available < 20 %}text-warning{% endif %}">{{ crop.quantity_available }}</span> <small>{{ crop.get_unit_display|default:crop.unit }}</small></td>
+    <td id="status-cell-{{ crop.id }}">
+        {% if crop.quantity_available == 0 %}
+            <span class="badge bg-danger text-white px-3 py-2 rounded-pill">Out of Stock</span>
+        {% elif crop.quantity_available < 20 %}
+            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fa-solid fa-triangle-exclamation"></i> Low Stock</span>
+        {% else %}
+            <span class="badge badge-soft-success px-3 py-2 rounded-pill">In Stock</span>
+        {% endif %}
+    </td>
+    <td>
+        <div class="input-group input-group-sm" style="width: 130px;">
+            <input type="number" id="quick-stock-{{ crop.id }}" class="form-control" value="{{ crop.quantity_available }}" min="0" step="any">
+            <button class="btn btn-success" onclick="updateCropStock({{ crop.id }})"><i class="fa-solid fa-check"></i></button>
+        </div>
+    </td>
+</tr>
+{% empty %}
+<tr><td colspan="5" class="text-center text-muted py-4">No inventory to manage.</td></tr>
+{% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB: FARM PROFILE ================= -->
+                <div class="tab-pane fade" id="tab-profile" role="tabpanel">
+                    <div class="glass-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-tractor me-2 text-success"></i> Farm Profile</h5>
+                            <button class="btn btn-success rounded-pill px-4 shadow-sm"><i class="fa-solid fa-floppy-disk me-2"></i>Save Changes</button>
+                        </div>
+                        <form>
+                            <div class="row g-4">
+                                <div class="col-md-12 text-center mb-3">
+                                    <div class="position-relative d-inline-block">
+                                        <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80" class="rounded-4 object-fit-cover shadow" width="100%" height="200" style="max-width: 600px;">
+                                        <button type="button" class="btn btn-light position-absolute bottom-0 end-0 m-3 rounded-circle shadow" style="width: 40px; height: 40px;"><i class="fa-solid fa-camera text-success"></i></button>
+                                    </div>
+                                    <h6 class="mt-3 text-muted">Farm Cover Photo</h6>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Farm Name</label>
+                                    <input type="text" class="form-control bg-light border-0" value="{{ request.user.farmer.farm_name|default:'My Farm' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Owner Name</label>
+                                    <input type="text" class="form-control bg-light border-0" value="{{ request.user.first_name|default:request.user.username }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Location</label>
+                                    <input type="text" class="form-control bg-light border-0" value="{{ request.user.farmer.address|default:'Not specified' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Contact Number</label>
+                                    <input type="text" class="form-control bg-light border-0" value="{{ request.user.phone_number|default:'' }}">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">About the Farm / Bio</label>
+                                    <textarea class="form-control bg-light border-0" rows="3">{{ request.user.farmer.bio|default:'' }}</textarea>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Certifications</label>
+                                    <div class="d-flex gap-3">
+                                        {% if request.user.farmer.organic_certificate %}
+                                        <div class="bg-light p-3 rounded-3 text-center border border-success">
+                                            <i class="fa-solid fa-certificate fs-1 text-success mb-2"></i>
+                                            <h6 class="mb-0 small fw-bold">Organic Certified</h6>
+                                        </div>
+                                        {% endif %}
+                                        {% if request.user.farmer.farm_ownership_certificate %}
+                                        <div class="bg-light p-3 rounded-3 text-center border border-primary">
+                                            <i class="fa-solid fa-file-contract fs-1 text-primary mb-2"></i>
+                                            <h6 class="mb-0 small fw-bold">Ownership Verified</h6>
+                                        </div>
+                                        {% endif %}
+                                        <a href="{% url 'profile' %}" class="btn btn-outline-secondary p-3 rounded-3 border-dashed d-flex flex-column align-items-center justify-content-center text-decoration-none">
+                                            <i class="fa-solid fa-plus fs-3 mb-2"></i>
+                                            <span class="small">Upload Cert</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- ================= TAB: WEATHER ================= -->
+                <div class="tab-pane fade" id="tab-weather" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-xl-6">
+                            <div class="glass-card p-4 h-100 bg-gradient text-dark" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                <div class="d-flex justify-content-between align-items-start mb-4">
+                                    <div>
+                                        <h3 class="fw-bold mb-0">{{ location }}</h3>
+                                        <p class="mb-0 fw-medium">Current Weather</p>
+                                    </div>
+                                    <i class="fa-solid fa-cloud-sun fs-1"></i>
+                                </div>
+                                <h1 class="display-1 fw-bold mb-0">{{ temp }}&deg;C</h1>
+                                <p class="fs-4 mb-4 fw-medium">Mostly Sunny</p>
+                                
+                                <div class="d-flex gap-4">
+                                    <div>
+                                        <p class="mb-0 fw-semibold small">Humidity</p>
+                                        <h5 class="fw-bold">{{ humidity }}%</h5>
+                                    </div>
+                                    <div>
+                                        <p class="mb-0 fw-semibold small">Wind</p>
+                                        <h5 class="fw-bold">12 km/h</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-6">
+                            <div class="glass-card p-4 h-100">
+                                <h5 class="fw-bold text-dark mb-4">7-Day Forecast</h5>
+                                <div class="d-flex flex-column gap-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-muted" style="width: 80px;">Today</span>
+                                        <i class="fa-solid fa-sun text-warning fs-4"></i>
+                                        <span class="fw-bold text-dark">{{ temp|add:2 }}&deg; / {{ temp|add:"-3" }}&deg;</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-muted" style="width: 80px;">Tomorrow</span>
+                                        <i class="fa-solid fa-cloud-rain text-primary fs-4"></i>
+                                        <span class="fw-bold text-dark">{{ temp|add:"-2" }}&deg; / {{ temp|add:"-5" }}&deg;</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-muted" style="width: 80px;">Wed</span>
+                                        <i class="fa-solid fa-cloud text-secondary fs-4"></i>
+                                        <span class="fw-bold text-dark">{{ temp|add:"-1" }}&deg; / {{ temp|add:"-4" }}&deg;</span>
+                                    </div>
+                                </div>
+                                <a href="{% url 'weather_dashboard' %}" class="btn btn-outline-primary rounded-pill w-100 mt-4">Full Forecast</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB: NOTIFICATIONS ================= -->
+                <div class="tab-pane fade" id="tab-notifications" role="tabpanel">
+                    <div class="glass-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-1"><i class="fa-regular fa-bell text-success me-2"></i> Notifications</h5>
+                                <span class="badge bg-success-subtle text-success rounded-pill fw-bold" id="notif-unread-badge">Unread: {{ unread_notif_count }}</span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="markAllFarmerNotificationsRead()" id="btn-mark-all-read" {% if unread_notif_count == 0 %}style="display:none;"{% endif %}><i class="fa-solid fa-check-double me-1"></i>Mark All Read</button>
+                        </div>
+                        
+                        <!-- Category Filters Removed for Simplicity -->
+                        
+                        <!-- Notification List -->
+                        <div class="d-flex flex-column gap-3" id="farmer-notifications-list">
+                            <!-- Populated by AJAX -->
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-success" role="status"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <!-- Footer -->
+            <footer class="mt-5 text-center text-muted small py-4 border-top">
+                <div class="mb-3 d-flex justify-content-center gap-3">
+                    <a href="#" class="text-muted text-decoration-none hover-primary">Home</a>
+                    <a href="#" class="text-muted text-decoration-none hover-primary">Marketplace</a>
+                    <a href="{% url 'about' %}" class="text-muted text-decoration-none hover-primary">About Us</a>
+                    <a href="#" class="text-muted text-decoration-none hover-primary">Contact Us</a>
+                    <a href="#" class="text-muted text-decoration-none hover-primary">Privacy Policy</a>
+                    <a href="#" class="text-muted text-decoration-none hover-primary">Terms & Conditions</a>
+                </div>
+                <div class="mb-3 fs-5 d-flex justify-content-center gap-3">
+                    <i class="fa-brands fa-facebook cursor-pointer text-primary"></i>
+                    <i class="fa-brands fa-twitter cursor-pointer text-info"></i>
+                    <i class="fa-brands fa-instagram cursor-pointer text-danger"></i>
+                </div>
+                <p class="mb-0">&copy; 2026 AgriConnect. Grow your farm. Feed the nation.</p>
+            </footer>
 
         </div>
     </div>
@@ -400,45 +940,282 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('salesTrendChart').getContext('2d');
-        const labels = {{ chart_dates|safe }};
-        const data = {{ chart_earnings|safe }};
-        
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels.length > 0 ? labels : ['No Data'],
-                datasets: [{
-                    label: 'Earnings (₹)',
-                    data: data.length > 0 ? data : [0],
-                    borderColor: '#2e7d32',
-                    backgroundColor: 'rgba(46, 125, 50, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(0,0,0,0.05)' }
+        // Animate counters
+        const counters = document.querySelectorAll('.counter');
+        const speed = 100;
+        counters.forEach(counter => {
+            const updateCount = () => {
+                const target = +counter.getAttribute('data-target');
+                const count = +counter.innerText.replace(/,/g, '');
+                const inc = target / speed;
+                if(count < target) {
+                    counter.innerText = Math.ceil(count + inc).toLocaleString();
+                    setTimeout(updateCount, 20);
+                } else {
+                    counter.innerText = target.toLocaleString();
+                }
+            };
+            updateCount();
+        });
+
+        // Setup Chart.js Defaults
+        Chart.defaults.font.family = "'Inter', 'Roboto', sans-serif";
+        Chart.defaults.color = '#6c757d';
+
+        // Keep references to chart instances
+        let revChart, catChart, trendChart;
+
+        function initCharts() {
+            const ctxRev = document.getElementById('monthlyRevenueChart');
+            if(ctxRev) {
+                revChart = new Chart(ctxRev.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                        datasets: [{
+                            label: 'Revenue (₹)',
+                            data: Array(12).fill(0),
+                            backgroundColor: '#4CAF50',
+                            borderRadius: 6,
+                            hoverBackgroundColor: '#2E7D32'
+                        }]
                     },
-                    x: {
-                        grid: { display: false }
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { borderDash: [5, 5] } },
+                            x: { grid: { display: false } }
+                        }
                     }
+                });
+            }
+
+            const ctxCat = document.getElementById('categorySalesChart');
+            if(ctxCat) {
+                catChart = new Chart(ctxCat.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            data: [],
+                            backgroundColor: ['#2E7D32', '#4CAF50', '#03A9F4', '#FF9800', '#9C27B0', '#E91E63', '#795548', '#607D8B'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false, cutout: '75%',
+                        plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 15 } } }
+                    }
+                });
+            }
+
+            const ctxOrders = document.getElementById('ordersTrendChart');
+            if(ctxOrders) {
+                trendChart = new Chart(ctxOrders.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                        datasets: [{
+                            label: 'Orders',
+                            data: Array(12).fill(0),
+                            borderColor: '#FF9800',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#2E7D32',
+                            pointRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { borderDash: [5, 5] }, ticks: { stepSize: 1 } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        }
+
+        window.loadAnalytics = function(year) {
+            if (!year) return;
+            fetch(`/farmer/analytics-api/?year=${year}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error("Failed to fetch analytics:", data.error);
+                        return;
+                    }
+                    
+                    if (revChart) {
+                        revChart.data.datasets[0].data = data.monthly_revenue;
+                        revChart.update();
+                    }
+                    
+                    if (catChart) {
+                        catChart.data.labels = data.category_sales.labels;
+                        catChart.data.datasets[0].data = data.category_sales.data;
+                        catChart.update();
+                    }
+                    
+                    if (trendChart) {
+                        trendChart.data.datasets[0].data = data.orders_trend;
+                        trendChart.update();
+                    }
+                })
+                .catch(err => console.error("Error loading analytics:", err));
+        };
+
+        // Initialize and load default year
+        initCharts();
+        const yearSelect = document.getElementById('analyticsYearSelect');
+        if (yearSelect) {
+            loadAnalytics(yearSelect.value);
+        }
+    });
+
+    // --- Notifications Logic ---
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
                 }
             }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    function updateUnreadBadges(count) {
+        const topBadge = document.getElementById('topbar-unread-dot');
+        const sidebarBadge = document.getElementById('sidebar-unread-badge');
+        const tabBadge = document.getElementById('notif-unread-badge');
+        const markAllBtn = document.getElementById('btn-mark-all-read');
+        
+        if (count > 0) {
+            if (topBadge) topBadge.classList.remove('d-none');
+            if (sidebarBadge) { sidebarBadge.classList.remove('d-none'); sidebarBadge.innerText = count; }
+            if (tabBadge) tabBadge.innerText = 'Unread: ' + count;
+            if (markAllBtn) markAllBtn.style.display = 'inline-block';
+        } else {
+            if (topBadge) topBadge.classList.add('d-none');
+            if (sidebarBadge) sidebarBadge.classList.add('d-none');
+            if (tabBadge) tabBadge.innerText = 'Unread: 0';
+            if (markAllBtn) markAllBtn.style.display = 'none';
+        }
+    }
+
+    function getNotifIcon(type) {
+        switch(type) {
+            case 'order': return '<div class="bg-success-subtle text-success rounded p-2"><i class="fa-solid fa-cart-shopping"></i></div>';
+            case 'product': return '<div class="bg-warning-subtle text-warning rounded p-2"><i class="fa-solid fa-boxes-stacked"></i></div>';
+            case 'review': return '<div class="bg-primary-subtle text-primary rounded p-2"><i class="fa-solid fa-star"></i></div>';
+            case 'weather': return '<div class="bg-info-subtle text-info rounded p-2"><i class="fa-solid fa-cloud-sun"></i></div>';
+            default: return '<div class="bg-secondary-subtle text-secondary rounded p-2"><i class="fa-solid fa-bell"></i></div>';
+        }
+    }
+
+    window.fetchFarmerNotifications = function() {
+        const listDiv = document.getElementById('farmer-notifications-list');
+        listDiv.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-success" role="status"></div></div>';
+        
+        fetch(`/farmer/notifications-api/`)
+            .then(res => res.json())
+            .then(data => {
+                updateUnreadBadges(data.unread_count);
+                
+                if (data.notifications.length === 0) {
+                    listDiv.innerHTML = '<div class="text-center py-5 text-muted"><i class="fa-regular fa-bell-slash fs-1 mb-3"></i><p>No notifications yet.</p></div>';
+                    return;
+                }
+                
+                let html = '';
+                data.notifications.forEach(n => {
+                    const unreadClass = !n.is_read ? 'bg-light border-success border-start border-4' : 'border';
+                    const readBtn = !n.is_read ? `<button class="btn btn-sm btn-outline-success rounded-pill px-2" onclick="markFarmerNotificationRead(${n.id})" title="Mark Read"><i class="fa-solid fa-check"></i></button>` : '';
+                    
+                    html += `
+                    <div class="card shadow-sm ${unreadClass}" id="notif-card-${n.id}">
+                        <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                ${getNotifIcon(n.type)}
+                                <div>
+                                    <p class="mb-1 text-dark fw-semibold small">${n.message}</p>
+                                    <span class="text-muted" style="font-size: 0.75rem;">${n.time_ago}</span>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-1">
+                                ${readBtn}
+                                <button class="btn btn-sm btn-outline-danger rounded-pill px-2" onclick="deleteFarmerNotification(${n.id})" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+                listDiv.innerHTML = html;
+            })
+            .catch(err => console.error("Error fetching notifications:", err));
+    };
+
+    window.markFarmerNotificationRead = function(id) {
+        fetch(`/farmer/notifications-api/${id}/read/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                updateUnreadBadges(data.unread_count);
+                fetchFarmerNotifications();
+            }
         });
-    });
+    };
+
+    window.deleteFarmerNotification = function(id) {
+        fetch(`/farmer/notifications-api/${id}/delete/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                updateUnreadBadges(data.unread_count);
+                fetchFarmerNotifications();
+            }
+        });
+    };
+
+    window.markAllFarmerNotificationsRead = function() {
+        fetch(`/farmer/notifications-api/read-all/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                updateUnreadBadges(0);
+                fetchFarmerNotifications();
+            }
+        });
+    };
+    // Initialize notifications tab if URL has hash
+    if (window.location.hash === '#tab-notifications') {
+        const notifTab = document.querySelector('[data-bs-target="#tab-notifications"]');
+        if (notifTab) {
+            notifTab.click();
+        }
+    }
+
 </script>
 {% endblock %}

@@ -66,44 +66,8 @@
             </div>
         </div>
 
-        <!-- Filters Sidebar -->
-        <div class="col-lg-3 mb-4">
-            <div class="card border-0 rounded-4 shadow-sm bg-white p-4 sticky-top" style="top: 20px;">
-                <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-sliders me-2"></i>Filter Alerts</h5>
-                
-                <form method="GET" action="{% url 'notifications_list' %}" class="d-flex flex-column gap-3">
-                    <div>
-                        <label class="form-label small fw-bold text-secondary uppercase">Notification Category</label>
-                        <select name="type" class="form-select border-success-subtle rounded-3" onchange="this.form.submit()">
-                            <option value="">All Categories</option>
-                            <option value="order" {% if selected_type == 'order' %}selected{% endif %}>📦 Orders & Shipments</option>
-                            <option value="price" {% if selected_type == 'price' %}selected{% endif %}>📈 Market Prices</option>
-                            <option value="weather" {% if selected_type == 'weather' %}selected{% endif %}>🌦️ Weather Advisories</option>
-                            <option value="message" {% if selected_type == 'message' %}selected{% endif %}>💬 Customer Chat</option>
-                            <option value="review" {% if selected_type == 'review' %}selected{% endif %}>★ Reviews & Feedback</option>
-                            <option value="product" {% if selected_type == 'product' %}selected{% endif %}>🌾 Product Status</option>
-                            <option value="verification" {% if selected_type == 'verification' %}selected{% endif %}>🛡️ Verification Center</option>
-                            <option value="system" {% if selected_type == 'system' %}selected{% endif %}>⚙️ System Announcements</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="form-label small fw-bold text-secondary uppercase">Priority Level</label>
-                        <select name="priority" class="form-select border-success-subtle rounded-3" onchange="this.form.submit()">
-                            <option value="">All Priorities</option>
-                            <option value="high" {% if selected_priority == 'high' %}selected{% endif %}>🔴 High Priority</option>
-                            <option value="medium" {% if selected_priority == 'medium' %}selected{% endif %}>🟡 Medium Priority</option>
-                            <option value="low" {% if selected_priority == 'low' %}selected{% endif %}>🔵 Low Priority</option>
-                        </select>
-                    </div>
-
-                    <a href="{% url 'notifications_list' %}" class="btn btn-sm btn-outline-secondary w-100 rounded-pill mt-2">Clear Filters</a>
-                </form>
-            </div>
-        </div>
-
         <!-- Notifications Feed List -->
-        <div class="col-lg-9">
+        <div class="col-12">
             <div class="d-flex flex-column gap-3">
                 {% for notif in notifications %}
                     <div class="notif-card p-3 shadow-sm d-flex gap-3 justify-content-between align-items-center {% if not notif.is_read %}unread{% endif %} {% if notif.priority == 'high' %}priority-high{% elif notif.priority == 'medium' %}priority-medium{% else %}priority-low{% endif %}">
@@ -131,12 +95,6 @@
 
                             <div>
                                 <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                                    <span class="badge 
-                                        {% if notif.priority == 'high' %}bg-danger text-white
-                                        {% elif notif.priority == 'medium' %}bg-warning text-dark
-                                        {% else %}bg-info text-white{% endif %} text-uppercase" style="font-size: 0.62rem;">
-                                        {{ notif.priority }}
-                                    </span>
                                     <span class="small text-muted">{{ notif.created_at|timesince }} ago</span>
                                 </div>
                                 <p class="mb-0 text-dark small fw-semibold">{{ notif.message }}</p>
@@ -165,25 +123,6 @@
                         <p class="small mb-0">You're all caught up! New alerts about orders, price shifts, and weather advisories will appear here.</p>
                     </div>
                 {% endfor %}
-            </div>
-        </div>
-
-        <!-- Activity Timeline Summary -->
-        <div class="col-12 mt-5">
-            <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
-                <h5 class="fw-bold text-success mb-4"><i class="fa-solid fa-clock-rotate-left me-2"></i>Alerts Log Timeline</h5>
-                <div class="position-relative ps-4 border-start border-success-subtle">
-                    {% for notif in notifications|slice:":5" %}
-                        <div class="position-relative mb-4">
-                            <!-- Bullet -->
-                            <div class="position-absolute rounded-circle bg-success" style="width: 12px; height: 12px; left: -30px; top: 4px; border: 2px solid white;"></div>
-                            <span class="small text-muted d-block">{{ notif.created_at|date:"l, h:i A" }}</span>
-                            <span class="small text-dark fw-semibold d-block">{{ notif.message }}</span>
-                        </div>
-                    {% empty %}
-                        <p class="text-muted small mb-0">No timeline activities recorded yet.</p>
-                    {% endfor %}
-                </div>
             </div>
         </div>
 

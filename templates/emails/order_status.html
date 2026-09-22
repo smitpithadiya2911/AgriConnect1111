@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 2px solid #2E7D32; padding-bottom: 20px; margin-bottom: 20px; }
+        .header h1 { color: #2E7D32; margin: 0; }
+        .content { font-size: 16px; color: #333333; line-height: 1.6; }
+        .status-box { background-color: #E8F5E9; border: 1px solid #4CAF50; padding: 20px; text-align: center; border-radius: 5px; margin: 20px 0; }
+        .status-box h3 { color: #2E7D32; margin: 0; font-size: 24px; }
+        .footer { text-align: center; font-size: 12px; color: #777777; margin-top: 30px; border-top: 1px solid #eeeeee; padding-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AgriConnect</h1>
+        </div>
+        <div class="content">
+            <p>Dear {{ order.buyer.first_name|default:order.buyer.username }},</p>
+            <p>There is an update regarding your order <strong>#AG-{{ order.id }}</strong>.</p>
+            
+            <div class="status-box">
+                <p style="margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #666;">New Status</p>
+                <h3>{{ status }}</h3>
+            </div>
+            
+            <p>
+                {% if status == 'Confirmed' %} Your order has been confirmed by the farmer.
+                {% elif status == 'Out For Delivery' %} Your order is out for delivery and will arrive shortly!
+                {% elif status == 'Delivered' %} Your order has been delivered successfully. Enjoy your fresh produce!
+                {% endif %}
+            </p>
+            
+            <p>Thank you,<br>The AgriConnect Team</p>
+        </div>
+        <div class="footer">
+            &copy; {% now "Y" %} AgriConnect Marketplace. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

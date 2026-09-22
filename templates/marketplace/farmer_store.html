@@ -50,13 +50,12 @@
             <!-- Action buttons -->
             <div class="d-flex gap-2 align-items-center">
                 {% if request.user.is_authenticated and request.user.role == 'buyer' %}
-                    <a href="{% url 'farmer_follow' farmer.id %}" class="btn btn-outline-primary rounded-pill px-4"><i class="fa-solid fa-heart me-1"></i>Follow Grower</a>
+
                     {% if has_purchased %}
                         <a href="{% url 'farmer_rate' farmer.id %}" class="btn btn-outline-warning rounded-pill px-4 text-dark"><i class="fa-solid fa-star me-1"></i>Rate Seller</a>
                     {% endif %}
                 {% endif %}
                 <a href="tel:{{ farmer.user.phone|default:'9876543210' }}" class="btn btn-outline-success rounded-pill px-4"><i class="fa-solid fa-phone me-2"></i>Call Seller</a>
-                <a href="{% url 'chat_detail' farmer.user.username %}" class="btn btn-success rounded-pill px-4" style="background: var(--primary-color); border: none;"><i class="fa-regular fa-comments me-2 text-white"></i>Chat Store</a>
             </div>
         </div>
 

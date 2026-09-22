@@ -1,448 +1,891 @@
 {% extends 'base.html' %}
-{% load static %}
-
-{% block title %}Enterprise Control Center – AgriConnect{% endblock %}
+{% block title %}Admin Control Center - AgriConnect SaaS{% endblock %}
 
 {% block extra_css %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-    .admin-sidebar {
-        border-radius: 20px;
-        background: white;
-        border: 1px solid rgba(46, 125, 50, 0.15);
-        position: sticky;
-        top: 20px;
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    :root {
+        --agri-admin-sidebar: #0f1f14;
+        --agri-admin-sidebar-hover: #162c1d;
+        --agri-admin-primary: #2E7D32;
+        --agri-admin-secondary: #4CAF50;
+        --agri-admin-accent: #FF9800;
+        --agri-admin-bg: #F8FFF8;
+        --agri-admin-card-bg: rgba(255, 255, 255, 0.96);
+        --agri-admin-border: rgba(46, 125, 50, 0.12);
+        --agri-admin-text: #1B4332;
+        --agri-admin-text-muted: #52796F;
     }
-    .admin-tab-btn {
+    
+    body { 
+        background-color: var(--agri-admin-bg) !important; 
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        overflow-x: hidden; 
+        color: var(--agri-admin-text);
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Outfit', sans-serif;
+        letter-spacing: -0.02em;
+    }
+
+    /* Full-screen Admin Layout */
+    .admin-wrapper { 
+        display: flex; 
+        height: 100vh; 
+        overflow: hidden; 
+    }
+    
+    /* === SIDEBAR === */
+    .admin-sidebar {
+        width: 270px;
+        background: linear-gradient(180deg, #0c1a10 0%, #122517 100%);
+        color: white;
+        overflow-y: auto;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid rgba(255, 255, 255, 0.06);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+        z-index: 100;
+    }
+    
+    .sidebar-header {
+        padding: 24px 20px;
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 12px 16px;
-        color: #495057;
-        text-decoration: none;
-        border-radius: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.15);
+    }
+    .sidebar-brand-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #2E7D32, #4CAF50);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        color: #ffffff;
+        font-size: 1.3rem;
+    }
+    
+    .admin-sidebar .nav-link {
+        color: #9bb3a1;
+        padding: 12px 20px;
+        font-size: 0.88rem;
+        transition: all 0.2s ease;
         font-weight: 500;
-        transition: all 0.2s ease-in-out;
-        border: none;
-        background: transparent;
+        display: flex;
+        align-items: center;
+        border-left: 3px solid transparent;
+        text-decoration: none;
+        margin: 2px 12px;
+        border-radius: 10px;
+    }
+    .admin-sidebar .nav-link:hover {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.06);
+        transform: translateX(3px);
+    }
+    .admin-sidebar .nav-link.active {
+        background: linear-gradient(90deg, rgba(46, 125, 50, 0.35) 0%, rgba(76, 175, 80, 0.2) 100%);
+        color: #ffffff;
+        border-left: 3px solid #4CAF50;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .admin-sidebar i.icon { 
+        width: 26px; 
+        text-align: center; 
+        margin-right: 12px; 
+        font-size: 1.05rem; 
+        color: inherit;
+    }
+    
+    .sidebar-promo {
+        margin: 20px 14px;
+        background: linear-gradient(135deg, rgba(46, 125, 50, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+        border: 1px solid rgba(76, 175, 80, 0.2);
+        border-radius: 16px;
+        padding: 16px;
+        backdrop-filter: blur(8px);
+    }
+
+    /* === MAIN CONTENT === */
+    .admin-main { 
+        flex-grow: 1; 
+        display: flex; 
+        flex-direction: column; 
+        overflow: hidden; 
+        background: radial-gradient(circle at 10% 10%, rgba(232, 245, 233, 0.6) 0%, #F8FFF8 80%);
+    }
+    
+    /* Top Navbar */
+    .top-navbar {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(16px);
+        padding: 14px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--agri-admin-border);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+        z-index: 50;
+    }
+    .search-bar-container {
+        position: relative;
+        width: 440px;
+    }
+    .search-bar-container i {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--agri-admin-text-muted);
+    }
+    .search-input {
         width: 100%;
-        text-align: left;
+        padding: 10px 16px 10px 44px;
+        border-radius: 9999px;
+        border: 1px solid rgba(46, 125, 50, 0.15);
+        background: #ffffff;
+        outline: none;
+        transition: all 0.25s ease;
+        font-size: 0.88rem;
     }
-    .admin-tab-btn:hover {
-        background-color: rgba(46, 125, 50, 0.05);
-        color: #2e7d32;
+    .search-input:focus { 
+        border-color: var(--agri-admin-secondary); 
+        box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.15); 
     }
-    .admin-tab-btn.active {
-        background-color: #2e7d32;
-        color: white !important;
+    
+    /* Content Area */
+    .content-area {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 28px 36px;
     }
-    .metric-badge {
-        font-size: 0.72rem;
-        padding: 4px 8px;
-        border-radius: 50px;
+    
+    /* Modern Glassmorphic Cards */
+    .saas-admin-card {
+        background: var(--agri-admin-card-bg);
+        border-radius: 18px;
+        border: 1px solid var(--agri-admin-border);
+        padding: 22px;
+        box-shadow: 0 8px 30px rgba(46, 125, 50, 0.04);
+        margin-bottom: 24px;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
     }
+    .saas-admin-card:hover {
+        box-shadow: 0 12px 36px rgba(46, 125, 50, 0.08);
+    }
+    
+    /* Stat Cards */
+    .saas-stat-box {
+        background: #ffffff;
+        border-radius: 18px;
+        border: 1px solid var(--agri-admin-border);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .saas-stat-box:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 28px rgba(46, 125, 50, 0.1);
+        border-color: rgba(76, 175, 80, 0.3);
+    }
+    .saas-stat-box::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--agri-admin-primary), var(--agri-admin-secondary));
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .saas-stat-box:hover::before {
+        opacity: 1;
+    }
+    
+    .stat-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        transition: transform 0.3s ease;
+    }
+    .saas-stat-box:hover .stat-icon-wrapper {
+        transform: scale(1.08) rotate(3deg);
+    }
+    
+    /* Badge & Table Styles */
+    .saas-table {
+        margin-bottom: 0;
+    }
+    .saas-table th { 
+        color: #52796F; 
+        font-weight: 700; 
+        font-size: 0.74rem; 
+        text-transform: uppercase; 
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid rgba(46, 125, 50, 0.1); 
+        padding: 12px 14px; 
+    }
+    .saas-table td { 
+        font-size: 0.88rem; 
+        vertical-align: middle; 
+        padding: 14px 14px; 
+        border-bottom: 1px solid rgba(46, 125, 50, 0.06); 
+    }
+    .saas-table tbody tr:hover {
+        background-color: rgba(232, 245, 233, 0.35);
+    }
+    
+    .status-badge { 
+        padding: 5px 12px; 
+        border-radius: 9999px; 
+        font-size: 0.72rem; 
+        font-weight: 700; 
+        letter-spacing: 0.02em;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    /* Hide base elements */
+    .custom-navbar, footer, .chat-widget { display: none !important; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-5 px-md-5 animate-fade">
-    <div class="row">
-        <!-- Sidebar Navigation -->
-        <div class="col-lg-3 mb-4">
-            <div class="admin-sidebar p-3 shadow-sm">
-                <div class="text-center mb-4">
-                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-2 shadow-sm" style="width: 80px; height: 80px; font-size: 2rem; font-weight: bold; border: 3px solid #e8f5e9;">
-                        A
-                    </div>
-                    <h5 class="fw-bold mb-0 text-dark">System Admin</h5>
-                    <span class="badge bg-success-subtle text-success px-3 py-1.5 rounded-pill small mt-1 fw-bold text-uppercase" style="font-size: 0.65rem;"><i class="fa-solid fa-shield-halved me-1"></i>Administrator</span>
-                </div>
-                <hr>
-                <div class="d-flex flex-column gap-1">
-                    <button class="admin-tab-btn active" data-tab-target="overview"><i class="fa-solid fa-gauge"></i>Dashboard Overview</button>
-                    <button class="admin-tab-btn" data-tab-target="users"><i class="fa-solid fa-users"></i>User Directories</button>
-                    <button class="admin-tab-btn" data-tab-target="products"><i class="fa-solid fa-wheat-awn"></i>Product Catalog</button>
-                    <button class="admin-tab-btn" data-tab-target="orders"><i class="fa-solid fa-box"></i>Order Shipments</button>
-                    <button class="admin-tab-btn" data-tab-target="complaints"><i class="fa-solid fa-circle-exclamation"></i>Disputes & Support</button>
-                    <button class="admin-tab-btn" data-tab-target="verification"><i class="fa-solid fa-square-check"></i>Verification Center</button>
-                    <button class="admin-tab-btn" data-tab-target="prices-weather"><i class="fa-solid fa-chart-line"></i>Prices & Weather</button>
-                    <button class="admin-tab-btn" data-tab-target="reports"><i class="fa-solid fa-file-invoice-dollar"></i>Reports Center</button>
-                    <button class="admin-tab-btn" data-tab-target="health"><i class="fa-solid fa-heart-pulse"></i>System Health</button>
-                    <a href="{% url 'notifications_list' %}" class="admin-tab-btn text-decoration-none text-dark"><i class="fa-solid fa-bell"></i>Notification Center</a>
-                </div>
+<div class="admin-wrapper">
+    
+    <!-- === LEFT SIDEBAR === -->
+    <aside class="admin-sidebar">
+        <!-- Logo Header -->
+        <div class="sidebar-header">
+            <div class="sidebar-brand-icon">
+                <i class="fa-solid fa-seedling"></i>
+            </div>
+            <div class="lh-1">
+                <h5 class="mb-1 fw-bold text-white tracking-tight">AgriConnect</h5>
+                <small style="color: #6ee7b7; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em;">ADMIN CONTROL SUITE</small>
             </div>
         </div>
-
-        <!-- Main Workspace Area -->
-        <div class="col-lg-9">
-            <!-- TAB: Overview -->
-            <div class="admin-tab-content active" id="tab-overview">
-                <div class="d-flex justify-content-between align-items-center mb-4 card border-0 rounded-4 shadow-sm bg-white p-4">
-                    <div>
-                        <span class="text-muted small uppercase fw-bold mb-1 d-block">{% now "l, F d, Y | H:i" %}</span>
-                        <h2 class="fw-bold text-success mb-0">Platform Overview</h2>
-                        <p class="text-muted mb-0">Enterprise administration dashboard for AgriConnect smart marketplace.</p>
+        
+        <!-- Navigation Links -->
+        <div class="mt-3 flex-grow-1 overflow-y-auto pb-4 custom-scrollbar">
+            <a href="#" class="nav-link active" data-tab-target="dashboard">
+                <i class="fa-solid fa-chart-pie icon"></i> Operations Center
+            </a>
+            
+            <a href="#" class="nav-link mt-1" data-tab-target="farmers">
+                <i class="fa-solid fa-tractor icon"></i> Farmers Management
+            </a>
+            <a href="#" class="nav-link" data-tab-target="buyers">
+                <i class="fa-solid fa-users icon"></i> Buyers Management
+            </a>
+            <a href="#" class="nav-link" data-tab-target="products">
+                <i class="fa-solid fa-wheat-awn icon"></i> Products Management
+            </a>
+            <a href="#" class="nav-link" data-tab-target="orders">
+                <i class="fa-solid fa-cart-shopping icon"></i> Orders Management
+            </a>
+            <a href="#" class="nav-link" data-tab-target="verification">
+                <i class="fa-solid fa-id-card icon"></i> Farmer Verification
+                {% if pending_crops.count %}
+                <span class="badge rounded-pill bg-warning text-dark ms-auto" style="font-size: 0.65rem;">{{ pending_crops.count }}</span>
+                {% endif %}
+            </a>
+            <a href="#" class="nav-link" data-tab-target="reviews">
+                <i class="fa-solid fa-star icon"></i> Reviews & Ratings
+            </a>
+            <a href="#" class="nav-link" data-tab-target="notifications">
+                <i class="fa-solid fa-bell icon"></i> Notifications
+                {% if notifications %}
+                <span class="badge rounded-pill bg-success ms-auto" style="font-size: 0.65rem;">{{ notifications|length }}</span>
+                {% endif %}
+            </a>
+            <a href="#" class="nav-link mt-2" data-tab-target="reports">
+                <i class="fa-solid fa-file-invoice-dollar icon"></i> Reports & Analytics
+            </a>
+            <a href="#" class="nav-link" data-tab-target="settings">
+                <i class="fa-solid fa-sliders icon"></i> System Settings
+            </a>
+            
+            <!-- Bottom Graphic Box -->
+            <div class="sidebar-promo">
+                <div class="d-flex gap-2 align-items-center mb-2">
+                    <div class="rounded-circle bg-success bg-opacity-25 p-2 text-success">
+                        <i class="fa-solid fa-shield-halved"></i>
                     </div>
                     <div>
-                        <span class="badge bg-success-subtle text-success p-2 px-3 rounded-pill fw-bold"><i class="fa-solid fa-circle-check me-2"></i>System Online</span>
+                        <h6 class="text-white mb-0 fw-bold" style="font-size:0.85rem;">Platform Health</h6>
+                        <small class="text-success fw-semibold" style="font-size:0.7rem;">● All Systems Operational</small>
                     </div>
                 </div>
-
-                <!-- Stats Cards Grid -->
-                <div class="row g-3 mb-4 text-center">
-                    <div class="col-6 col-md-3">
-                        <div class="card-premium p-3 bg-white border border-success-subtle">
-                            <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem;">Total Revenue</span>
-                            <h3 class="fw-extrabold text-success mb-0">₹{{ total_revenue|floatformat:0 }}</h3>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="card-premium p-3 bg-white border border-success-subtle">
-                            <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem;">Orders Processed</span>
-                            <h3 class="fw-extrabold text-success mb-0">{{ total_orders }}</h3>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="card-premium p-3 bg-white border border-success-subtle">
-                            <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem;">Active Grains/Crops</span>
-                            <h3 class="fw-extrabold text-success mb-0">{{ total_products }}</h3>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="card-premium p-3 bg-white border border-success-subtle">
-                            <span class="text-muted small uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem;">Pending Moderation</span>
-                            <h3 class="fw-extrabold text-warning mb-0">{{ total_products_pending }}</h3>
-                        </div>
-                    </div>
+                <div class="text-white-50 small mt-2" style="font-size:0.72rem; line-height: 1.5;">
+                    Empowering fair agricultural trade across India.
                 </div>
+            </div>
+            
+            <div class="text-center text-white-50 mb-3" style="font-size: 0.72rem;">
+                &copy; 2025 AgriConnect SaaS<br>Smart Farmer Marketplace
+            </div>
+        </div>
+    </aside>
 
-                <!-- Revenue Chart -->
-                <div class="card-premium p-4 mb-4 bg-white border border-success-subtle">
-                    <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-chart-line me-2"></i>Enterprise Growth Index</h5>
-                    <div style="height: 220px; position: relative;">
-                        <canvas id="revenueTrendChart" height="220"></canvas>
-                    </div>
-                </div>
-
-                <div class="row g-4">
-                    <!-- Crops Pending Moderation -->
-                    <div class="col-md-6">
-                        <div class="card-premium p-4 bg-white border border-success-subtle h-100">
-                            <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-clock me-2"></i>Crop Verification Queue</h5>
-                            <div class="list-group list-group-flush">
-                                {% for crop in pending_crops %}
-                                    <div class="py-2.5 border-bottom d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="fw-bold text-dark mb-0">{{ crop.name }}</h6>
-                                            <small class="text-muted">Farmer: {{ crop.farmer.user.username }} | Price: ₹{{ crop.price_per_kg }}/kg</small>
-                                        </div>
-                                        <div class="d-flex gap-1">
-                                            <form action="{% url 'admin_approve_crop' crop.id %}" method="POST" class="mb-0">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-xs btn-success rounded-pill px-2.5 py-1 text-white" style="font-size: 0.72rem;">Approve</button>
-                                            </form>
-                                            <form action="{% url 'admin_reject_crop' crop.id %}" method="POST" class="mb-0">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-xs btn-outline-danger rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">Reject</button>
-                                            </form>
-                                        </div>
+    <!-- === MAIN CONTENT === -->
+    <main class="admin-main">
+        
+        <!-- Top Navbar -->
+        <header class="top-navbar">
+            <!-- Search Bar -->
+            <div class="search-bar-container">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" class="search-input" placeholder="Search farmers, crops, orders, phone, ID...">
+            </div>
+            
+            <!-- Right Icons & Admin Profile -->
+            <div class="d-flex align-items-center gap-3">
+                <!-- Notifications Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-light rounded-circle position-relative border-0 shadow-sm" style="width: 42px; height: 42px;" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                        <i class="fa-regular fa-bell text-secondary"></i>
+                        {% if notifications %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.6rem; padding: 4px 6px;">
+                            {{ notifications|length }}
+                        </span>
+                        {% endif %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-2" style="min-width: 320px; border-radius: 14px;">
+                        <li>
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                <h6 class="dropdown-header fw-bold text-dark p-0 mb-0">System Activity</h6>
+                                <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small">Live Feed</span>
+                            </div>
+                        </li>
+                        {% for note in notifications|slice:":5" %}
+                        <li>
+                            <a class="dropdown-item py-2 px-3 rounded-2 text-wrap" href="#">
+                                <div class="d-flex align-items-start gap-2">
+                                    <i class="fa-solid fa-circle-dot text-success mt-1 small"></i>
+                                    <div>
+                                        <div class="fw-semibold text-dark small">{{ note.title|default:"Platform Event" }}</div>
+                                        <div class="text-muted small" style="font-size: 0.76rem;">{{ note.message }}</div>
+                                        <div class="text-muted small" style="font-size: 0.68rem;">{{ note.created_at|timesince }} ago</div>
                                     </div>
-                                {% empty %}
-                                    <p class="text-muted small text-center my-4">Crop verification queue is empty.</p>
-                                {% endfor %}
+                                </div>
+                            </a>
+                        </li>
+                        {% empty %}
+                        <li class="p-3 text-center text-muted small">No new notifications.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <!-- Super Admin Avatar Dropdown -->
+                <div class="dropdown">
+                    <div class="d-flex align-items-center gap-2 p-1 pe-2 rounded-pill bg-white shadow-sm border border-success border-opacity-10 cursor-pointer" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                        <img src="https://ui-avatars.com/api/?name=Admin&background=1B4332&color=fff&bold=true" class="rounded-circle" width="36" height="36" alt="Admin">
+                        <div class="lh-1 me-2 text-start">
+                            <div class="fw-bold text-dark" style="font-size:0.86rem;">Super Admin</div>
+                            <small class="text-success fw-semibold" style="font-size:0.7rem;">Verified</small>
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-muted small me-1"></i>
+                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-2" style="border-radius: 14px;">
+                        <li><a class="dropdown-item py-2 rounded-2" href="#"><i class="fa-solid fa-user-shield me-2 text-success"></i> Admin Profile</a></li>
+                        <li><a class="dropdown-item py-2 rounded-2" href="#" onclick="document.querySelector('[data-tab-target=\'settings\']').click();"><i class="fa-solid fa-sliders me-2 text-muted"></i> System Settings</a></li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li><a class="dropdown-item py-2 rounded-2 text-danger fw-semibold" href="{% url 'logout' %}"><i class="fa-solid fa-right-from-bracket me-2"></i> Sign Out</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Content Area -->
+        <div class="content-area">
+            
+            <!-- Header Row -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1 text-dark" id="page-title">Operations Center</h3>
+                    <p class="text-muted mb-0 small" id="page-subtitle">Welcome back, Admin! Real-time marketplace control, approvals, and metrics.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-success rounded-pill px-3 py-2 fw-semibold small" onclick="window.location.reload();">
+                        <i class="fa-solid fa-arrows-rotate me-1"></i> Refresh Data
+                    </button>
+                    <button class="btn btn-agri-primary shadow-sm small" onclick="document.querySelector('[data-tab-target=\'reports\']').click();">
+                        <i class="fa-solid fa-file-export me-1"></i> Quick Reports
+                    </button>
+                </div>
+            </div>
+            
+            <!-- MAIN GRID SYSTEM (Dashboard Overview) -->
+            <div id="dashboard-content">
+                
+                <!-- TOP 4 HERO KPI CARDS -->
+                <div class="row g-3 mb-4">
+                    <!-- 1. Total Farmers -->
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="saas-stat-box cursor-pointer" onclick="document.querySelector('[data-tab-target=\'farmers\']').click();">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Total Farmers</span>
+                                    <h3 class="fw-bold text-dark mb-0 saas-counter" data-target="{{ total_farmers|default:0 }}">{{ total_farmers|default:0 }}</h3>
+                                </div>
+                                <div class="stat-icon-wrapper" style="background: rgba(46, 125, 50, 0.12); color: #2E7D32;">
+                                    <i class="fa-solid fa-tractor"></i>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between small mt-2">
+                                <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 fw-semibold">
+                                    <i class="fa-solid fa-circle-check me-1"></i>Active Sellers
+                                </span>
+                                <span class="text-success fw-bold"><i class="fa-solid fa-arrow-trend-up"></i> +12%</span>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Pending Disputes -->
-                    <div class="col-md-6">
-                        <div class="card-premium p-4 bg-white border border-success-subtle h-100">
-                            <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-triangle-exclamation me-2"></i>Recent Disputes & Complaints</h5>
-                            <div class="list-group list-group-flush">
-                                {% for feed in recent_feedbacks %}
-                                    <div class="py-2.5 border-bottom">
-                                        <div class="d-flex justify-content-between">
-                                            <h6 class="fw-bold text-dark mb-0">{{ feed.subject }}</h6>
-                                            <small class="text-muted">{{ feed.created_at|date:"M d" }}</small>
-                                        </div>
-                                        <p class="mb-1 text-muted small text-truncate">{{ feed.message }}</p>
-                                        <div class="d-flex justify-content-between align-items-center mt-1">
-                                            <span class="small text-secondary">By: {{ feed.user.username }}</span>
-                                            <form action="{% url 'admin_resolve_feedback' feed.id %}" method="POST" class="mb-0">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-xs btn-outline-success rounded-pill px-2 py-0.5" style="font-size: 0.7rem;">Resolve</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                {% empty %}
-                                    <p class="text-muted small text-center my-4">All complaints resolved successfully!</p>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB: Users Directory -->
-            <div class="admin-tab-content d-none" id="tab-users">
-                <div class="card-premium p-4 bg-white border border-success-subtle mb-4">
-                    <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-users me-2"></i>Platform Farmers Directory</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr class="bg-light">
-                                    <th>Farmer Name</th>
-                                    <th>Farm Details</th>
-                                    <th>Location</th>
-                                    <th>Rating</th>
-                                    <th>Status</th>
-                                    <th>Contact</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for f in farmers_list %}
-                                    <tr>
-                                        <td>
-                                            <strong class="text-dark d-block">{{ f.user.first_name|default:f.user.username }}</strong>
-                                            <small class="text-muted">{{ f.user.email }}</small>
-                                        </td>
-                                        <td>
-                                            <strong class="text-success">{{ f.farm_name }}</strong>
-                                            <small class="text-muted d-block">Size: {{ f.farm_size }} | Exp: {{ f.experience }}</small>
-                                        </td>
-                                        <td>{{ f.farm_location }}</td>
-                                        <td>★ {{ f.store_rating }}</td>
-                                        <td><span class="badge bg-success-subtle text-success">Verified Partner</span></td>
-                                        <td>
-                                            <a href="{% url 'chat_detail' f.user.username %}" class="btn btn-sm btn-outline-success rounded-pill px-3"><i class="fa-solid fa-envelope"></i></a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="card-premium p-4 bg-white border border-success-subtle">
-                    <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-user me-2"></i>Platform Buyers Directory</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr class="bg-light">
-                                    <th>Buyer Name</th>
-                                    <th>Email ID</th>
-                                    <th>Shipping Address</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for b in buyers_list %}
-                                    <tr>
-                                        <td><strong>{{ b.user.first_name|default:b.user.username }}</strong></td>
-                                        <td>{{ b.user.email }}</td>
-                                        <td>{{ b.user.address|default:"Not Configured" }}</td>
-                                        <td><span class="badge bg-success-subtle text-success">Active Member</span></td>
-                                        <td>
-                                            <a href="{% url 'chat_detail' b.user.username %}" class="btn btn-sm btn-outline-success rounded-pill px-3"><i class="fa-solid fa-envelope"></i></a>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB: Product Catalog -->
-            <div class="admin-tab-content d-none" id="tab-products">
-                <div class="card-premium p-4 bg-white border border-success-subtle">
-                    <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-wheat-awn me-2"></i>Listed Marketplace Crops</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr class="bg-light">
-                                    <th>Crop Produce</th>
-                                    <th>Farmer Seller</th>
-                                    <th>Category</th>
-                                    <th>Price per Unit</th>
-                                    <th>Available Stock</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for crop in products_list %}
-                                    <tr>
-                                        <td><strong>{{ crop.name }}</strong></td>
-                                        <td>{{ crop.farmer.user.first_name|default:crop.farmer.user.username }}</td>
-                                        <td>{{ crop.category.name }}</td>
-                                        <td class="fw-bold text-success">₹{{ crop.price_per_kg }}/{{ crop.get_unit_display }}</td>
-                                        <td>{{ crop.quantity_available|floatformat:0 }} kg</td>
-                                        <td>
-                                            {% if crop.is_approved %}
-                                                <span class="badge bg-success-subtle text-success">Approved Listing</span>
-                                            {% else %}
-                                                <span class="badge bg-warning-subtle text-warning text-dark">Under Moderation</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB: Orders Shipments -->
-            <div class="admin-tab-content d-none" id="tab-orders">
-                <div class="card-premium p-4 bg-white border border-success-subtle">
-                    <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-truck-ramp-box me-2"></i>Orders Shipment Log</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr class="bg-light">
-                                    <th>Order ID</th>
-                                    <th>Date</th>
-                                    <th>Buyer Details</th>
-                                    <th>Total (₹)</th>
-                                    <th>Delivery Status</th>
-                                    <th class="text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for order in orders_list %}
-                                    <tr>
-                                        <td class="fw-bold">#{{ order.id }}</td>
-                                        <td>{{ order.created_at|date:"M d, Y" }}</td>
-                                        <td>{{ order.buyer.username }}</td>
-                                        <td class="fw-bold text-success">₹{{ order.total_amount }}</td>
-                                        <td>
-                                            <span class="badge {% if order.status == 'Pending' %}bg-secondary{% elif order.status == 'Delivered' %}bg-success{% elif order.status == 'Cancelled' %}bg-danger{% else %}bg-info{% endif %}" style="font-size: 0.72rem;">
-                                                {{ order.status }}
-                                            </span>
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="d-inline-flex gap-1">
-                                                <a href="{% url 'order_tracking' order.id %}" class="btn btn-sm btn-outline-success rounded-pill px-3"><i class="fa-solid fa-route me-1"></i>Track</a>
-                                                <a href="{% url 'order_invoice' order.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="fa-solid fa-file-invoice me-1"></i>Invoice</a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB: Disputes & Support -->
-            <div class="admin-tab-content d-none" id="tab-complaints">
-                <div class="card-premium p-4 bg-white border border-success-subtle">
-                    <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-triangle-exclamation me-2"></i>Disputes & Support Tickets</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr class="bg-light">
-                                    <th>User</th>
-                                    <th>Topic / Subject</th>
-                                    <th>Message Description</th>
-                                    <th>Filed Date</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for feed in complaints_list %}
-                                    <tr>
-                                        <td><strong>{{ feed.user.username }}</strong></td>
-                                        <td>{{ feed.subject }}</td>
-                                        <td>{{ feed.message|truncatewords:10 }}</td>
-                                        <td>{{ feed.created_at|date:"M d, Y" }}</td>
-                                        <td>
-                                            {% if feed.is_resolved %}
-                                                <span class="badge bg-success-subtle text-success">Resolved</span>
-                                            {% else %}
-                                                <span class="badge bg-warning-subtle text-warning text-dark">Open Ticket</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if not feed.is_resolved %}
-                                                <form action="{% url 'admin_resolve_feedback' feed.id %}" method="POST" class="mb-0">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">Mark Resolved</button>
-                                                </form>
-                                            {% else %}
-                                                <span class="text-success small"><i class="fa-solid fa-check-double me-1"></i>Resolved</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB: Verification Center -->
-            <div class="admin-tab-content d-none" id="tab-verification">
-                <div class="card border-0 rounded-4 shadow-sm bg-white p-4 mb-4">
-                    <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-square-check me-2"></i>Document Verification Center</h5>
-                    <p class="text-muted small">Verify government-issued farming licenses, organic status certificates, and land record documents submitted by registered farmers on AgriConnect.</p>
                     
-                    <div class="table-responsive mt-3">
-                        <table class="table align-middle table-hover small">
-                            <thead class="table-light">
+                    <!-- 2. Total Buyers / Users -->
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="saas-stat-box cursor-pointer" onclick="document.querySelector('[data-tab-target=\'buyers\']').click();">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Registered Buyers</span>
+                                    <h3 class="fw-bold text-dark mb-0 saas-counter" data-target="{{ total_buyers|default:0 }}">{{ total_buyers|default:0 }}</h3>
+                                </div>
+                                <div class="stat-icon-wrapper" style="background: rgba(2, 136, 209, 0.12); color: #0288D1;">
+                                    <i class="fa-solid fa-users"></i>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between small mt-2">
+                                <span class="text-muted fw-semibold" style="font-size:0.75rem;">
+                                    Active: {{ active_users|default:total_buyers }} | Susp: {{ suspended_users|default:0 }}
+                                </span>
+                                <span class="text-primary fw-bold"><i class="fa-solid fa-arrow-trend-up"></i> +18%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 3. Total Orders -->
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="saas-stat-box cursor-pointer" onclick="document.querySelector('[data-tab-target=\'orders\']').click();">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Total Orders</span>
+                                    <h3 class="fw-bold text-dark mb-0 saas-counter" data-target="{{ total_orders|default:0 }}">{{ total_orders|default:0 }}</h3>
+                                </div>
+                                <div class="stat-icon-wrapper" style="background: rgba(255, 152, 0, 0.12); color: #FF9800;">
+                                    <i class="fa-solid fa-cart-shopping"></i>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between small mt-2">
+                                <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-2 py-1 fw-semibold">
+                                    <i class="fa-solid fa-clock me-1"></i>Pending: {{ pending_orders|default:0 }}
+                                </span>
+                                <span class="text-warning fw-bold"><i class="fa-solid fa-arrow-trend-up"></i> +22%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 4. Platform Revenue -->
+                    <div class="col-sm-6 col-xl-3">
+                        <div class="saas-stat-box">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Platform GMV</span>
+                                    <h3 class="fw-bold text-success mb-0">₹<span class="saas-counter" data-target="{{ total_revenue|default:0 }}">{{ total_revenue|default:0|floatformat:0 }}</span></h3>
+                                </div>
+                                <div class="stat-icon-wrapper" style="background: rgba(16, 185, 129, 0.15); color: #10B981;">
+                                    <i class="fa-solid fa-indian-rupee-sign"></i>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between small mt-2">
+                                <span class="text-muted fw-semibold" style="font-size:0.75rem;">Gross Processed</span>
+                                <span class="text-success fw-bold"><i class="fa-solid fa-arrow-trend-up"></i> +28%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECONDARY QUICK KPI STRIP -->
+                <div class="saas-admin-card p-3 mb-4 bg-white border-0 shadow-sm">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <span class="fw-bold text-dark small text-uppercase">
+                                <i class="fa-solid fa-bolt text-warning me-1"></i>Action Pipeline:
+                            </span>
+                            <span class="badge bg-warning bg-opacity-15 text-dark rounded-pill px-3 py-1 fw-semibold cursor-pointer" onclick="document.querySelector('[data-tab-target=\'products\']').click();">
+                                <i class="fa-solid fa-hourglass-half text-warning me-1"></i>Pending Crops: <strong>{{ pending_crops.count|default:total_products_pending }}</strong>
+                            </span>
+                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 fw-semibold">
+                                <i class="fa-solid fa-seedling me-1"></i>Total Listed Crops: <strong>{{ total_products }}</strong>
+                            </span>
+                            <span class="badge bg-info bg-opacity-10 text-primary rounded-pill px-3 py-1 fw-semibold">
+                                <i class="fa-solid fa-user-plus me-1"></i>New Registrations: <strong>{{ new_registrations|default:0 }}</strong>
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted small fw-medium">
+                                Active Deliveries: <strong>{{ pending_orders|default:0 }}</strong>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ANALYTICS CHARTS ROW -->
+                <div class="row g-4 mb-4">
+                    <!-- Left: Orders & Revenue Line/Area Chart -->
+                    <div class="col-lg-8">
+                        <div class="saas-admin-card h-100 mb-0">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-0">Platform Growth & Orders Velocity</h5>
+                                    <small class="text-muted">Monthly revenue throughput and verified order volumes</small>
+                                </div>
+                                <div class="d-flex align-items-center gap-3 small fw-semibold">
+                                    <span class="d-flex align-items-center gap-1"><span class="rounded-circle" style="width:10px; height:10px; background:#2E7D32;"></span> Revenue (₹)</span>
+                                    <span class="d-flex align-items-center gap-1"><span class="rounded-circle" style="width:10px; height:10px; background:#FF9800;"></span> Orders</span>
+                                </div>
+                            </div>
+                            <div style="position: relative; height: 260px; width: 100%;">
+                                <canvas id="ordersChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right: Product Category Distribution -->
+                    <div class="col-lg-4">
+                        <div class="saas-admin-card h-100 mb-0">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-0">Produce Categories</h5>
+                                    <small class="text-muted">Marketplace inventory split</small>
+                                </div>
+                                <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small">Live</span>
+                            </div>
+                            <div style="position: relative; height: 200px; width: 100%;" class="d-flex align-items-center justify-content-center">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                            <div class="row g-2 mt-2 text-center small">
+                                <div class="col-4">
+                                    <div class="p-2 rounded bg-light">
+                                        <div class="fw-bold text-success">35%</div>
+                                        <div class="text-muted" style="font-size: 0.7rem;">Vegetables</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 rounded bg-light">
+                                        <div class="fw-bold text-warning">28%</div>
+                                        <div class="text-muted" style="font-size: 0.7rem;">Fruits</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 rounded bg-light">
+                                        <div class="fw-bold text-primary">37%</div>
+                                        <div class="text-muted" style="font-size: 0.7rem;">Grains/Other</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ACTIONABLE PIPELINE: PENDING CROPS APPROVALS & RECENT ORDERS -->
+                <div class="row g-4 mb-4">
+                    <!-- Left: Pending Crop Listings Pipeline -->
+                    <div class="col-lg-6">
+                        <div class="saas-admin-card h-100 mb-0">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-0">
+                                        <i class="fa-solid fa-hourglass-half text-warning me-2"></i>Pending Crop Approvals
+                                    </h5>
+                                    <small class="text-muted">Review farmer listings before they go live on the public marketplace</small>
+                                </div>
+                                <span class="badge bg-warning bg-opacity-15 text-dark rounded-pill px-3 py-1 fw-semibold">
+                                    {{ pending_crops.count|default:0 }} Pending
+                                </span>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table saas-table table-borderless">
+                                    <thead>
+                                        <tr>
+                                            <th>Produce</th>
+                                            <th>Farmer</th>
+                                            <th>Price</th>
+                                            <th>Quantity</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for crop in pending_crops %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    {% if crop.image %}
+                                                    <img src="{{ crop.image.url }}" width="36" height="36" class="rounded-3 object-fit-cover shadow-sm">
+                                                    {% else %}
+                                                    <div class="rounded-3 bg-light d-flex align-items-center justify-content-center" style="width:36px; height:36px;">
+                                                        <i class="fa-solid fa-leaf text-success"></i>
+                                                    </div>
+                                                    {% endif %}
+                                                    <div>
+                                                        <div class="fw-bold text-dark">{{ crop.name }}</div>
+                                                        <small class="text-muted">{{ crop.category.name|default:"Uncategorized" }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="fw-medium text-dark">{{ crop.farmer.user.username }}</span>
+                                            </td>
+                                            <td class="fw-bold text-success">
+                                                ₹{{ crop.price_per_kg }}/{{ crop.get_unit_display }}
+                                            </td>
+                                            <td class="text-muted small">
+                                                {{ crop.quantity_available }} {{ crop.unit }}
+                                            </td>
+                                            <td>
+                                                <div class="d-flex gap-1">
+                                                    <a href="{% url 'admin_approve_crop' crop.pk %}" class="btn btn-sm btn-success rounded-pill px-2 py-1" title="Approve Listing">
+                                                        <i class="fa-solid fa-check"></i>
+                                                    </a>
+                                                    <a href="{% url 'admin_reject_crop' crop.pk %}" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" title="Reject / Hide">
+                                                        <i class="fa-solid fa-xmark"></i>
+                                                    </a>
+                                                    <a href="{% url 'crop_detail' crop.pk %}" class="btn btn-sm btn-light text-primary rounded-pill px-2 py-1" title="Preview" target="_blank">
+                                                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">
+                                                <i class="fa-solid fa-circle-check text-success fs-3 d-block mb-2"></i>
+                                                All crop listings are verified and approved!
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Recent Platform Orders -->
+                    <div class="col-lg-6">
+                        <div class="saas-admin-card h-100 mb-0">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-0">
+                                        <i class="fa-solid fa-receipt text-success me-2"></i>Recent Transactions
+                                    </h5>
+                                    <small class="text-muted">Real-time marketplace customer orders</small>
+                                </div>
+                                <button class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-semibold" onclick="document.querySelector('[data-tab-target=\'orders\']').click();">
+                                    All Orders →
+                                </button>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table saas-table table-borderless">
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th>
+                                            <th>Buyer</th>
+                                            <th>Farmer</th>
+                                            <th>Amount</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for order in recent_orders %}
+                                        <tr>
+                                            <td class="text-primary fw-bold">#{{ order.id }}</td>
+                                            <td class="fw-medium text-dark">{{ order.buyer.username }}</td>
+                                            <td class="text-muted">{{ order.farmer.user.username }}</td>
+                                            <td class="fw-bold text-dark">₹{{ order.total_amount|floatformat:2 }}</td>
+                                            <td>
+                                                {% if order.status == 'Delivered' %}
+                                                <span class="status-badge bg-success bg-opacity-10 text-success"><i class="fa-solid fa-circle-check"></i> Delivered</span>
+                                                {% elif order.status == 'Pending' %}
+                                                <span class="status-badge bg-warning bg-opacity-10 text-warning"><i class="fa-solid fa-clock"></i> Pending</span>
+                                                {% elif order.status == 'Cancelled' or order.status == 'Rejected' %}
+                                                <span class="status-badge bg-danger bg-opacity-10 text-danger"><i class="fa-solid fa-circle-xmark"></i> {{ order.status }}</span>
+                                                {% else %}
+                                                <span class="status-badge bg-info bg-opacity-10 text-info"><i class="fa-solid fa-truck"></i> {{ order.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'order_tracking' order.pk %}" class="btn btn-sm btn-light text-primary rounded-pill px-2 py-1" title="Track Order">
+                                                    <i class="fa-solid fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted py-4">No recent orders found.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- RECENT FEEDBACKS & STORE REVIEWS STRIP -->
+                {% if recent_feedbacks %}
+                <div class="saas-admin-card mb-0">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0">
+                                <i class="fa-solid fa-star text-warning me-2"></i>Recent Buyer Ratings & Feedbacks
+                            </h5>
+                            <small class="text-muted">What verified customers are saying about farm produce</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1" onclick="document.querySelector('[data-tab-target=\'reviews\']').click();">
+                            View All Reviews
+                        </button>
+                    </div>
+                    <div class="row g-3">
+                        {% for rev in recent_feedbacks|slice:":3" %}
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-4 bg-light border border-success border-opacity-10 h-100">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="fw-bold text-dark small">{{ rev.buyer.username }}</div>
+                                    <div class="text-warning small"><i class="fa-solid fa-star"></i> {{ rev.rating }} / 5</div>
+                                </div>
+                                <div class="text-muted small mb-2" style="font-size: 0.8rem;">
+                                    "{{ rev.comment|truncatechars:85|default:'Fresh produce delivered on time.' }}"
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center text-muted small" style="font-size: 0.72rem;">
+                                    <span class="text-success fw-semibold"><i class="fa-solid fa-leaf me-1"></i>{{ rev.crop.name }}</span>
+                                    <span>{{ rev.created_at|date:"M d, Y" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+            </div> <!-- End Dashboard Content -->
+            
+            
+            <!-- ==========================================
+                 SECTION: FARMERS MANAGEMENT
+                 ========================================== -->
+            <div id="section-farmers" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Farmers Directory & Store Management</h4>
+                        <p class="text-muted small mb-0">Supervise verified farm accounts, produce volume, and activity status.</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-success rounded-pill px-3 py-1 fw-semibold small" onclick="document.querySelector('[data-tab-target=\'verification\']').click();">
+                            <i class="fa-solid fa-id-badge me-1"></i> Verifications ({{ pending_crops.count|default:0 }})
+                        </button>
+                        <form action="{% url 'report_generate' %}" method="POST" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="report_type" value="farmers">
+                            <input type="hidden" name="format" value="csv">
+                            <input type="hidden" name="direct_download" value="true">
+                            <button type="submit" class="btn btn-agri-primary shadow-sm small">
+                                <i class="fa-solid fa-file-arrow-down me-1"></i> Export Farmers CSV
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="saas-admin-card p-0 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table saas-table mb-0">
+                            <thead>
                                 <tr>
-                                    <th>Farmer Details</th>
-                                    <th>Submitted Files</th>
-                                    <th>Trust Score</th>
+                                    <th>#</th>
+                                    <th>Farmer Name</th>
+                                    <th>Contact</th>
+                                    <th>Location</th>
+                                    <th>Crops Listed</th>
                                     <th>Status</th>
-                                    <th class="text-end">Actions</th>
+                                    <th>Account Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for farmer in farmers_list %}
-                                    <tr>
-                                        <td>
-                                            <div class="fw-bold text-dark">{{ farmer.user.first_name|default:farmer.user.username }}</div>
-                                            <small class="text-muted">{{ farmer.farm_name|default:"Local Farm" }} &bull; {{ farmer.farm_location }}</small>
-                                        </td>
-                                        <td>
-                                            {% if farmer.aadhaar_document %}
-                                                <span class="badge bg-light text-success border me-1" title="Aadhaar ID"><i class="fa-solid fa-id-card"></i> Government ID</span>
-                                            {% endif %}
-                                            {% if farmer.farm_certificate %}
-                                                <span class="badge bg-light text-success border" title="Land Certificate"><i class="fa-solid fa-file-contract"></i> Land Record</span>
-                                            {% endif %}
-                                            {% if not farmer.aadhaar_document and not farmer.farm_certificate %}
-                                                <span class="text-muted italic small">No files uploaded yet</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <span class="fw-bold text-success">{{ farmer.trust_score }}/100</span>
-                                        </td>
-                                        <td>
-                                            {% if farmer.verification_status == 'approved' %}
-                                                <span class="badge bg-success text-white">Approved</span>
-                                            {% elif farmer.verification_status == 'review' %}
-                                                <span class="badge bg-warning text-dark">Under Review</span>
-                                            {% elif farmer.verification_status == 'resubmit' %}
-                                                <span class="badge bg-info text-white">Resubmit Req.</span>
-                                            {% elif farmer.verification_status == 'rejected' %}
-                                                <span class="badge bg-danger text-white">Rejected</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary text-white">Pending Submission</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-end">
-                                            <a href="{% url 'admin_farmer_verify' farmer.id %}" class="btn btn-sm btn-outline-success rounded-pill px-3">
-                                                Review Credentials
+                                <tr>
+                                    <td class="text-muted fw-bold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <img src="https://ui-avatars.com/api/?name={{ farmer.user.username }}&background=2E7D32&color=fff" width="34" height="34" class="rounded-circle shadow-sm">
+                                            <div>
+                                                <div class="fw-bold text-dark">{{ farmer.user.username }}</div>
+                                                <small class="text-muted">{{ farmer.farm_name|default:"Independent Farmer" }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-muted small">
+                                        <div><i class="fa-regular fa-envelope me-1"></i> {{ farmer.user.email }}</div>
+                                        {% if farmer.phone %}<div class="text-muted"><i class="fa-solid fa-phone me-1"></i> {{ farmer.phone }}</div>{% endif %}
+                                    </td>
+                                    <td class="text-dark">{{ farmer.city|default:"-" }}</td>
+                                    <td>
+                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 fw-bold">
+                                            {{ farmer.crops.count }} Crops
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if farmer.verification_status == 'approved' %}
+                                        <span class="status-badge bg-success bg-opacity-10 text-success"><i class="fa-solid fa-circle-check"></i> Verified</span>
+                                        {% elif farmer.user.is_active == False %}
+                                        <span class="status-badge bg-danger bg-opacity-10 text-danger"><i class="fa-solid fa-ban"></i> Suspended</span>
+                                        {% else %}
+                                        <span class="status-badge bg-warning bg-opacity-10 text-warning"><i class="fa-solid fa-clock"></i> Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{% url 'admin_edit_user' farmer.user.pk %}" class="btn btn-sm btn-light text-primary rounded-pill px-2 py-1" title="Edit Profile">
+                                                <i class="fa-solid fa-pen"></i>
                                             </a>
-                                        </td>
-                                    </tr>
+                                            <a href="{% url 'admin_suspend_user' farmer.user.pk %}" class="btn btn-sm btn-light text-warning rounded-pill px-2 py-1" title="Suspend/Activate User">
+                                                <i class="fa-solid fa-ban"></i>
+                                            </a>
+                                            <form action="{% url 'admin_delete_user' farmer.user.pk %}" method="POST" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-light text-danger rounded-pill px-2 py-1" title="Deactivate" onclick="return confirm('Are you sure you want to deactivate this farmer account?');">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
                                 {% empty %}
-                                    <tr>
-                                        <td colspan="5" class="text-center py-4 text-muted">No registered farmers found on the platform.</td>
-                                    </tr>
+                                <tr><td colspan="7" class="text-center text-muted py-4">No registered farmers found.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -450,163 +893,771 @@
                 </div>
             </div>
 
-            <!-- TAB: Prices & Weather Monitor -->
-            <div class="admin-tab-content d-none" id="tab-prices-weather">
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <div class="card-premium p-4 bg-white border border-success-subtle h-100">
-                            <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-chart-line me-2"></i>Market Price Monitoring</h5>
-                            <div class="d-flex flex-column gap-3">
-                                {% for insight in market_insights %}
-                                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
-                                        <div>
-                                            <h6 class="fw-bold text-dark mb-0">{{ insight.crop_name }}</h6>
-                                            <small class="text-muted">{{ insight.region }}</small>
+            <!-- ==========================================
+                 SECTION: BUYERS MANAGEMENT
+                 ========================================== -->
+            <div id="section-buyers" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Buyers & Consumers Directory</h4>
+                        <p class="text-muted small mb-0">Track customer purchases, registration dates, and account standing.</p>
+                    </div>
+                    <form action="{% url 'report_generate' %}" method="POST" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="report_type" value="buyers">
+                        <input type="hidden" name="format" value="csv">
+                        <input type="hidden" name="direct_download" value="true">
+                        <button type="submit" class="btn btn-agri-primary shadow-sm small">
+                            <i class="fa-solid fa-file-arrow-down me-1"></i> Export Buyers CSV
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="saas-admin-card p-0 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table saas-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Buyer Name</th>
+                                    <th>Email Address</th>
+                                    <th>Joined Date</th>
+                                    <th>Total Orders</th>
+                                    <th>Account Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for buyer in buyers_list %}
+                                <tr>
+                                    <td class="text-muted fw-bold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <img src="https://ui-avatars.com/api/?name={{ buyer.user.username }}&background=0288D1&color=fff" width="34" height="34" class="rounded-circle shadow-sm">
+                                            <div class="fw-bold text-dark">{{ buyer.user.username }}</div>
                                         </div>
-                                        <div class="text-end">
-                                            <strong class="text-success d-block">₹{{ insight.current_price }}/kg</strong>
-                                            <span class="badge bg-success-subtle text-success small">+{{ insight.price_change_percent }}%</span>
+                                    </td>
+                                    <td class="text-muted small">{{ buyer.user.email }}</td>
+                                    <td class="text-muted small">{{ buyer.user.date_joined|date:"M d, Y" }}</td>
+                                    <td class="fw-bold">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1">
+                                            {{ buyer.orders.count|default:"0" }} Orders
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if buyer.user.is_active %}
+                                        <span class="status-badge bg-success bg-opacity-10 text-success"><i class="fa-solid fa-circle-check"></i> Active</span>
+                                        {% else %}
+                                        <span class="status-badge bg-danger bg-opacity-10 text-danger"><i class="fa-solid fa-ban"></i> Blocked</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{% url 'admin_edit_user' buyer.user.pk %}" class="btn btn-sm btn-light text-primary rounded-pill px-2 py-1" title="Edit">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </a>
+                                            <a href="{% url 'admin_suspend_user' buyer.user.pk %}" class="btn btn-sm btn-light text-warning rounded-pill px-2 py-1" title="Suspend/Activate">
+                                                <i class="fa-solid fa-ban"></i>
+                                            </a>
+                                            <form action="{% url 'admin_delete_user' buyer.user.pk %}" method="POST" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-light text-danger rounded-pill px-2 py-1" title="Deactivate" onclick="return confirm('Are you sure you want to deactivate this buyer?');">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
-                                    </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="text-center text-muted py-4">No buyers found.</td></tr>
                                 {% endfor %}
-                            </div>
-                        </div>
+                            </tbody>
+                        </table>
                     </div>
+                </div>
+            </div>
 
+            <!-- ==========================================
+                 SECTION: PRODUCTS MANAGEMENT
+                 ========================================== -->
+            <div id="section-products" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Crop Catalog & Inventory Approvals</h4>
+                        <p class="text-muted small mb-0">Inspect listings, approve farm produce, adjust availability, or remove violations.</p>
+                    </div>
+                    <form action="{% url 'report_generate' %}" method="POST" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="report_type" value="top_selling">
+                        <input type="hidden" name="format" value="csv">
+                        <input type="hidden" name="direct_download" value="true">
+                        <button type="submit" class="btn btn-agri-primary shadow-sm small">
+                            <i class="fa-solid fa-file-arrow-down me-1"></i> Export Catalog CSV
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="saas-admin-card p-0 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table saas-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Produce Name</th>
+                                    <th>Category</th>
+                                    <th>Farmer</th>
+                                    <th>Price / Unit</th>
+                                    <th>Stock</th>
+                                    <th>Approval</th>
+                                    <th>Moderation Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products_list %}
+                                <tr>
+                                    <td class="text-muted fw-bold">{{ forloop.counter }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% if product.image %}
+                                            <img src="{{ product.image.url }}" width="38" height="38" class="rounded-3 object-fit-cover shadow-sm">
+                                            {% else %}
+                                            <div class="rounded-3 bg-light d-flex align-items-center justify-content-center" style="width:38px; height:38px;">
+                                                <i class="fa-solid fa-leaf text-success"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div class="fw-bold text-dark">{{ product.name }}</div>
+                                        </div>
+                                    </td>
+                                    <td class="text-muted small">{{ product.category.name|default:"-" }}</td>
+                                    <td class="text-dark fw-medium">{{ product.farmer.user.username }}</td>
+                                    <td class="fw-bold text-success">₹{{ product.price_per_kg }}/{{ product.get_unit_display }}</td>
+                                    <td>
+                                        {% if product.quantity_available > 0 %}
+                                        <span class="text-dark fw-semibold">{{ product.quantity_available }} {{ product.unit }}</span>
+                                        {% else %}
+                                        <span class="text-danger small fw-bold">Out of Stock</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if product.is_approved and product.quantity_available > 0 %}
+                                        <span class="status-badge bg-success bg-opacity-10 text-success"><i class="fa-solid fa-circle-check"></i> Live</span>
+                                        {% elif not product.is_approved %}
+                                        <span class="status-badge bg-warning bg-opacity-15 text-warning-emphasis"><i class="fa-solid fa-clock"></i> Pending Approval</span>
+                                        {% else %}
+                                        <span class="status-badge bg-secondary bg-opacity-10 text-secondary">Sold Out</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{% url 'crop_detail' product.pk %}" class="btn btn-sm btn-light text-primary rounded-pill px-2 py-1" title="View Listing Page" target="_blank">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </a>
+                                            {% if not product.is_approved %}
+                                            <a href="{% url 'admin_approve_crop' product.pk %}" class="btn btn-sm btn-success rounded-pill px-2 py-1" title="Approve Listing">
+                                                <i class="fa-solid fa-check"></i>
+                                            </a>
+                                            {% endif %}
+                                            <a href="{% url 'admin_reject_crop' product.pk %}" class="btn btn-sm btn-light text-warning rounded-pill px-2 py-1" title="Hide/Reject">
+                                                <i class="fa-solid fa-eye-slash"></i>
+                                            </a>
+                                            <a href="{% url 'admin_delete_crop' product.pk %}" class="btn btn-sm btn-light text-danger rounded-pill px-2 py-1" title="Delete Produce" onclick="return confirm('Are you sure you want to delete this product listing?');">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="8" class="text-center text-muted py-4">No products found.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 SECTION: ORDER MANAGEMENT
+                 ========================================== -->
+            <div id="section-orders" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Platform Order Fulfillment & Audit</h4>
+                        <p class="text-muted small mb-0">Complete audit trail of all orders, dispatch statuses, and payment receipts.</p>
+                    </div>
+                    <form action="{% url 'report_generate' %}" method="POST" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="report_type" value="orders">
+                        <input type="hidden" name="format" value="csv">
+                        <input type="hidden" name="direct_download" value="true">
+                        <button type="submit" class="btn btn-agri-primary shadow-sm small">
+                            <i class="fa-solid fa-file-arrow-down me-1"></i> Export Orders CSV
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="saas-admin-card p-0 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table saas-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Date & Time</th>
+                                    <th>Buyer Name</th>
+                                    <th>Farmer / Seller</th>
+                                    <th>Gross Amount</th>
+                                    <th>Status</th>
+                                    <th>Fulfillment Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders_list %}
+                                <tr>
+                                    <td class="text-primary fw-bold">#{{ order.id }}</td>
+                                    <td class="text-muted small">{{ order.created_at|date:"M d, Y H:i" }}</td>
+                                    <td class="fw-medium text-dark">{{ order.buyer.username }}</td>
+                                    <td class="text-muted">{{ order.farmer.user.username }}</td>
+                                    <td class="fw-bold text-dark">₹{{ order.total_amount|floatformat:2 }}</td>
+                                    <td>
+                                        {% if order.status == 'Delivered' %}
+                                        <span class="status-badge bg-success bg-opacity-10 text-success"><i class="fa-solid fa-circle-check"></i> Delivered</span>
+                                        {% elif order.status == 'Pending' %}
+                                        <span class="status-badge bg-warning bg-opacity-10 text-warning"><i class="fa-solid fa-clock"></i> Pending</span>
+                                        {% elif order.status == 'Cancelled' or order.status == 'Rejected' %}
+                                        <span class="status-badge bg-danger bg-opacity-10 text-danger"><i class="fa-solid fa-circle-xmark"></i> {{ order.status }}</span>
+                                        {% else %}
+                                        <span class="status-badge bg-info bg-opacity-10 text-info"><i class="fa-solid fa-truck"></i> {{ order.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{% url 'order_tracking' order.pk %}" class="btn btn-sm btn-light text-primary rounded-pill px-2 py-1" title="Track Shipment">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'order_invoice' order.pk %}" class="btn btn-sm btn-light text-success rounded-pill px-2 py-1" title="Download Invoice" target="_blank">
+                                                <i class="fa-solid fa-file-invoice"></i>
+                                            </a>
+                                            <a href="{% url 'admin_delete_order' order.pk %}" class="btn btn-sm btn-light text-danger rounded-pill px-2 py-1" title="Delete Order" onclick="return confirm('Are you sure you want to delete this order record?');">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="7" class="text-center text-muted py-4">No orders recorded in the system.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 SECTION: FARMER VERIFICATION
+                 ========================================== -->
+            <div id="section-verification" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Farmer Identity & Farm Verification Pipeline</h4>
+                        <p class="text-muted small mb-0">Review submitted government ID cards (Aadhaar/Kisan Card) and official farm land records.</p>
+                    </div>
+                </div>
+                
+                <div class="saas-admin-card p-0 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table saas-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Farmer Username</th>
+                                    <th>Aadhaar / ID Card</th>
+                                    <th>Farm / Land Certificate</th>
+                                    <th>Status</th>
+                                    <th>Verification Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for farmer in farmers_list %}
+                                {% if farmer.verification_status != 'approved' %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">{{ farmer.user.username }}</div>
+                                        <small class="text-muted">{{ farmer.farm_name|default:"Farm registration" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if farmer.aadhaar_document %}
+                                        <a href="{{ farmer.aadhaar_document.url }}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 small">
+                                            <i class="fa-solid fa-file-pdf me-1"></i> View Aadhaar
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted small"><i class="fa-solid fa-circle-exclamation me-1"></i> Not Uploaded</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if farmer.farm_certificate %}
+                                        <a href="{{ farmer.farm_certificate.url }}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 small">
+                                            <i class="fa-solid fa-file-lines me-1"></i> View Certificate
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted small"><i class="fa-solid fa-circle-exclamation me-1"></i> Not Uploaded</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="status-badge bg-warning bg-opacity-15 text-warning-emphasis">
+                                            <i class="fa-solid fa-hourglass-half"></i> {{ farmer.verification_status|capfirst }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <form method="post" action="{% url 'admin_farmer_verify' farmer.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to approve this farmer verification?');">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="approve">
+                                                <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-semibold" title="Approve Farmer">
+                                                    <i class="fa-solid fa-check me-1"></i> Approve
+                                                </button>
+                                            </form>
+                                            <form method="post" action="{% url 'admin_farmer_verify' farmer.pk %}" class="d-inline" onsubmit="var reason = prompt('Optional rejection reason:'); if(reason === null) return false; this.admin_notes.value = reason;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="reject">
+                                                <input type="hidden" name="admin_notes" value="">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold" title="Reject Farmer">
+                                                    <i class="fa-solid fa-xmark me-1"></i> Reject
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="fa-solid fa-circle-check text-success fs-3 d-block mb-2"></i>
+                                        No pending farmer verifications at this time!
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 SECTION: REVIEWS & RATINGS
+                 ========================================== -->
+            <div id="section-reviews" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Customer Reviews & Seller Ratings</h4>
+                        <p class="text-muted small mb-0">Monitor product satisfaction, star ratings, and community feedback.</p>
+                    </div>
+                </div>
+                
+                <div class="saas-admin-card p-0 overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table saas-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Buyer</th>
+                                    <th>Produce / Crop</th>
+                                    <th>Rating Score</th>
+                                    <th>Feedback / Comment</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for review in reviews_list %}
+                                <tr>
+                                    <td class="fw-bold text-dark">{{ review.buyer.username }}</td>
+                                    <td>
+                                        <span class="text-success fw-semibold"><i class="fa-solid fa-leaf me-1"></i>{{ review.crop.name }}</span>
+                                    </td>
+                                    <td class="text-warning fw-bold">
+                                        <i class="fa-solid fa-star"></i> {{ review.rating }} / 5
+                                    </td>
+                                    <td class="text-muted">{{ review.comment|truncatechars:70|default:"No comment provided." }}</td>
+                                    <td class="text-muted small">{{ review.created_at|date:"M d, Y" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted py-4">No reviews recorded yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 SECTION: NOTIFICATIONS
+                 ========================================== -->
+            <div id="section-notifications" style="display: none;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="fw-bold mb-1 text-dark">Platform Audit & Activity Log</h4>
+                        <p class="text-muted small mb-0">Chronological feed of registrations, orders, and system updates.</p>
+                    </div>
+                </div>
+                
+                <div class="saas-admin-card">
+                    <ul class="list-group list-group-flush">
+                        {% for note in notifications %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-3 border-bottom">
+                            <div class="d-flex align-items-start gap-3">
+                                {% if note.notification_type == 'order' %}
+                                    <div class="rounded-circle p-2 bg-warning-subtle text-warning"><i class="fa-solid fa-box"></i></div>
+                                {% elif note.notification_type == 'product' %}
+                                    <div class="rounded-circle p-2 bg-success-subtle text-success"><i class="fa-solid fa-leaf"></i></div>
+                                {% else %}
+                                    <div class="rounded-circle p-2 bg-info-subtle text-primary"><i class="fa-solid fa-circle-info"></i></div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-1 fw-bold text-dark">{{ note.title|default:"Platform Notification" }}</h6>
+                                    <p class="mb-0 text-muted small">{{ note.message }}</p>
+                                </div>
+                            </div>
+                            <span class="text-muted small text-nowrap ms-3">{{ note.created_at|timesince }} ago</span>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center text-muted py-4">No system activity logged.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 SECTION: REPORTS & ANALYTICS
+                 ========================================== -->
+            <div id="section-reports" style="display: none;">
+                <div class="mb-4">
+                    <h4 class="fw-bold mb-1 text-dark">Data Exports & Business Intelligence Reports</h4>
+                    <p class="text-muted small mb-0">Generate and download audit reports in CSV, Excel, or PDF formats.</p>
+                </div>
+                
+                <div class="row g-4">
+                    <!-- User & Farmer Reports -->
                     <div class="col-md-6">
-                        <div class="card border-0 rounded-4 shadow-sm bg-white p-4 h-100">
-                            <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-cloud-sun me-2"></i>Weather Center Monitoring</h5>
-                            <div class="d-flex flex-column gap-3 small">
-                                <div class="p-3 bg-light rounded-4 border">
-                                    <strong>Gujarat Region (Rajkot):</strong>
-                                    <p class="text-muted mb-0 mt-1">Temperature: 34&deg;C &bull; Precipitation index is normal. Stable harvest forecast.</p>
+                        <div class="saas-admin-card text-center p-4 h-100 d-flex flex-column justify-content-between align-items-center">
+                            <div>
+                                <div class="stat-icon-wrapper mb-3 mx-auto" style="background: rgba(46, 125, 50, 0.12); color: #2E7D32; width: 64px; height: 64px; font-size: 1.6rem;">
+                                    <i class="fa-solid fa-users"></i>
                                 </div>
-                                <div class="p-3 bg-light rounded-4 border">
-                                    <strong>Punjab Region (Ludhiana):</strong>
-                                    <p class="text-muted mb-0 mt-1">Temperature: 28&deg;C &bull; Light showers predicted. Low pesticide spray advisories apply.</p>
+                                <h5 class="fw-bold text-dark mb-1">User & Marketplace Directory Reports</h5>
+                                <p class="text-muted small mb-4">Export detailed profile data on registered farmers, consumer buyers, and verification records.</p>
+                            </div>
+                            
+                            <form action="{% url 'report_generate' %}" method="POST" class="w-100">
+                                {% csrf_token %}
+                                <div class="mb-3 text-start">
+                                    <label class="form-label small fw-bold text-muted">Report Type</label>
+                                    <select name="report_type" class="form-select rounded-pill">
+                                        <option value="farmers">Farmers Directory Report</option>
+                                        <option value="buyers">Buyers Directory Report</option>
+                                        <option value="farmer_verification">Farmer Verification Audit</option>
+                                        <option value="user_registration">User Registration Log</option>
+                                    </select>
                                 </div>
+                                <div class="mb-4 text-start">
+                                    <label class="form-label small fw-bold text-muted">File Format</label>
+                                    <select name="format" class="form-select rounded-pill">
+                                        <option value="csv">Export as CSV (.csv)</option>
+                                        <option value="xlsx">Export as Excel (.xlsx)</option>
+                                        <option value="pdf">Export as PDF (.pdf)</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" name="direct_download" value="true">
+                                <button type="submit" class="btn btn-agri-primary w-100 py-2">
+                                    <i class="fa-solid fa-download me-2"></i> Download User Report
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Sales & Revenue Financial Reports -->
+                    <div class="col-md-6">
+                        <div class="saas-admin-card text-center p-4 h-100 d-flex flex-column justify-content-between align-items-center">
+                            <div>
+                                <div class="stat-icon-wrapper mb-3 mx-auto" style="background: rgba(2, 136, 209, 0.12); color: #0288D1; width: 64px; height: 64px; font-size: 1.6rem;">
+                                    <i class="fa-solid fa-chart-line"></i>
+                                </div>
+                                <h5 class="fw-bold text-dark mb-1">Financial & Sales Audit Reports</h5>
+                                <p class="text-muted small mb-4">Generate comprehensive marketplace transaction sheets, crop volume, and platform revenue.</p>
                             </div>
+                            
+                            <form action="{% url 'report_generate' %}" method="POST" class="w-100">
+                                {% csrf_token %}
+                                <div class="mb-3 text-start">
+                                    <label class="form-label small fw-bold text-muted">Financial Dataset</label>
+                                    <select name="report_type" class="form-select rounded-pill">
+                                        <option value="orders">Complete Orders Log</option>
+                                        <option value="sales">Sales by Produce Type</option>
+                                        <option value="revenue">Platform Revenue Breakdown</option>
+                                        <option value="top_selling">Top Selling Crops Matrix</option>
+                                    </select>
+                                </div>
+                                <div class="mb-4 text-start">
+                                    <label class="form-label small fw-bold text-muted">File Format</label>
+                                    <select name="format" class="form-select rounded-pill">
+                                        <option value="csv">Export as CSV (.csv)</option>
+                                        <option value="xlsx">Export as Excel (.xlsx)</option>
+                                        <option value="pdf">Export as PDF (.pdf)</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" name="direct_download" value="true">
+                                <button type="submit" class="btn btn-agri-accent w-100 py-2">
+                                    <i class="fa-solid fa-download me-2"></i> Download Financial Report
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- TAB: Reports Center -->
-            <div class="admin-tab-content d-none" id="tab-reports">
-                <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
-                    <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Reports & Data Exports</h5>
-                    <p class="text-muted small">Download wholesale transactions summary logs, users listings registries, or revenue sheets as CSV sheets, spreadsheet workbooks, or printable PDFs.</p>
-                    
-                    <div class="row g-3 mt-2">
-                        <div class="col-md-4">
-                            <div class="p-3 bg-light rounded-4 border text-center">
-                                <h6 class="fw-bold text-dark mb-2">Marketplace Revenue Sheet</h6>
-                                <a href="{% url 'admin_reports' %}" class="btn btn-sm btn-success rounded-pill px-3 w-100">Export Reports</a>
-                            </div>
+            <!-- ==========================================
+                 SECTION: SYSTEM SETTINGS
+                 ========================================== -->
+            <div id="section-settings" style="display: none;">
+                <div class="mb-4">
+                    <h4 class="fw-bold mb-1 text-dark">Platform Configuration & Parameters</h4>
+                    <p class="text-muted small mb-0">Adjust marketplace branding, commission parameters, and verification defaults.</p>
+                </div>
+                
+                <div class="saas-admin-card p-4" style="max-width: 640px;">
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-dark">Marketplace Name</label>
+                            <input type="text" class="form-control rounded-pill px-3" value="AgriConnect Smart Farmer Marketplace">
                         </div>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-dark">Platform Take Rate / Commission (%)</label>
+                            <input type="number" class="form-control rounded-pill px-3" value="3.5" step="0.1">
+                            <small class="text-muted">Applied as zero platform fee for certified smallholder farmers.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small text-dark">Support Helpline & Escalation Email</label>
+                            <input type="email" class="form-control rounded-pill px-3" value="support@agriconnect.org">
+                        </div>
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="button" class="btn btn-agri-primary px-4" onclick="alert('Settings configuration saved successfully.');">
+                                <i class="fa-solid fa-floppy-disk me-1"></i> Save Configuration
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
-            <!-- TAB: System Health -->
-            <div class="admin-tab-content d-none" id="tab-health">
-                <div class="card border-0 rounded-4 shadow-sm bg-white p-4">
-                    <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-heart-pulse me-2"></i>System Health & Infrastructure</h5>
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <div class="p-3 rounded-4 border bg-success-subtle text-success text-center">
-                                <h6 class="fw-bold mb-1">Database Connectivity</h6>
-                                <strong class="fs-4">100% OK</strong>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="p-3 rounded-4 border bg-success-subtle text-success text-center">
-                                <h6 class="fw-bold mb-1">Server Response Time</h6>
-                                <strong class="fs-4">42 ms</strong>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="p-3 rounded-4 border bg-success-subtle text-success text-center">
-                                <h6 class="fw-bold mb-1">Authentication Security</h6>
-                                <strong class="fs-4">100% Secure</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 p-3 bg-light rounded-4 border small">
-                        <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-clock-rotate-left me-2 text-secondary"></i>Recent Admin Log History</h6>
-                        <ul class="text-muted mb-0 ps-3">
-                            <li>Admin completed verification check on Ramesh Patel's storefront parameters.</li>
-                            <li>Admin updated APMC daily price indices indices values.</li>
-                            <li>Admin marked buyers complaint #2 as resolved.</li>
-                        </ul>
-                    </div>
+            <!-- SECTION PLACEHOLDER -->
+            <div id="other-content" style="display: none; height: 60vh; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                <div class="saas-admin-card p-5" style="max-width: 480px;">
+                    <i id="other-content-icon" class="fa-solid fa-hammer text-success mb-3" style="font-size: 3rem;"></i>
+                    <h4 class="fw-bold text-dark" id="other-content-title">Section Under Maintenance</h4>
+                    <p class="text-muted mb-0 small">This module is currently being configured and will sync with live database services.</p>
                 </div>
             </div>
-
+            
         </div>
-    </div>
+    </main>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Scripts -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Tab switching logic
-        const tabBtns = document.querySelectorAll('.admin-tab-btn');
-        const tabContents = document.querySelectorAll('.admin-tab-content');
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // --- Counter Animation ---
+        const counters = document.querySelectorAll('.saas-counter');
+        counters.forEach(counter => {
+            const rawTarget = counter.getAttribute('data-target') || '0';
+            const target = parseFloat(rawTarget.replace(/,/g, '')) || 0;
+            const duration = 1200;
+            const stepTime = 20;
+            const steps = duration / stepTime;
+            const increment = target / steps;
+            let current = 0;
 
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const targetTabId = this.getAttribute('data-tab-target');
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                if (target >= 1000) {
+                    counter.innerText = Math.floor(current).toLocaleString('en-IN');
+                } else if (Number.isInteger(target)) {
+                    counter.innerText = Math.floor(current);
+                } else {
+                    counter.innerText = current.toFixed(1);
+                }
+            }, stepTime);
+        });
 
-                tabBtns.forEach(b => b.classList.remove('active'));
+        // --- Sidebar Navigation Logic ---
+        const navLinks = document.querySelectorAll('.admin-sidebar .nav-link');
+        const pageTitle = document.getElementById('page-title');
+        const pageSubtitle = document.getElementById('page-subtitle');
+        const otherContent = document.getElementById('other-content');
+        const otherContentTitle = document.getElementById('other-content-title');
+        const otherContentIcon = document.getElementById('other-content-icon');
+
+        const contentSections = {
+            'dashboard': document.getElementById('dashboard-content'),
+            'farmers': document.getElementById('section-farmers'),
+            'buyers': document.getElementById('section-buyers'),
+            'products': document.getElementById('section-products'),
+            'orders': document.getElementById('section-orders'),
+            'verification': document.getElementById('section-verification'),
+            'reviews': document.getElementById('section-reviews'),
+            'notifications': document.getElementById('section-notifications'),
+            'reports': document.getElementById('section-reports'),
+            'settings': document.getElementById('section-settings'),
+        };
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all
+                navLinks.forEach(l => l.classList.remove('active'));
+                
+                // Add active class to clicked
                 this.classList.add('active');
-
-                tabContents.forEach(content => {
-                    if (content.id === `tab-${targetTabId}`) {
-                        content.classList.remove('d-none');
-                        content.classList.add('active');
-                    } else {
-                        content.classList.add('d-none');
-                        content.classList.remove('active');
-                    }
+                
+                const target = this.getAttribute('data-tab-target');
+                const titleText = this.innerText.trim();
+                const iconElem = this.querySelector('i');
+                const iconClass = iconElem ? iconElem.className : 'fa-solid fa-gear';
+                
+                // Update header
+                pageTitle.innerText = titleText;
+                
+                // Hide all sections
+                Object.values(contentSections).forEach(sec => {
+                    if (sec) sec.style.display = 'none';
                 });
+                if (otherContent) otherContent.style.display = 'none';
+                
+                if (contentSections[target]) {
+                    contentSections[target].style.display = 'block';
+                    if (target === 'dashboard') {
+                        pageSubtitle.innerText = "Welcome back, Admin! Real-time marketplace control, approvals, and metrics.";
+                    } else {
+                        pageSubtitle.innerText = "Supervise and manage " + titleText.toLowerCase() + " records and controls.";
+                    }
+                } else if (otherContent) {
+                    pageSubtitle.innerText = "Manage your " + titleText.toLowerCase() + " settings and records here.";
+                    otherContent.style.display = 'flex';
+                    if (otherContentTitle) otherContentTitle.innerText = titleText + " Module";
+                    if (otherContentIcon) {
+                        otherContentIcon.className = iconClass + " text-success mb-3";
+                        otherContentIcon.style.fontSize = "3rem";
+                    }
+                }
             });
         });
 
-        // Revenue Chart logic
-        const ctx = document.getElementById('revenueTrendChart').getContext('2d');
-        const months = {{ months|safe }};
-        const revenue = {{ monthly_revenue|safe }};
+        // --- Chart.js: Orders & Growth Chart ---
+        const ctxRev = document.getElementById('ordersChart');
+        if (ctxRev) {
+            // Dynamic months from django if available or fallback
+            let chartLabels = {{ months|safe|default:"['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep']" }};
+            let chartRevenue = {{ monthly_revenue|safe|default:"[42000, 58000, 64000, 92000, 115000, 148000]" }};
+            let chartOrders = [28, 44, 52, 78, 96, 124];
 
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: months,
-                datasets: [{
-                    label: 'Revenue (₹)',
-                    data: revenue,
-                    backgroundColor: '#2e7d32',
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(0,0,0,0.05)' }
+            new Chart(ctxRev, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [
+                        {
+                            label: 'Revenue (₹)',
+                            data: chartRevenue,
+                            borderColor: '#2E7D32',
+                            backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                            fill: true,
+                            borderWidth: 2.5,
+                            tension: 0.35,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#2E7D32',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Orders',
+                            data: chartOrders,
+                            borderColor: '#FF9800',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            tension: 0.35,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#FF9800',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
                     },
-                    x: {
-                        grid: { display: false }
-                    }
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1B4332',
+                            padding: 10,
+                            titleFont: { family: 'Plus Jakarta Sans', size: 12 },
+                            bodyFont: { family: 'Plus Jakarta Sans', size: 12 },
+                            cornerRadius: 8
+                        }
+                    }, 
+                    scales: { 
+                        x: {
+                            grid: { display: false }
+                        },
+                        y: { 
+                            type: 'linear', 
+                            position: 'left',
+                            grid: { color: 'rgba(46, 125, 50, 0.06)' },
+                            ticks: {
+                                callback: function(value) { return '₹' + (value >= 1000 ? (value/1000) + 'k' : value); }
+                            }
+                        }, 
+                        y1: { 
+                            type: 'linear', 
+                            position: 'right',
+                            grid: { display: false }
+                        } 
+                    } 
                 }
-            }
-        });
+            });
+        }
+
+        // --- Chart.js: Produce Category Donut ---
+        const ctxCat = document.getElementById('categoryChart');
+        if (ctxCat) {
+            new Chart(ctxCat, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Vegetables', 'Fruits', 'Grains & Pulses', 'Organic Specials', 'Dairy & Herbs'],
+                    datasets: [{
+                        data: [35, 28, 20, 10, 7],
+                        backgroundColor: ['#2E7D32', '#4CAF50', '#FF9800', '#0288D1', '#9C27B0'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    cutout: '72%',
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1B4332',
+                            cornerRadius: 8
+                        }
+                    } 
+                }
+            });
+        }
     });
 </script>
 {% endblock %}

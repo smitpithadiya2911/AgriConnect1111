@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify Account – AgriConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-card {
+        max-width: 500px;
+        margin: 4rem auto;
+        border-radius: 1rem;
+        box-shadow: 0 8px 32px rgba(46, 125, 50, 0.1);
+        border: none;
+        overflow: hidden;
+    }
+    .auth-header {
+        background: linear-gradient(135deg, #2E7D32, #4CAF50);
+        padding: 2rem 1.5rem;
+        text-align: center;
+        color: white;
+    }
+    .auth-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .auth-body {
+        padding: 2.5rem 2rem;
+        background-color: #ffffff;
+    }
+    .otp-input-group {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .otp-input-group input {
+        width: 3rem;
+        height: 3.5rem;
+        font-size: 1.5rem;
+        text-align: center;
+        border: 2px solid #e0e0e0;
+        border-radius: 0.5rem;
+        background-color: #f8f9fa;
+        color: #2E7D32;
+        font-weight: bold;
+        transition: all 0.2s ease;
+    }
+    .otp-input-group input:focus {
+        border-color: #4CAF50;
+        box-shadow: 0 0 0 0.25rem rgba(76, 175, 80, 0.25);
+        outline: none;
+        background-color: #fff;
+    }
+    #id_otp_code { display: none; }
+    .timer-text { color: #e53935; font-weight: 600; font-size: 0.95rem; }
+    .btn-verify { background-color: #2E7D32; color: white; padding: 0.8rem; font-weight: bold; font-size: 1.1rem; border-radius: 0.5rem; transition: all 0.3s ease; }
+    .btn-verify:hover { background-color: #1b5e20; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container fade-in-up">
+    <div class="card auth-card">
+        <div class="auth-header">
+            <i class="fa-solid fa-user-check auth-icon"></i>
+            <h3 class="fw-bold mb-1">Verify Your Email</h3>
+            <p class="mb-0 opacity-75">Activate your AgriConnect account</p>
+        </div>
+        <div class="auth-body">
+            <div class="text-center mb-4">
+                <p class="text-muted mb-1">We have sent a 6-digit verification code to:</p>
+                <div class="fw-bold text-dark fs-5">{{ auth_otp.email }}</div>
+            </div>
+
+            <form method="POST" id="otpForm">
+                {% csrf_token %}
+                <div class="otp-input-group">
+                    <input type="text" maxlength="1" class="otp-char" autofocus>
+                    <input type="text" maxlength="1" class="otp-char">
+                    <input type="text" maxlength="1" class="otp-char">
+                    <input type="text" maxlength="1" class="otp-char">
+                    <input type="text" maxlength="1" class="otp-char">
+                    <input type="text" maxlength="1" class="otp-char">
+                </div>
+                <input type="text" name="otp_code" id="id_otp_code" required>
+
+                <div class="text-center mb-4">
+                    <div class="timer-text" id="countdown">Valid for <span id="time">05:00</span></div>
+                </div>
+
+                <div class="d-grid gap-3">
+                    <button type="submit" class="btn btn-verify w-100" id="verifyBtn">
+                        <i class="fa-solid fa-check-circle me-2"></i> Verify & Activate
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('.otp-char');
+        const hiddenInput = document.getElementById('id_otp_code');
+        const form = document.getElementById('otpForm');
+
+        function updateHiddenInput() {
+            let val = '';
+            inputs.forEach(input => val += input.value);
+            hiddenInput.value = val;
+        }
+
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                if (this.value.length === 1 && index < inputs.length - 1) inputs[index + 1].focus();
+                updateHiddenInput();
+            });
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' && !this.value && index > 0) inputs[index - 1].focus();
+            });
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, inputs.length);
+                if (pastedData) {
+                    for (let i = 0; i < pastedData.length; i++) {
+                        if (inputs[index + i]) inputs[index + i].value = pastedData[i];
+                    }
+                    updateHiddenInput();
+                }
+            });
+        });
+
+        form.addEventListener('submit', function(e) {
+            updateHiddenInput();
+            if (hiddenInput.value.length !== 6) {
+                e.preventDefault();
+                alert('Please enter a complete 6-digit OTP.');
+            } else {
+                const btn = document.getElementById('verifyBtn');
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Verifying...';
+                btn.disabled = true;
+            }
+        });
+
+        let duration = 5 * 60;
+        const display = document.getElementById('time');
+        let timer = setInterval(function () {
+            let minutes = parseInt(duration / 60, 10);
+            let seconds = parseInt(duration % 60, 10);
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+            display.textContent = minutes + ":" + seconds;
+            if (--duration < 0) {
+                clearInterval(timer);
+                display.textContent = "00:00";
+                document.getElementById('countdown').innerHTML = "OTP Expired. Please register again.";
+                document.getElementById('verifyBtn').disabled = true;
+            }
+        }, 1000);
+    });
+</script>
+{% endblock %}

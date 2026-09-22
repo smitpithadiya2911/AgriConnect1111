@@ -126,23 +126,20 @@
                                     <br><span class="badge bg-success-subtle text-success" style="font-size: 0.62rem;">COD Collected</span>
                                 </td>
                                 <td>
-                                    <span class="badge {% if order.status == 'Pending' %}bg-secondary{% elif order.status == 'Delivered' %}bg-success{% elif order.status == 'Cancelled' %}bg-danger{% else %}bg-info{% endif %}" style="font-size: 0.72rem;">
+                                    <span id="status-badge-{{ order.id }}" class="badge {% if order.status == 'Pending' %}bg-secondary{% elif order.status == 'Delivered' %}bg-success{% elif order.status == 'Cancelled' %}bg-danger{% else %}bg-info{% endif %}" style="font-size: 0.72rem;">
                                         {{ order.status }}
                                     </span>
                                 </td>
                                 <td>
                                     {% if order.status != 'Delivered' and order.status != 'Cancelled' and order.status != 'Returned' %}
-                                        <form action="{% url 'farmer_update_order_status' order.id %}" method="POST" class="d-flex align-items-center mb-0">
-                                            {% csrf_token %}
-                                            <select name="status" class="form-select form-select-sm me-2" style="width: 150px;">
-                                                <option value="Pending" {% if order.status == 'Pending' %}selected{% endif %}>Pending</option>
-                                                <option value="Accepted" {% if order.status == 'Accepted' %}selected{% endif %}>Accepted</option>
-                                                <option value="Packed" {% if order.status == 'Packed' %}selected{% endif %}>Packed</option>
-                                                <option value="Out For Delivery" {% if order.status == 'Out For Delivery' %}selected{% endif %}>Out For Delivery</option>
-                                                <option value="Delivered" {% if order.status == 'Delivered' %}selected{% endif %}>Delivered</option>
-                                            </select>
-                                            <button type="submit" class="btn btn-sm btn-success"><i class="fa-solid fa-check"></i></button>
-                                        </form>
+                                        <select class="form-select form-select-sm status-dropdown" data-order-id="{{ order.id }}" style="width: 150px;" onchange="updateOrderStatus(this)">
+                                            <option value="Pending" {% if order.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                            <option value="Confirmed" {% if order.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
+                                            <option value="Out For Delivery" {% if order.status == 'Out For Delivery' %}selected{% endif %}>Out For Delivery</option>
+                                            <option value="Delivered" {% if order.status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                                            <option value="Rejected" {% if order.status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                                            <option value="Cancelled" {% if order.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                        </select>
                                     {% else %}
                                         <span class="text-muted small">No active actions</span>
                                     {% endif %}
@@ -186,6 +183,51 @@
                 }
             }
         }
+    }
+    
+    function updateOrderStatus(selectElement) {
+        const orderId = selectElement.getAttribute('data-order-id');
+        const newStatus = selectElement.value;
+        const originalColor = selectElement.style.backgroundColor;
+        
+        selectElement.disabled = true;
+        selectElement.style.opacity = '0.5';
+        
+        fetch(`/farmer/orders/${orderId}/status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `status=${encodeURIComponent(newStatus)}`
+        })
+        .then(response => {
+            selectElement.disabled = false;
+            selectElement.style.opacity = '1';
+            if (response.ok) {
+                // Success styling flash
+                selectElement.style.backgroundColor = '#d4edda';
+                setTimeout(() => selectElement.style.backgroundColor = originalColor, 1000);
+                
+                // Update badge if exists
+                const badge = document.getElementById(`status-badge-${orderId}`);
+                if (badge) {
+                    badge.textContent = newStatus;
+                    badge.className = 'badge';
+                    if (newStatus === 'Pending') badge.classList.add('bg-secondary');
+                    else if (newStatus === 'Delivered') badge.classList.add('bg-success');
+                    else if (newStatus === 'Cancelled') badge.classList.add('bg-danger');
+                    else badge.classList.add('bg-info');
+                }
+            } else {
+                alert('Failed to update status. Please try again.');
+            }
+        })
+        .catch(error => {
+            selectElement.disabled = false;
+            selectElement.style.opacity = '1';
+            alert('Error updating status.');
+        });
     }
 </script>
 {% endblock %}

@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify Order OTP – AgriConnect{% endblock %}
+
+{% block extra_css %}
+<style>
+    .otp-card {
+        max-width: 500px;
+        margin: 4rem auto;
+        border-radius: 1rem;
+        box-shadow: 0 8px 32px rgba(46, 125, 50, 0.1);
+        border: none;
+        overflow: hidden;
+    }
+    .otp-header {
+        background: linear-gradient(135deg, #2E7D32, #4CAF50);
+        padding: 2rem 1.5rem;
+        text-align: center;
+        color: white;
+    }
+    .otp-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .otp-body {
+        padding: 2.5rem 2rem;
+        background-color: #ffffff;
+    }
+    .otp-input-group {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .otp-input-group input {
+        width: 3rem;
+        height: 3.5rem;
+        font-size: 1.5rem;
+        text-align: center;
+        border: 2px solid #e0e0e0;
+        border-radius: 0.5rem;
+        background-color: #f8f9fa;
+        color: #2E7D32;
+        font-weight: bold;
+        transition: all 0.2s ease;
+    }
+    .otp-input-group input:focus {
+        border-color: #4CAF50;
+        box-shadow: 0 0 0 0.25rem rgba(76, 175, 80, 0.25);
+        outline: none;
+        background-color: #fff;
+    }
+    /* Hidden input to hold the actual value */
+    #id_otp_code {
+        display: none;
+    }
+    .timer-text {
+        color: #e53935;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+    .btn-verify {
+        background-color: #2E7D32;
+        color: white;
+        padding: 0.8rem;
+        font-weight: bold;
+        font-size: 1.1rem;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    .btn-verify:hover {
+        background-color: #1b5e20;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+    }
+    .resend-link {
+        color: #6c757d;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: color 0.2s ease;
+    }
+    .resend-link:hover {
+        color: #2E7D32;
+    }
+    .resend-link.disabled {
+        pointer-events: none;
+        opacity: 0.6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container fade-in-up">
+    <div class="card otp-card">
+        <div class="otp-header">
+            <i class="fa-solid fa-shield-halved otp-icon"></i>
+            <h3 class="fw-bold mb-1">Verify Your Order</h3>
+            <p class="mb-0 opacity-75">Secure Checkout Processing</p>
+        </div>
+        <div class="otp-body">
+            <div class="text-center mb-4">
+                <p class="text-muted mb-1">We have sent a 6-digit verification code to:</p>
+                <div class="fw-bold text-dark fs-5">{{ request.user.email }}</div>
+            </div>
+
+            <form method="POST" id="otpForm">
+                {% csrf_token %}
+                
+                <div class="otp-input-group">
+                    <input type="text" maxlength="1" class="otp-char" autofocus>
+                    <input type="text" maxlength="1" class="otp-char">
+                    <input type="text" maxlength="1" class="otp-char">
+                    <input type="text" maxlength="1" class="otp-char">
+                    <input type="text" maxlength="1" class="otp-char">
+                    <input type="text" maxlength="1" class="otp-char">
+                </div>
+                
+                <!-- Hidden input that actually gets submitted -->
+                <input type="text" name="otp_code" id="id_otp_code" required>
+
+                <div class="text-center mb-4">
+                    <div class="timer-text" id="countdown">Valid for <span id="time">05:00</span></div>
+                </div>
+
+                <div class="d-grid gap-3">
+                    <button type="submit" class="btn btn-verify w-100" id="verifyBtn">
+                        <i class="fa-solid fa-check-circle me-2"></i> Verify & Place Order
+                    </button>
+                    
+                    <div class="text-center mt-2">
+                        <span class="text-muted small">Didn't receive the code?</span><br>
+                        <a href="{% url 'resend_order_otp' order_otp.pk %}" class="resend-link fw-bold mt-1 d-inline-block" id="resendLink">
+                            <i class="fa-solid fa-rotate-right me-1"></i> Resend OTP
+                        </a>
+                        {% if order_otp.resend_count > 0 %}
+                            <div class="small text-muted mt-1">(Resent {{ order_otp.resend_count }}/3 times)</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+<div id="ajaxAlert" style="display:none;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- OTP Input Logic ---
+        const inputs = document.querySelectorAll('.otp-char');
+        const hiddenInput = document.getElementById('id_otp_code');
+        const form = document.getElementById('otpForm');
+
+        function updateHiddenInput() {
+            let val = '';
+            inputs.forEach(input => val += input.value);
+            hiddenInput.value = val;
+        }
+
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', function(e) {
+                // Allow only numbers
+                this.value = this.value.replace(/[^0-9]/g, '');
+                
+                if (this.value.length === 1) {
+                    if (index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                }
+                updateHiddenInput();
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' && !this.value) {
+                    if (index > 0) {
+                        inputs[index - 1].focus();
+                    }
+                }
+            });
+
+            // Handle Paste
+            input.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, inputs.length);
+                if (pastedData) {
+                    for (let i = 0; i < pastedData.length; i++) {
+                        if (inputs[index + i]) {
+                            inputs[index + i].value = pastedData[i];
+                        }
+                    }
+                    updateHiddenInput();
+                    // Focus on the next empty input or the last one
+                    let nextEmpty = Array.from(inputs).findIndex(inp => !inp.value);
+                    if (nextEmpty !== -1) {
+                        inputs[nextEmpty].focus();
+                    } else {
+                        inputs[inputs.length - 1].focus();
+                    }
+                }
+            });
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateHiddenInput();
+            
+            const btn = document.getElementById('verifyBtn');
+            const alertBox = document.getElementById('ajaxAlert');
+            
+            if (hiddenInput.value.length !== 6) {
+                alertBox.className = "alert alert-danger mt-3";
+                alertBox.innerHTML = "Please enter a complete 6-digit OTP.";
+                alertBox.style.display = "block";
+                return;
+            } 
+            
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Verifying...';
+            btn.disabled = true;
+            alertBox.style.display = "none";
+            
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ otp_code: hiddenInput.value })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if(data.success) {
+                    Swal.fire({
+                        title: 'Order Placed!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonText: 'Go to Dashboard',
+                        confirmButtonColor: '#2E7D32',
+                        allowOutsideClick: false
+                    }).then((result) => {
+                        window.location.href = data.redirect;
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message,
+                        icon: 'error',
+                        confirmButtonColor: '#d33'
+                    });
+                    btn.innerHTML = '<i class="fa-solid fa-check-circle me-2"></i> Verify & Place Order';
+                    btn.disabled = false;
+                    if(data.redirect) setTimeout(() => window.location.href = data.redirect, 2000);
+                }
+            }).catch(() => {
+                btn.innerHTML = '<i class="fa-solid fa-check-circle me-2"></i> Verify & Place Order';
+                btn.disabled = false;
+            });
+        });
+
+        // --- Countdown Timer Logic ---
+        // Expiry timestamp passed from backend
+        const expiresStr = "{{ order_otp.expires_at|date:'Y-m-d H:i:s' }}";
+        // Simple JS countdown for display (5 mins from load is easier, but using actual server time is better if timezone aligns)
+        // For simplicity, we just run a 5 minute timer visually from page load
+        let duration = 5 * 60;
+        const display = document.getElementById('time');
+        
+        let timer = setInterval(function () {
+            let minutes = parseInt(duration / 60, 10);
+            let seconds = parseInt(duration % 60, 10);
+
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+
+            display.textContent = minutes + ":" + seconds;
+
+            if (--duration < 0) {
+                clearInterval(timer);
+                display.textContent = "00:00";
+                document.getElementById('countdown').innerHTML = "OTP Expired. Please request a new one.";
+                document.getElementById('verifyBtn').disabled = true;
+            }
+        }, 1000);
+    });
+</script>
+{% endblock %}

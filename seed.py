@@ -266,9 +266,8 @@ def seed_db():
         # VEGETABLES -> Ramesh Patel
         ('Vegetables', 'Tomato', 'VEG-TOM-01', 'ramesh_patel', 35.00, 500, 'kg', 'crops/tomato.jpg', 'Fresh red vine-ripened tomatoes in wooden crates.'),
         ('Vegetables', 'Potato', 'VEG-POT-01', 'ramesh_patel', 22.00, 1000, 'kg', 'crops/potato.jpg', 'Fresh organic russet potatoes harvested directly from soil.'),
-        ('Vegetables', 'Onion', 'VEG-ONI-01', 'ramesh_patel', 28.00, 800, 'kg', 'crops/onion.jpg', 'Farm-fresh purple red onions stacked in wholesale packs.'),
-        ('Vegetables', 'Green Chili', 'VEG-CHI-01', 'ramesh_patel', 45.00, 150, 'kg', 'crops/green_chili.jpg', 'Spicy fresh green chilies harvested directly from plants.'),
-        ('Vegetables', 'Cabbage', 'VEG-CAB-01', 'ramesh_patel', 30.00, 300, 'kg', 'crops/cabbage.jpg', 'Large, leafy organic green cabbages from vegetable fields.'),
+        ('Vegetables', 'Onion', 'VEG-ONI-01', 'ramesh_patel', 28.00, 800, 'kg', 'crops/onion.jpeg.jpg', 'Farm-fresh purple red onions stacked in wholesale packs.'),
+        ('Vegetables', 'Green Chili', 'VEG-CHI-01', 'ramesh_patel', 45.00, 150, 'kg', 'crops/chilli.jpg', 'Spicy fresh green chilies harvested directly from plants.'),
 
         # FRUITS -> Rajesh Verma
         ('Fruits', 'Mango', 'FRU-MAN-01', 'rajesh_verma', 120.00, 200, 'piece', 'crops/mango.jpg', 'Juicy and sweet Alphonso mangoes, hand-packed in baskets.'),
@@ -323,31 +322,7 @@ def seed_db():
     for cat_name, name, sku, farmer_username, price, qty, unit, img_path, desc in crops_data:
         farmer_prof = farmer_profiles[farmer_username]
         
-        # Determine shelf life based on crop name/category
-        lower_name = name.lower()
-        cat_lower = cat_name.lower()
-        
-        if 'spinach' in lower_name or 'coriander' in lower_name or 'milk' in lower_name or 'curd' in lower_name:
-            shelf_life = 2
-        elif 'paneer' in lower_name or 'banana' in lower_name or 'chili' in lower_name:
-            shelf_life = 4
-        elif cat_lower in ['vegetables', 'organic products']:
-            if 'tomato' in lower_name or 'cucumber' in lower_name:
-                shelf_life = 7
-            else:
-                shelf_life = 14
-        elif cat_lower == 'dairy products':
-            if 'butter' in lower_name:
-                shelf_life = 30
-            else:
-                shelf_life = 90  # cheese
-        elif cat_lower == 'fruits':
-            if 'watermelon' in lower_name:
-                shelf_life = 7
-            else:
-                shelf_life = 15
-        else:
-            shelf_life = 180  # grains, pulses, spices, seeds
+        shelf_life = 180
 
         crop, created = Crop.objects.get_or_create(
             name=name,

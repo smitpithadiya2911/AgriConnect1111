@@ -10,13 +10,8 @@ from .models import (
     Payment,
     Review,
     Notification,
-    Feedback,
-    PriceTrend,
     ChatMessage,
     Wishlist,
-    FavoriteFarmer,
-    FarmerRating,
-    Report,
 )
 
 
@@ -202,50 +197,6 @@ class NotificationAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(Feedback)
-class FeedbackAdmin(admin.ModelAdmin):
-    list_display = (
-        'id',
-        'user',
-        'subject',
-        'is_resolved',
-        'created_at'
-    )
-
-    list_filter = (
-        'is_resolved',
-    )
-
-    search_fields = (
-        'subject',
-        'user__username'
-    )
-
-    list_editable = (
-        'is_resolved',
-    )
-
-
-@admin.register(PriceTrend)
-class PriceTrendAdmin(admin.ModelAdmin):
-    list_display = (
-        'id',
-        'crop_name',
-        'category',
-        'avg_price',
-        'record_date'
-    )
-
-    list_filter = (
-        'category',
-        'record_date'
-    )
-
-    search_fields = (
-        'crop_name',
-    )
-
-
 @admin.register(ChatMessage)
 class ChatMessageAdmin(admin.ModelAdmin):
     list_display = (
@@ -275,22 +226,3 @@ class WishlistAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'crop__name')
 
 
-@admin.register(FavoriteFarmer)
-class FavoriteFarmerAdmin(admin.ModelAdmin):
-    list_display = ('id', 'buyer', 'farmer', 'followed_at')
-    list_filter = ('followed_at',)
-    search_fields = ('buyer__username', 'farmer__farm_name')
-
-
-@admin.register(FarmerRating)
-class FarmerRatingAdmin(admin.ModelAdmin):
-    list_display = ('id', 'buyer', 'farmer', 'rating', 'quality_rating', 'communication_rating', 'delivery_rating', 'packaging_rating', 'created_at')
-    list_filter = ('rating', 'created_at')
-    search_fields = ('buyer__username', 'farmer__farm_name')
-
-
-@admin.register(Report)
-class ReportAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'report_type', 'generated_by', 'format', 'download_count', 'scheduled_interval', 'created_at')
-    list_filter = ('report_type', 'format', 'scheduled_interval', 'created_at')
-    search_fields = ('name', 'generated_by__username')

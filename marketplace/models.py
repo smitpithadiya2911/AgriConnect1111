@@ -215,6 +215,52 @@ class Order(models.Model):
         }
         return progress_map.get(self.status, 0)
 
+    @property
+    def status_badge_class(self):
+        if self.status in ['Pending', 'Placed']:
+            return 'bg-warning text-dark'
+        elif self.status == 'Confirmed':
+            return 'bg-primary text-white'
+        elif self.status == 'Packed':
+            return 'bg-info text-dark'
+        elif self.status == 'Out For Delivery':
+            return 'bg-warning-subtle text-warning-emphasis border border-warning'
+        elif self.status == 'Delivered':
+            return 'bg-success text-white'
+        elif self.status in ['Cancelled', 'Rejected']:
+            return 'bg-danger text-white'
+        return 'bg-secondary text-white'
+
+    @property
+    def display_status(self):
+        return 'Placed' if self.status == 'Pending' else self.status
+
+    @property
+    def progress_bar_class(self):
+        if self.status == 'Delivered':
+            return 'bg-success'
+        elif self.status in ['Cancelled', 'Rejected']:
+            return 'bg-danger'
+        return 'bg-primary'
+
+    @property
+    def progress_step_text(self):
+        if self.status in ['Pending', 'Placed']:
+            return 'Step 1/5: Order Received'
+        elif self.status == 'Confirmed':
+            return 'Step 2/5: Accepted & Confirmed'
+        elif self.status == 'Packed':
+            return 'Step 3/5: Packed & Ready'
+        elif self.status == 'Out For Delivery':
+            return 'Step 4/5: Courier In-Transit'
+        elif self.status == 'Delivered':
+            return 'Step 5/5: Successfully Delivered'
+        elif self.status == 'Cancelled':
+            return 'Order Cancelled'
+        elif self.status == 'Rejected':
+            return 'Order Rejected'
+        return self.status
+
 
 class OrderItem(models.Model):
     """Represents an individual crop within a larger Order."""

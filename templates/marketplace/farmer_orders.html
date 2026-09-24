@@ -296,35 +296,16 @@
 
                                 <!-- Delivery Stage & Progress -->
                                 <td style="min-width: 160px;">
-                                    <span id="status-badge-{{ order.id }}" class="badge badge-stage 
-                                        {% if order.status == 'Pending' or order.status == 'Placed' %}bg-warning text-dark
-                                        {% elif order.status == 'Confirmed' %}bg-primary text-white
-                                        {% elif order.status == 'Packed' %}bg-info text-dark
-                                        {% elif order.status == 'Out For Delivery' %}bg-warning-subtle text-warning-emphasis border border-warning
-                                        {% elif order.status == 'Delivered' %}bg-success text-white
-                                        {% elif order.status == 'Cancelled' or order.status == 'Rejected' %}bg-danger text-white
-                                        {% else %}bg-secondary text-white{% endif %}">
-                                        {% if order.status == 'Pending' %}Placed{% else %}{{ order.status }}{% endif %}
+                                    <span id="status-badge-{{ order.id }}" class="badge badge-stage {{ order.status_badge_class }}">
+                                        {{ order.display_status }}
                                     </span>
                                     
                                     <!-- Progress indicator bar -->
                                     <div class="progress-bar-delivery">
-                                        <div id="progress-fill-{{ order.id }}" class="progress-fill 
-                                            {% if order.status == 'Delivered' %}bg-success
-                                            {% elif order.status == 'Cancelled' or order.status == 'Rejected' %}bg-danger
-                                            {% else %}bg-primary{% endif %}" 
-                                            style="width: {{ order.delivery_progress }}%;">
-                                        </div>
+                                        <div id="progress-fill-{{ order.id }}" class="progress-fill {{ order.progress_bar_class }}" style="width: {{ order.delivery_progress }}%;"></div>
                                     </div>
                                     <small id="progress-text-{{ order.id }}" class="text-muted d-block mt-1" style="font-size: 0.68rem;">
-                                        {% if order.status == 'Pending' or order.status == 'Placed' %}Step 1/5: Order Received
-                                        {% elif order.status == 'Confirmed' %}Step 2/5: Accepted & Confirmed
-                                        {% elif order.status == 'Packed' %}Step 3/5: Packed & Ready
-                                        {% elif order.status == 'Out For Delivery' %}Step 4/5: Courier In-Transit
-                                        {% elif order.status == 'Delivered' %}Step 5/5: Successfully Delivered
-                                        {% elif order.status == 'Cancelled' %}Order Cancelled
-                                        {% elif order.status == 'Rejected' %}Order Rejected
-                                        {% else %}{{ order.status }}{% endif %}
+                                        {{ order.progress_step_text }}
                                     </small>
                                 </td>
 
@@ -353,13 +334,13 @@
                                                     data-order-id="{{ order.id }}" 
                                                     style="width: 160px; font-size: 0.78rem;" 
                                                     onchange="updateOrderStatus(this)">
-                                                <option value="Placed" {% if order.status == 'Placed' or order.status == 'Pending' %}selected{% endif %}>Placed</option>
-                                                <option value="Confirmed" {% if order.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
-                                                <option value="Packed" {% if order.status == 'Packed' %}selected{% endif %}>Packed</option>
-                                                <option value="Out For Delivery" {% if order.status == 'Out For Delivery' %}selected{% endif %}>Out For Delivery</option>
-                                                <option value="Delivered" {% if order.status == 'Delivered' %}selected{% endif %}>Delivered</option>
-                                                <option value="Rejected" {% if order.status == 'Rejected' %}selected{% endif %}>Rejected</option>
-                                                <option value="Cancelled" {% if order.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                                <option value="Placed"{% if order.status == 'Placed' or order.status == 'Pending' %} selected{% endif %}>Placed</option>
+                                                <option value="Confirmed"{% if order.status == 'Confirmed' %} selected{% endif %}>Confirmed</option>
+                                                <option value="Packed"{% if order.status == 'Packed' %} selected{% endif %}>Packed</option>
+                                                <option value="Out For Delivery"{% if order.status == 'Out For Delivery' %} selected{% endif %}>Out For Delivery</option>
+                                                <option value="Delivered"{% if order.status == 'Delivered' %} selected{% endif %}>Delivered</option>
+                                                <option value="Rejected"{% if order.status == 'Rejected' %} selected{% endif %}>Rejected</option>
+                                                <option value="Cancelled"{% if order.status == 'Cancelled' %} selected{% endif %}>Cancelled</option>
                                             </select>
                                         {% else %}
                                             <span class="text-muted small" style="font-size: 0.75rem;">
@@ -375,7 +356,7 @@
                                         <!-- Track Delivery Button -->
                                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 shadow-none" 
                                                 title="Track Deliveries & View Stages"
-                                                onclick="openTrackingModal({{ order.id }}, '{{ order.status }}', '{{ order.buyer.username }}', '{{ order.shipping_address|escapejs }}', '{{ order.total_amount }}')">
+                                                onclick="openTrackingModal({{ order.id }}, '{{ order.status }}', '{{ order.buyer.username|escapejs }}', '{{ order.shipping_address|escapejs }}', '{{ order.total_amount }}')">
                                             <i class="fa-solid fa-truck-fast me-1"></i>Track
                                         </button>
                                         

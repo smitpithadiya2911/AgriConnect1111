@@ -19,9 +19,13 @@
                     <p class="text-muted small">Log in to manage your marketplace profile &amp; transactions</p>
                 </div>
 
-                <form method="POST">
+                <form method="POST" autocomplete="off">
                     {% csrf_token %}
                     
+                    <!-- Decoy hidden fields to trap browser auto-fill -->
+                    <input type="text" name="fake_usernamenotremembered" style="position:absolute; top:-9999px; left:-9999px;" tabindex="-1" autocomplete="off">
+                    <input type="password" name="fake_passwordnotremembered" style="position:absolute; top:-9999px; left:-9999px;" tabindex="-1" autocomplete="new-password">
+
                     {% if form.non_field_errors %}
                         <div class="alert alert-danger rounded-3 py-2 text-center small mb-3">
                             {{ form.non_field_errors|striptags }}
@@ -33,7 +37,7 @@
                         <label class="form-label fw-bold small text-muted">Username or Email Address</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 rounded-start-3" style="border-color: #dee2e6;"><i class="fa-solid fa-user text-muted"></i></span>
-                            <input type="text" name="username" class="form-control border-start-0 rounded-end-3" placeholder="Enter username or email" required id="id_username" style="border-color: #dee2e6;">
+                            <input type="text" name="username" class="form-control border-start-0 rounded-end-3" placeholder="Enter username or email" required id="id_username" autocomplete="off" value="" style="border-color: #dee2e6;">
                         </div>
                         {% if form.username.errors %}
                             <div class="text-danger small mt-1">{{ form.username.errors|striptags }}</div>
@@ -42,10 +46,13 @@
 
                     <!-- Password Input with Toggle -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted mb-1">Password</label>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-bold small text-muted mb-0">Password</label>
+                            <a href="{% url 'forgot_password' %}" class="small text-success text-decoration-none fw-semibold">Forgot Password?</a>
+                        </div>
                         <div class="input-group position-relative">
                             <span class="input-group-text bg-light border-end-0 rounded-start-3" style="border-color: #dee2e6;"><i class="fa-solid fa-lock text-muted"></i></span>
-                            <input type="password" name="password" class="form-control border-start-0 border-end-0" placeholder="Enter password" required id="id_password" style="border-color: #dee2e6;">
+                            <input type="password" name="password" class="form-control border-start-0 border-end-0" placeholder="Enter password" required id="id_password" autocomplete="new-password" value="" style="border-color: #dee2e6;">
                             <span class="input-group-text bg-light border-start-0 rounded-end-3 cursor-pointer" onclick="togglePasswordVisibility()" style="border-color: #dee2e6;"><i class="fa-solid fa-eye text-muted" id="pwEyeIcon"></i></span>
                         </div>
 
@@ -109,5 +116,20 @@
             eyeIcon.classList.add('fa-eye');
         }
     }
+
+    // Force clear browser autofill on page load
+    window.addEventListener('load', function() {
+        const clearFields = () => {
+            const u = document.getElementById('id_username');
+            const p = document.getElementById('id_password');
+            if (u && u.value === 'buyer_test') u.value = '';
+            // Also if not actively submitted, clear on first load
+            if (p && !document.referrer.includes('login')) p.value = '';
+        };
+        clearFields();
+        setTimeout(clearFields, 50);
+        setTimeout(clearFields, 200);
+        setTimeout(clearFields, 500);
+    });
 </script>
 {% endblock %}

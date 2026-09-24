@@ -1,64 +1,311 @@
 {% extends 'base.html' %}
 
-{% block title %}My Profile – AgriConnect{% endblock %}
+{% block title %}My Profile Settings – AgriConnect{% endblock %}
 
 {% block content %}
 <div class="container py-5 animate-fade">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card-premium p-4">
-                <h2 class="fw-bold text-success mb-2"><i class="fa-solid fa-user-gear me-2"></i>My Profile Settings</h2>
-                <p class="text-muted mb-4">View and update your contact information, credentials, and role-specific settings.</p>
-                
-                <div class="text-center mb-4">
-                    {% if request.user.profile_picture %}
-                        <img src="{{ request.user.profile_picture.url }}" alt="Profile" class="rounded-circle border border-success border-3 p-1 mb-2" style="width: 120px; height: 120px; object-fit: cover;">
-                    {% else %}
-                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 120px; height: 120px; font-size: 3.5rem; font-weight: 700;">
-                            {{ request.user.username|slice:":1"|upper }}
-                        </div>
-                    {% endif %}
-                    <h4 class="fw-bold mb-0">{{ request.user.username }}</h4>
-                    <span class="badge bg-success-subtle text-success text-uppercase px-3 py-2 mt-1">{{ request.user.get_role_display }}</span>
+        <div class="col-lg-8 col-md-10">
+
+            <!-- Profile Details & Picture Form Card -->
+            <div class="card-premium p-4 p-md-5 mb-4 shadow-sm border-0 rounded-4 bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                    <div>
+                        <h2 class="fw-bold text-success mb-1">
+                            <i class="fa-solid fa-user-gear me-2"></i>My Profile Settings
+                        </h2>
+                        <p class="text-muted small mb-0">Manage your contact details, profile picture, credentials, and role settings.</p>
+                    </div>
+                    <span class="badge bg-success-subtle text-success text-uppercase px-3 py-2 rounded-pill fw-bold">
+                        <i class="fa-solid {% if request.user.role == 'farmer' %}fa-tractor{% else %}fa-cart-shopping{% endif %} me-1"></i>
+                        {{ request.user.get_role_display }}
+                    </span>
                 </div>
 
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" enctype="multipart/form-data" id="profileForm">
                     {% csrf_token %}
-                    
-                    <h5 class="fw-bold mb-3 text-secondary border-bottom pb-2">Core Settings</h5>
-                    {% for field in u_form %}
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.errors %}
-                                <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
+                    <input type="hidden" name="action" value="update_profile">
+                    <input type="hidden" name="remove_picture" id="removePictureField" value="0">
+
+                    <!-- Avatar & Profile Picture Upload Section -->
+                    <div class="text-center mb-4 p-4 rounded-4 bg-light border border-dashed">
+                        <div class="position-relative d-inline-block mb-3">
+                            {% if request.user.profile_picture %}
+                                <img src="{{ request.user.profile_picture.url }}" id="profileAvatarImg" alt="Profile" 
+                                     class="rounded-circle border border-success border-3 p-1 shadow-sm object-fit-cover" 
+                                     style="width: 130px; height: 130px;">
+                                <div id="profileAvatarInitial" class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto shadow-sm d-none" 
+                                     style="width: 130px; height: 130px; font-size: 3.5rem; font-weight: 700;">
+                                    {{ request.user.username|slice:":1"|upper }}
+                                </div>
+                            {% else %}
+                                <img src="" id="profileAvatarImg" alt="Profile" 
+                                     class="rounded-circle border border-success border-3 p-1 shadow-sm object-fit-cover d-none" 
+                                     style="width: 130px; height: 130px;">
+                                <div id="profileAvatarInitial" class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto shadow-sm" 
+                                     style="width: 130px; height: 130px; font-size: 3.5rem; font-weight: 700;">
+                                    {{ request.user.username|slice:":1"|upper }}
+                                </div>
+                            {% endif %}
+
+                            <!-- Quick Camera Trigger Overlay -->
+                            <label for="profilePicInput" class="btn btn-success btn-sm rounded-circle position-absolute bottom-0 end-0 shadow-sm d-flex align-items-center justify-content-center cursor-pointer" 
+                                   style="width: 40px; height: 40px; transform: translate(5px, 5px);" title="Upload Profile Picture">
+                                <i class="fa-solid fa-camera text-white fs-6"></i>
+                            </label>
+                        </div>
+
+                        <!-- Real Hidden File Input with Custom Stylings -->
+                        <input type="file" name="profile_picture" id="profilePicInput" class="d-none" accept="image/*">
+
+                        <div>
+                            <h5 class="fw-bold mb-1 text-dark">{{ request.user.get_full_name|default:request.user.username }}</h5>
+                            <p class="text-muted small mb-2">@{{ request.user.username }} &bull; {{ request.user.email }}</p>
+
+                            <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+                                <label for="profilePicInput" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1 cursor-pointer">
+                                    <i class="fa-solid fa-upload me-1"></i> Choose New Photo
+                                </label>
+                                {% if request.user.profile_picture %}
+                                    <button type="button" id="removePhotoBtn" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1" onclick="removePhoto()">
+                                        <i class="fa-solid fa-trash-can me-1"></i> Remove Photo
+                                    </button>
+                                {% endif %}
+                            </div>
+
+                            <!-- Live Feedback on Selected File -->
+                            <div id="photoStatusBadge" class="badge bg-primary-subtle text-primary mt-2 d-none px-3 py-1.5 rounded-pill small">
+                                <i class="fa-solid fa-image me-1"></i> <span id="photoFileName">New photo chosen</span> (Click "Save Settings" to apply)
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Core User Settings -->
+                    <h5 class="fw-bold mb-3 text-secondary border-bottom pb-2">
+                        <i class="fa-solid fa-id-card me-2 text-success"></i>Core Personal Information
+                    </h5>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">First Name</label>
+                            {{ u_form.first_name }}
+                            {% if u_form.first_name.errors %}
+                                <div class="text-danger small mt-1">{{ u_form.first_name.errors|striptags }}</div>
                             {% endif %}
                         </div>
-                    {% endfor %}
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Last Name</label>
+                            {{ u_form.last_name }}
+                            {% if u_form.last_name.errors %}
+                                <div class="text-danger small mt-1">{{ u_form.last_name.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
 
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Email Address</label>
+                            {{ u_form.email }}
+                            {% if u_form.email.errors %}
+                                <div class="text-danger small mt-1">{{ u_form.email.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Phone Number</label>
+                            {{ u_form.phone }}
+                            {% if u_form.phone.errors %}
+                                <div class="text-danger small mt-1">{{ u_form.phone.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted">Address</label>
+                        {{ u_form.address }}
+                        {% if u_form.address.errors %}
+                            <div class="text-danger small mt-1">{{ u_form.address.errors|striptags }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Role-Specific Settings -->
                     {% if p_form %}
                         <h5 class="fw-bold my-4 text-success border-bottom pb-2">
                             {% if role == 'farmer' %}
-                                <i class="fa-solid fa-tractor me-2"></i>Farm Profile Settings
+                                <i class="fa-solid fa-tractor me-2"></i>Farm Details &amp; Profile Settings
                             {% else %}
-                                <i class="fa-solid fa-address-card me-2"></i>Buyer Profile Settings
+                                <i class="fa-solid fa-truck-ramp-box me-2"></i>Buyer Delivery &amp; Profile Settings
                             {% endif %}
                         </h5>
-                        {% for field in p_form %}
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small text-success">{{ field.label }}</label>
-                                {{ field }}
-                                {% if field.errors %}
-                                    <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
+
+                        <div class="row g-3">
+                            {% for field in p_form %}
+                                <div class="{% if field.name == 'delivery_address' or field.name == 'about' %}col-12{% else %}col-md-6{% endif %}">
+                                    <label class="form-label fw-bold small text-muted">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% if field.errors %}
+                                        <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
                     {% endif %}
 
-                    <button type="submit" class="btn btn-primary-custom w-100 py-2 mt-4"><i class="fa-solid fa-floppy-disk me-2"></i>Save Settings</button>
+                    <button type="submit" class="btn btn-success w-100 py-2.5 mt-4 fw-bold rounded-3 shadow-sm">
+                        <i class="fa-solid fa-floppy-disk me-2"></i>Save Profile Settings
+                    </button>
                 </form>
             </div>
+
+
+            <!-- Security & Password Change Card -->
+            <div class="card-premium p-4 p-md-5 mb-5 shadow-sm border-0 rounded-4 bg-white" id="securitySection">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-success-subtle text-success rounded-circle p-2.5 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="fa-solid fa-shield-halved fs-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">
+                            <i class="fa-solid fa-lock text-success me-2"></i>Change Password
+                        </h4>
+                        <p class="text-muted small mb-0">Forgot your password or want to set a new one? Update it directly below without needing your old password.</p>
+                    </div>
+                </div>
+
+                <div class="alert alert-light border-start border-4 border-success py-2.5 px-3 rounded-2 small text-muted mb-4">
+                    <i class="fa-solid fa-circle-info text-success me-2"></i>
+                    Since you are logged into your account, you can set a brand new password directly. Ensure it is at least 6 characters long.
+                </div>
+
+                <form method="POST" action="{% url 'profile' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="change_password">
+
+                    <div class="row g-3 mb-3">
+                        <!-- New Password -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">New Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-key text-muted"></i></span>
+                                <input type="password" name="new_password" id="id_new_password" 
+                                       class="form-control border-start-0 border-end-0" 
+                                       placeholder="Enter new password" required minlength="6" oninput="checkPasswordMatch()">
+                                <button type="button" class="input-group-text bg-light border-start-0 cursor-pointer" onclick="togglePassword('id_new_password', 'eyeIcon1')">
+                                    <i class="fa-solid fa-eye text-muted" id="eyeIcon1"></i>
+                                </button>
+                            </div>
+                            <div class="form-text small">Minimum 6 characters.</div>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Confirm New Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-circle-check text-muted"></i></span>
+                                <input type="password" name="confirm_password" id="id_confirm_password" 
+                                       class="form-control border-start-0 border-end-0" 
+                                       placeholder="Confirm new password" required minlength="6" oninput="checkPasswordMatch()">
+                                <button type="button" class="input-group-text bg-light border-start-0 cursor-pointer" onclick="togglePassword('id_confirm_password', 'eyeIcon2')">
+                                    <i class="fa-solid fa-eye text-muted" id="eyeIcon2"></i>
+                                </button>
+                            </div>
+                            <div id="matchMessage" class="small mt-1 fw-semibold"></div>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="savePasswordBtn" class="btn btn-outline-success fw-bold w-100 py-2.5 rounded-3">
+                        <i class="fa-solid fa-shield-check me-2"></i>Update Password
+                    </button>
+                </form>
+            </div>
+
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Live Avatar Preview on File Selection
+    const picInput = document.getElementById('profilePicInput');
+    const avatarImg = document.getElementById('profileAvatarImg');
+    const avatarInitial = document.getElementById('profileAvatarInitial');
+    const photoBadge = document.getElementById('photoStatusBadge');
+    const photoFileName = document.getElementById('photoFileName');
+    const removeField = document.getElementById('removePictureField');
+
+    if (picInput) {
+        picInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Verify image file
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select a valid image file (JPG, PNG, WEBP).');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    avatarImg.src = evt.target.result;
+                    avatarImg.classList.remove('d-none');
+                    if (avatarInitial) avatarInitial.classList.add('d-none');
+                    
+                    photoFileName.textContent = file.name;
+                    photoBadge.classList.remove('d-none');
+                    removeField.value = '0';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Remove photo handler
+    function removePhoto() {
+        if (confirm('Are you sure you want to remove your profile picture? Click "Save Settings" to confirm.')) {
+            removeField.value = '1';
+            picInput.value = '';
+            avatarImg.src = '';
+            avatarImg.classList.add('d-none');
+            if (avatarInitial) avatarInitial.classList.remove('d-none');
+            photoFileName.textContent = 'Photo will be removed';
+            photoBadge.classList.remove('d-none');
+            photoBadge.className = 'badge bg-danger-subtle text-danger mt-2 px-3 py-1.5 rounded-pill small';
+        }
+    }
+
+    // Password visibility toggle
+    function togglePassword(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    // Real-time password match validator
+    function checkPasswordMatch() {
+        const p1 = document.getElementById('id_new_password').value;
+        const p2 = document.getElementById('id_confirm_password').value;
+        const msg = document.getElementById('matchMessage');
+        const btn = document.getElementById('savePasswordBtn');
+
+        if (!p2) {
+            msg.textContent = '';
+            return;
+        }
+
+        if (p1 === p2) {
+            msg.textContent = '✓ Passwords match';
+            msg.className = 'small mt-1 fw-semibold text-success';
+        } else {
+            msg.textContent = '✗ Passwords do not match';
+            msg.className = 'small mt-1 fw-semibold text-danger';
+        }
+    }
+</script>
 {% endblock %}

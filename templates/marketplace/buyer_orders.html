@@ -89,12 +89,18 @@
                                 <td class="fw-bold">#{{ order.id }}</td>
                                 <td>{{ order.created_at|date:"M d, Y" }}</td>
                                 <td>
-                                    <div class="fw-bold text-dark">{{ order.farmer.user.first_name|default:order.farmer.user.username }}</div>
-                                    <small class="text-muted"><i class="fa-solid fa-tractor text-success me-1"></i>{{ order.farmer.farm_name }}</small>
+                                    {% if order.farmer and order.farmer.user %}
+                                        <div class="fw-bold text-dark">{{ order.farmer.user.first_name|default:order.farmer.user.username }}</div>
+                                        <small class="text-muted"><i class="fa-solid fa-tractor text-success me-1"></i>{{ order.farmer.farm_name|default:"Verified Farm" }}</small>
+                                    {% elif order.farmer %}
+                                        <div class="fw-bold text-dark">{{ order.farmer.farm_name|default:"Direct Farmer" }}</div>
+                                    {% else %}
+                                        <div class="fw-bold text-muted">Direct Marketplace Order</div>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <strong class="text-success fs-5">₹{{ order.total_amount }}</strong>
-                                    <br><span class="badge bg-success-subtle text-success" style="font-size: 0.62rem;">COD Mode</span>
+                                    <br><span class="badge bg-success-subtle text-success" style="font-size: 0.62rem;">{{ order.payment_method|default:"COD" }} Mode</span>
                                 </td>
                                 <td>
                                     <span class="badge {% if order.status == 'Delivered' %}bg-success{% else %}bg-warning text-dark{% endif %}" style="font-size: 0.72rem;">
@@ -113,7 +119,7 @@
                                 <td class="text-end">
                                     <div class="d-inline-flex gap-1">
                                         <a href="{% url 'order_tracking' order.id %}" class="btn btn-sm btn-outline-success px-3 rounded-pill"><i class="fa-solid fa-route me-1"></i>Track</a>
-                                        {% if order.status == 'Delivered' %}
+                                        {% if order.status == 'Delivered' and order.farmer %}
                                             <a href="{% url 'farmer_rate' order.farmer.id %}" class="btn btn-sm btn-warning px-3 rounded-pill text-dark"><i class="fa-solid fa-star me-1"></i>Rate Farmer</a>
                                         {% endif %}
                                         <a href="{% url 'order_invoice' order.id %}" class="btn btn-sm btn-outline-secondary px-3 rounded-pill"><i class="fa-solid fa-file-invoice me-1"></i>Invoice</a>

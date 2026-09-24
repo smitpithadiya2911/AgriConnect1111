@@ -106,7 +106,6 @@ class Buyer(models.Model):
     city = models.CharField(max_length=100, blank=True, null=True)
     state = models.CharField(max_length=100, blank=True, null=True)
     pincode = models.CharField(max_length=10, blank=True, null=True)
-    favorite_farmers = models.ManyToManyField(Farmer, related_name='favorited_by', blank=True)
 
     def __str__(self):
         return f"Buyer Profile for {self.user.username}"

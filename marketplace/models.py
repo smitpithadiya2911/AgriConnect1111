@@ -143,8 +143,10 @@ class CartItem(models.Model):
 class Order(models.Model):
     """Represents a finalized purchase made by a buyer."""
     STATUS_CHOICES = (
-        ('Pending', 'Pending'),
+        ('Placed', 'Placed'),
+        ('Pending', 'Placed (Pending)'),
         ('Confirmed', 'Confirmed'),
+        ('Packed', 'Packed'),
         ('Out For Delivery', 'Out For Delivery'),
         ('Delivered', 'Delivered'),
         ('Cancelled', 'Cancelled'),
@@ -188,6 +190,30 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} by {self.buyer.username}"
+
+    @property
+    def is_new_order(self):
+        return self.status in ['Pending', 'Placed']
+
+    @property
+    def is_in_transit(self):
+        return self.status in ['Confirmed', 'Packed', 'Out For Delivery']
+
+    @property
+    def is_completed(self):
+        return self.status in ['Delivered', 'Cancelled', 'Rejected', 'Returned']
+
+    @property
+    def delivery_progress(self):
+        progress_map = {
+            'Pending': 20,
+            'Placed': 20,
+            'Confirmed': 40,
+            'Packed': 60,
+            'Out For Delivery': 85,
+            'Delivered': 100,
+        }
+        return progress_map.get(self.status, 0)
 
 
 class OrderItem(models.Model):
@@ -289,21 +315,6 @@ class Notification(models.Model):
     def __str__(self):
         return f"Notification for {self.user.username} - {self.notification_type} ({self.priority})"
 
-
-class ChatMessage(models.Model):
-    """Direct messaging between farmers and buyers."""
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_messages')
-    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_messages')
-    crop = models.ForeignKey(Crop, on_delete=models.SET_NULL, null=True, blank=True)
-    message = models.TextField()
-    is_read = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['created_at']
-
-    def __str__(self):
-        return f"Msg from {self.sender.username} to {self.receiver.username}"
 
 
 class Wishlist(models.Model):

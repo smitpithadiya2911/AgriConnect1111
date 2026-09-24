@@ -111,7 +111,7 @@ default_db_url = (
 
 DATABASE_URL = os.environ.get('DATABASE_URL', default_db_url)
 
-db_config = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+db_config = dj_database_url.parse(DATABASE_URL, conn_max_age=0, conn_health_checks=True)
 
 # PyMySQL does not accept mysqlclient-specific keyword arguments like 'ssl-mode' or 'sslmode'
 if 'OPTIONS' in db_config:

@@ -38,7 +38,7 @@
                         {% else %}
                             <span class="badge bg-secondary text-white px-2 py-1 small rounded-pill"><i class="fa-solid fa-circle-minus me-1"></i>Standard Seller</span>
                         {% endif %}
-                        {% if "organic" in farmer.specialization.lower %}
+                        {% if "organic" in farmer.specialization|lower %}
                             <span class="badge bg-warning text-dark px-2 py-1 rounded-pill small"><i class="fa-solid fa-leaf me-1"></i>Organic Certified</span>
                         {% endif %}
                     </div>
@@ -55,7 +55,7 @@
                         <a href="{% url 'farmer_rate' farmer.id %}" class="btn btn-outline-warning rounded-pill px-4 text-dark"><i class="fa-solid fa-star me-1"></i>Rate Seller</a>
                     {% endif %}
                 {% endif %}
-                <a href="tel:{{ farmer.user.phone|default:'9876543210' }}" class="btn btn-outline-success rounded-pill px-4"><i class="fa-solid fa-phone me-2"></i>Call Seller</a>
+                <a href="tel:{{ farmer.user.phone|default:'9876543210' }}" class="btn btn-outline-success rounded-pill px-4" rel="nofollow"><i class="fa-solid fa-phone me-2"></i>Call Seller</a>
             </div>
         </div>
 
@@ -133,7 +133,7 @@
                         <strong class="text-success">{{ farmer.ontime_delivery }}%</strong>
                     </div>
                     <div class="progress" style="height: 6px;">
-                        <div class="progress-bar bg-success" style="width: {{ farmer.ontime_delivery }}%"></div>
+                        <div class="progress-bar bg-success perf-bar" data-width="{{ farmer.ontime_delivery }}"></div>
                     </div>
                 </div>
 
@@ -143,7 +143,7 @@
                         <strong class="text-success">{{ farmer.satisfaction_rate }}%</strong>
                     </div>
                     <div class="progress" style="height: 6px;">
-                        <div class="progress-bar bg-success" style="width: {{ farmer.satisfaction_rate }}%"></div>
+                        <div class="progress-bar bg-success perf-bar" data-width="{{ farmer.satisfaction_rate }}"></div>
                     </div>
                 </div>
 
@@ -294,4 +294,14 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Set progress bar widths from data attributes to avoid HTML validation errors
+    document.querySelectorAll('.perf-bar').forEach(function(bar) {
+        var w = bar.getAttribute('data-width');
+        if (w) bar.style.width = w + '%';
+    });
+</script>
 {% endblock %}

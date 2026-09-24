@@ -108,16 +108,6 @@ class CheckoutForm(forms.Form):
         return cleaned_data
 
 
-class ChatMessageForm(forms.Form):
-    message = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'class': 'form-control',
-            'rows': 2,
-            'placeholder': 'Type your message here...',
-            'style': 'resize: none; border-radius: 12px;'
-        }),
-        required=True
-    )
 
 
 class AdvancedCropRecommendationForm(forms.Form):

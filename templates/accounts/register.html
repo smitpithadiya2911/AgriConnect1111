@@ -73,8 +73,12 @@
                     <p class="text-muted small">Select your profile role below to begin registration</p>
                 </div>
 
-                <form method="POST" enctype="multipart/form-data" id="onboardingForm">
+                <form method="POST" enctype="multipart/form-data" id="onboardingForm" autocomplete="off">
                     {% csrf_token %}
+
+                    <!-- Decoy hidden fields to trap browser auto-fill -->
+                    <input type="text" name="fake_usernamenotremembered" style="position:absolute; top:-9999px; left:-9999px;" tabindex="-1" autocomplete="off">
+                    <input type="password" name="fake_passwordnotremembered" style="position:absolute; top:-9999px; left:-9999px;" tabindex="-1" autocomplete="new-password">
                     
                     <!-- Hidden input for selected role -->
                     <select name="role" id="id_role" class="d-none">
@@ -490,6 +494,19 @@
                 }
             });
         }
+
+        // Clear any browser autofilled values on registration load
+        const clearRegFields = () => {
+            const u = document.getElementById('id_username');
+            const p = document.getElementById('id_password');
+            const cp = document.getElementById('id_confirm_password');
+            if (u && !'{{ form.username.value|default:"" }}') u.value = '';
+            if (p) p.value = '';
+            if (cp) cp.value = '';
+        };
+        clearRegFields();
+        setTimeout(clearRegFields, 50);
+        setTimeout(clearRegFields, 200);
 
         // Trigger default initial role toggle state
         selectRole(document.getElementById('id_role').value);

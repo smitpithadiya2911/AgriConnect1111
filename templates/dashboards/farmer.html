@@ -331,7 +331,6 @@
                     <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-products" type="button" role="tab"><i class="fa-solid fa-wheat-awn w-20px"></i> My Products</button>
                     <a href="{% url 'crop_create' %}" class="nav-link"><i class="fa-solid fa-plus w-20px"></i> Add Product</a>
                     <a href="{% url 'farmer_orders' %}" class="nav-link"><i class="fa-solid fa-receipt w-20px"></i> Orders</a>
-                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-inventory" type="button" role="tab"><i class="fa-solid fa-boxes-stacked w-20px"></i> Inventory</button>
                     <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-analytics" type="button" role="tab"><i class="fa-solid fa-chart-pie w-20px"></i> Sales Analytics</button>
                     <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-reviews" type="button" role="tab"><i class="fa-solid fa-star w-20px text-warning"></i> Customer Reviews</button>
                     <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-profile" type="button" role="tab"><i class="fa-solid fa-tractor w-20px"></i> Farm Profile</button>
@@ -471,33 +470,6 @@
                         </div>
                     </div>
 
-                    <!-- INVENTORY STATUS QUICK STRIP -->
-                    <div class="glass-card p-3 mb-4 bg-white border-0 shadow-sm">
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="fw-bold text-dark small text-uppercase">
-                                    <i class="fa-solid fa-layer-group text-success me-1"></i>Inventory Status:
-                                </span>
-                                <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 fw-semibold">
-                                    <i class="fa-solid fa-circle-check me-1"></i>In Stock: {{ in_stock_count }}
-                                </span>
-                                <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-1 fw-semibold">
-                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>Low Stock: {{ low_stock_count }}
-                                </span>
-                                <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1 fw-semibold">
-                                    <i class="fa-solid fa-circle-xmark me-1"></i>Out of Stock: {{ out_of_stock_count }}
-                                </span>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="text-muted small fw-semibold">
-                                    <i class="fa-solid fa-users text-primary me-1"></i>Customers Served: <strong>{{ active_customers }}</strong>
-                                </span>
-                                <button class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-0" onclick="document.querySelector('[data-bs-target=\'#tab-inventory\']').click();" title="Adjust Stock">
-                                    Adjust Stock <i class="fa-solid fa-arrow-right ms-1"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- Row: Weather & Orders Portal -->
                     <div class="row g-4 mb-4">
@@ -710,71 +682,6 @@
 
 
                 <!-- ================= TAB: ORDERS ================= -->
-                <!-- ================= TAB: INVENTORY ================= -->
-                <div class="tab-pane fade" id="tab-inventory" role="tabpanel">
-                    <div class="glass-card p-4">
-                        <h5 class="fw-bold text-dark mb-4">Inventory Management</h5>
-                        <div class="row g-4 mb-4">
-                            <div class="col-md-4">
-                                <div class="bg-light p-3 rounded-4 border text-center">
-                                    <h3 id="in-stock-count" class="fw-bold text-success mb-0">{{ in_stock_count }}</h3>
-                                    <small class="text-muted text-uppercase fw-bold">In Stock Products</small>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="bg-light p-3 rounded-4 border border-warning-subtle text-center">
-                                    <h3 id="low-stock-count" class="fw-bold text-warning mb-0">{{ low_stock_count }}</h3>
-                                    <small class="text-muted text-uppercase fw-bold">Low Stock Alerts</small>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="bg-light p-3 rounded-4 border border-danger-subtle text-center">
-                                    <h3 id="out-of-stock-count" class="fw-bold text-danger mb-0">{{ out_of_stock_count }}</h3>
-                                    <small class="text-muted text-uppercase fw-bold">Out of Stock</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-custom align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>Product Name</th>
-                                        <th>SKU / Category</th>
-                                        <th>Current Stock</th>
-                                        <th>Status</th>
-                                        <th>Quick Update</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-{% for crop in all_crops %}
-<tr id="crop-row-{{ crop.id }}">
-    <td class="fw-bold text-dark">{{ crop.name }}</td>
-    <td class="text-muted small">SKU-{{ crop.id }} <br> {{ crop.category.name|default:"Uncategorized" }}</td>
-    <td><span id="stock-display-{{ crop.id }}" class="fs-5 fw-bold {% if crop.quantity_available == 0 %}text-danger{% elif crop.quantity_available < 20 %}text-warning{% endif %}">{{ crop.quantity_available }}</span> <small>{{ crop.get_unit_display|default:crop.unit }}</small></td>
-    <td id="status-cell-{{ crop.id }}">
-        {% if crop.quantity_available == 0 %}
-            <span class="badge bg-danger text-white px-3 py-2 rounded-pill">Out of Stock</span>
-        {% elif crop.quantity_available < 20 %}
-            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fa-solid fa-triangle-exclamation"></i> Low Stock</span>
-        {% else %}
-            <span class="badge badge-soft-success px-3 py-2 rounded-pill">In Stock</span>
-        {% endif %}
-    </td>
-    <td>
-        <div class="input-group input-group-sm" style="width: 130px;">
-            <input type="number" id="quick-stock-{{ crop.id }}" class="form-control" value="{{ crop.quantity_available }}" min="0" step="any">
-            <button class="btn btn-success" onclick="updateCropStock({{ crop.id }})"><i class="fa-solid fa-check"></i></button>
-        </div>
-    </td>
-</tr>
-{% empty %}
-<tr><td colspan="5" class="text-center text-muted py-4">No inventory to manage.</td></tr>
-{% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- ================= TAB: FARM PROFILE ================= -->
                 <div class="tab-pane fade" id="tab-profile" role="tabpanel">

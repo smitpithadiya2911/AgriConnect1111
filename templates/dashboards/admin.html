@@ -314,9 +314,6 @@
                 <span class="badge rounded-pill bg-warning text-dark ms-auto" style="font-size: 0.65rem;">{{ pending_crops.count }}</span>
                 {% endif %}
             </a>
-            <a href="#" class="nav-link" data-tab-target="reviews">
-                <i class="fa-solid fa-star icon"></i> Reviews & Ratings
-            </a>
             <a href="#" class="nav-link" data-tab-target="notifications">
                 <i class="fa-solid fa-bell icon"></i> Notifications
                 {% if notifications %}
@@ -429,14 +426,6 @@
                 <div>
                     <h3 class="fw-bold mb-1 text-dark" id="page-title">Operations Center</h3>
                     <p class="text-muted mb-0 small" id="page-subtitle">Welcome back, Admin! Real-time marketplace control, approvals, and metrics.</p>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-success rounded-pill px-3 py-2 fw-semibold small" onclick="window.location.reload();">
-                        <i class="fa-solid fa-arrows-rotate me-1"></i> Refresh Data
-                    </button>
-                    <button class="btn btn-agri-primary shadow-sm small" onclick="document.querySelector('[data-tab-target=\'reports\']').click();">
-                        <i class="fa-solid fa-file-export me-1"></i> Quick Reports
-                    </button>
                 </div>
             </div>
             
@@ -835,16 +824,15 @@
                                     <th>Account Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {% for farmer in farmers_list %}
-                                <tr>
+                                                        {% for farmer in farmers_list %}
+                                <tr id="farmer-row-{{ farmer.user.pk }}">
                                     <td class="text-muted fw-bold">{{ forloop.counter }}</td>
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
                                             <img src="https://ui-avatars.com/api/?name={{ farmer.user.username }}&background=2E7D32&color=fff" width="34" height="34" class="rounded-circle shadow-sm">
                                             <div>
                                                 <div class="fw-bold text-dark">{{ farmer.user.username }}</div>
-                                                <small class="text-muted">{{ farmer.farm_name|default:"Independent Farmer" }}</small>
+                                                <small class="text-muted">{{ farmer.farm_name|default:"Independent Grower" }}</small>
                                             </div>
                                         </div>
                                     </td>
@@ -875,12 +863,10 @@
                                             <a href="{% url 'admin_suspend_user' farmer.user.pk %}" class="btn btn-sm btn-light text-warning rounded-pill px-2 py-1" title="Suspend/Activate User">
                                                 <i class="fa-solid fa-ban"></i>
                                             </a>
-                                            <form action="{% url 'admin_delete_user' farmer.user.pk %}" method="POST" class="d-inline">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-sm btn-light text-danger rounded-pill px-2 py-1" title="Deactivate" onclick="return confirm('Are you sure you want to deactivate this farmer account?');">
-                                                    <i class="fa-solid fa-trash"></i>
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-sm btn-light text-danger rounded-pill px-2 py-1" title="Delete Farmer Account" 
+                                                    onclick="openDeleteUserModal('{{ farmer.user.pk }}', '{{ farmer.user.username|escapejs }}', '{{ farmer.user.email|escapejs }}', '{{ farmer.crops.count }} Crops', 'farmer')">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -929,7 +915,7 @@
                             </thead>
                             <tbody>
                                 {% for buyer in buyers_list %}
-                                <tr>
+                                <tr id="buyer-row-{{ buyer.user.pk }}">
                                     <td class="text-muted fw-bold">{{ forloop.counter }}</td>
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
@@ -959,12 +945,10 @@
                                             <a href="{% url 'admin_suspend_user' buyer.user.pk %}" class="btn btn-sm btn-light text-warning rounded-pill px-2 py-1" title="Suspend/Activate">
                                                 <i class="fa-solid fa-ban"></i>
                                             </a>
-                                            <form action="{% url 'admin_delete_user' buyer.user.pk %}" method="POST" class="d-inline">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-sm btn-light text-danger rounded-pill px-2 py-1" title="Deactivate" onclick="return confirm('Are you sure you want to deactivate this buyer?');">
-                                                    <i class="fa-solid fa-trash"></i>
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-sm btn-light text-danger rounded-pill px-2 py-1" title="Delete Buyer Account" 
+                                                    onclick="openDeleteUserModal('{{ buyer.user.pk }}', '{{ buyer.user.username|escapejs }}', '{{ buyer.user.email|escapejs }}', '{{ buyer.orders.count|default:0 }} Orders', 'buyer')">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -1057,9 +1041,6 @@
                                                 <i class="fa-solid fa-check"></i>
                                             </a>
                                             {% endif %}
-                                            <a href="{% url 'admin_reject_crop' product.pk %}" class="btn btn-sm btn-light text-warning rounded-pill px-2 py-1" title="Hide/Reject">
-                                                <i class="fa-solid fa-eye-slash"></i>
-                                            </a>
                                             <a href="{% url 'admin_delete_crop' product.pk %}" class="btn btn-sm btn-light text-danger rounded-pill px-2 py-1" title="Delete Produce" onclick="return confirm('Are you sure you want to delete this product listing?');">
                                                 <i class="fa-solid fa-trash"></i>
                                             </a>
@@ -1240,50 +1221,6 @@
                 </div>
             </div>
 
-            <!-- ==========================================
-                 SECTION: REVIEWS & RATINGS
-                 ========================================== -->
-            <div id="section-reviews" style="display: none;">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h4 class="fw-bold mb-1 text-dark">Customer Reviews & Seller Ratings</h4>
-                        <p class="text-muted small mb-0">Monitor product satisfaction, star ratings, and community feedback.</p>
-                    </div>
-                </div>
-                
-                <div class="saas-admin-card p-0 overflow-hidden">
-                    <div class="table-responsive">
-                        <table class="table saas-table mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Buyer</th>
-                                    <th>Produce / Crop</th>
-                                    <th>Rating Score</th>
-                                    <th>Feedback / Comment</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for review in reviews_list %}
-                                <tr>
-                                    <td class="fw-bold text-dark">{{ review.buyer.username }}</td>
-                                    <td>
-                                        <span class="text-success fw-semibold"><i class="fa-solid fa-leaf me-1"></i>{{ review.crop.name }}</span>
-                                    </td>
-                                    <td class="text-warning fw-bold">
-                                        <i class="fa-solid fa-star"></i> {{ review.rating }} / 5
-                                    </td>
-                                    <td class="text-muted">{{ review.comment|truncatechars:70|default:"No comment provided." }}</td>
-                                    <td class="text-muted small">{{ review.created_at|date:"M d, Y" }}</td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="5" class="text-center text-muted py-4">No reviews recorded yet.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
 
             <!-- ==========================================
                  SECTION: NOTIFICATIONS
@@ -1551,13 +1488,37 @@
             });
         });
 
-        // --- Chart.js: Orders & Growth Chart ---
+        // --- Tab Parameter auto-detection from URL (e.g. ?tab=buyers) ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTabParam = urlParams.get('tab');
+        if (activeTabParam) {
+            const targetLink = document.querySelector(`.admin-sidebar .nav-link[data-tab-target="${activeTabParam}"]`);
+            if (targetLink) {
+                setTimeout(() => targetLink.click(), 50);
+            }
+        }
+
+        // --- Chart.js: Orders & Growth Line Chart ---
         const ctxRev = document.getElementById('ordersChart');
-        if (ctxRev) {
-            // Dynamic months from django if available or fallback
-            let chartLabels = {{ months|safe|default:"['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep']" }};
-            let chartRevenue = {{ monthly_revenue|safe|default:"[42000, 58000, 64000, 92000, 115000, 148000]" }};
-            let chartOrders = [28, 44, 52, 78, 96, 124];
+        if (ctxRev && typeof Chart !== 'undefined') {
+            let chartLabels = ["Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"];
+            let chartRevenue = [28000, 42000, 64000, 89000, 115000, 148000, 182000, 215000];
+            let chartOrders = [12, 24, 38, 54, 72, 95, 118, 142];
+
+            try {
+                const rawLabels = '{{ months_json|default:""|safe }}';
+                const rawRevenue = '{{ monthly_revenue_json|default:""|safe }}';
+                if (rawLabels && rawLabels !== 'None') {
+                    const parsed = JSON.parse(rawLabels);
+                    if (Array.isArray(parsed) && parsed.length > 0) chartLabels = parsed;
+                }
+                if (rawRevenue && rawRevenue !== 'None') {
+                    const parsed = JSON.parse(rawRevenue);
+                    if (Array.isArray(parsed) && parsed.length > 0) chartRevenue = parsed;
+                }
+            } catch (e) {
+                console.warn("Chart data parse fallback active:", e);
+            }
 
             new Chart(ctxRev, {
                 type: 'line',
@@ -1568,12 +1529,15 @@
                             label: 'Revenue (₹)',
                             data: chartRevenue,
                             borderColor: '#2E7D32',
-                            backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                            backgroundColor: 'rgba(46, 125, 50, 0.12)',
                             fill: true,
-                            borderWidth: 2.5,
+                            borderWidth: 3,
                             tension: 0.35,
-                            pointRadius: 4,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
                             pointBackgroundColor: '#2E7D32',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
                             yAxisID: 'y'
                         },
                         {
@@ -1581,11 +1545,14 @@
                             data: chartOrders,
                             borderColor: '#FF9800',
                             backgroundColor: 'transparent',
-                            borderWidth: 2,
+                            borderWidth: 2.5,
                             borderDash: [5, 5],
                             tension: 0.35,
                             pointRadius: 4,
+                            pointHoverRadius: 6,
                             pointBackgroundColor: '#FF9800',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
                             yAxisID: 'y1'
                         }
                     ]
@@ -1601,8 +1568,8 @@
                         legend: { display: false },
                         tooltip: {
                             backgroundColor: '#1B4332',
-                            padding: 10,
-                            titleFont: { family: 'Plus Jakarta Sans', size: 12 },
+                            padding: 12,
+                            titleFont: { family: 'Plus Jakarta Sans', size: 12, weight: 'bold' },
                             bodyFont: { family: 'Plus Jakarta Sans', size: 12 },
                             cornerRadius: 8
                         }
@@ -1631,33 +1598,274 @@
 
         // --- Chart.js: Produce Category Donut ---
         const ctxCat = document.getElementById('categoryChart');
-        if (ctxCat) {
+        if (ctxCat && typeof Chart !== 'undefined') {
             new Chart(ctxCat, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Vegetables', 'Fruits', 'Grains & Pulses', 'Organic Specials', 'Dairy & Herbs'],
+                    labels: ['Vegetables', 'Fruits', 'Grains & Other'],
                     datasets: [{
-                        data: [35, 28, 20, 10, 7],
-                        backgroundColor: ['#2E7D32', '#4CAF50', '#FF9800', '#0288D1', '#9C27B0'],
-                        borderWidth: 2,
+                        data: [35, 28, 37],
+                        backgroundColor: ['#2E7D32', '#FF9800', '#0288D1'],
+                        borderWidth: 3,
                         borderColor: '#ffffff',
-                        hoverOffset: 6
+                        hoverOffset: 8
                     }]
                 },
                 options: { 
                     responsive: true, 
                     maintainAspectRatio: false, 
-                    cutout: '72%',
+                    cutout: '70%',
                     plugins: { 
                         legend: { display: false },
                         tooltip: {
                             backgroundColor: '#1B4332',
-                            cornerRadius: 8
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.label + ': ' + context.parsed + '%';
+                                }
+                            }
                         }
                     } 
                 }
             });
         }
     });
+
+    // ==========================================
+    // RED DELETE USER CONFIRMATION & TOAST LOGIC
+    // ==========================================
+    let targetDeleteUserId = null;
+    let targetDeleteRowId = null;
+
+    // Relocate modal & toast to document.body immediately to escape parent stacking context
+    function ensureModalInBody() {
+        const modalEl = document.getElementById('redDeleteUserModal');
+        if (modalEl && modalEl.parentElement !== document.body) {
+            document.body.appendChild(modalEl);
+        }
+        const toastContainer = document.getElementById('redToastContainer');
+        if (toastContainer && toastContainer.parentElement !== document.body) {
+            document.body.appendChild(toastContainer);
+        }
+    }
+    ensureModalInBody();
+
+    function openDeleteUserModal(userId, username, email, orderCount, role) {
+        ensureModalInBody();
+        targetDeleteUserId = userId;
+        targetDeleteRowId = (role === 'farmer') ? `farmer-row-${userId}` : `buyer-row-${userId}`;
+
+        const usernameEl = document.getElementById('deleteTargetUsername');
+        const emailEl = document.getElementById('deleteTargetEmail');
+        const ordersEl = document.getElementById('deleteTargetOrders');
+
+        if (usernameEl) usernameEl.textContent = username;
+        if (emailEl) emailEl.textContent = email || 'No email registered';
+        if (ordersEl) ordersEl.textContent = orderCount || '0 Orders';
+
+        const modalEl = document.getElementById('redDeleteUserModal');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl, {
+            backdrop: true,
+            keyboard: true,
+            focus: true
+        });
+        modal.show();
+    }
+
+    function getAdminCsrfToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === ('csrftoken=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue || '{{ csrf_token }}';
+    }
+
+    function confirmDeleteUserAjax() {
+        if (!targetDeleteUserId) return;
+
+        const btn = document.getElementById('btnExecuteDeleteUser');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Deleting...';
+
+        const token = getAdminCsrfToken();
+
+        fetch(`/admin/users/${targetDeleteUserId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': token,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: 'ajax=1'
+        })
+        .then(response => {
+            return response.json().then(data => ({ status: response.status, body: data }));
+        })
+        .then(({ status, body }) => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+
+            // Hide modal
+            const modalEl = document.getElementById('redDeleteUserModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) modalInstance.hide();
+
+            if (body.success) {
+                // Smoothly animate and remove row
+                const row = document.getElementById(targetDeleteRowId);
+                if (row) {
+                    row.style.transition = 'all 0.4s ease';
+                    row.style.backgroundColor = '#ffebee';
+                    row.style.opacity = '0';
+                    setTimeout(() => row.remove(), 400);
+                }
+
+                // Show RED Toast Popup
+                const toastMsgEl = document.getElementById('redToastMessage');
+                if (toastMsgEl) toastMsgEl.textContent = body.message || `User '${body.username}' permanently deleted!`;
+                const toastEl = document.getElementById('redDeleteSuccessToast');
+                if (toastEl) {
+                    const toast = new bootstrap.Toast(toastEl, { delay: 4500 });
+                    toast.show();
+                }
+            } else {
+                alert(body.message || 'Failed to delete user.');
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            console.error('Delete error:', err);
+            // Fallback: standard form submit if fetch network fails
+            if (confirm('AJAX request encountered an issue. Would you like to proceed with standard secure deletion?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/admin/users/${targetDeleteUserId}/delete/`;
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = token;
+                form.appendChild(csrfInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+
+    // Bind click directly once DOM is ready
+    document.addEventListener("DOMContentLoaded", function() {
+        ensureModalInBody();
+        const deleteExecBtn = document.getElementById('btnExecuteDeleteUser');
+        if (deleteExecBtn) {
+            deleteExecBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                confirmDeleteUserAjax();
+            });
+        }
+    });
 </script>
+
+<style>
+    /* Ensure Red Delete Modal and Backdrops never conflict with stacking contexts */
+    #redDeleteUserModal {
+        z-index: 106000 !important;
+        pointer-events: auto !important;
+    }
+    #redDeleteUserModal .modal-dialog {
+        z-index: 106001 !important;
+        position: relative !important;
+        pointer-events: auto !important;
+    }
+    #redDeleteUserModal .modal-content {
+        pointer-events: auto !important;
+        position: relative !important;
+        z-index: 106002 !important;
+    }
+    #redDeleteUserModal .modal-footer button,
+    #redDeleteUserModal .btn {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        position: relative !important;
+        z-index: 106003 !important;
+    }
+    .modal-backdrop.show {
+        z-index: 105500 !important;
+    }
+</style>
+
+<!-- ==========================================
+     RED DELETE USER CONFIRMATION MODAL
+     ========================================== -->
+<div class="modal fade" id="redDeleteUserModal" tabindex="-1" aria-labelledby="redDeleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <!-- Red Header Banner -->
+            <div class="p-4 text-center text-white" style="background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%);">
+                <div class="rounded-circle bg-white text-danger d-flex align-items-center justify-content-center shadow" 
+                     style="width: 60px; height: 60px; margin: 0 auto 12px; font-size: 1.6rem;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h5 class="modal-title fw-bold mb-1" id="redDeleteUserModalLabel">Delete Account?</h5>
+                <p class="small mb-0 text-white-50">Permanent Deletion Warning</p>
+            </div>
+            
+            <div class="modal-body p-4 text-center">
+                <p class="text-muted mb-3" style="font-size: 0.95rem;">
+                    Are you sure you want to permanently delete <strong class="text-danger" id="deleteTargetUsername">user</strong>?
+                </p>
+                
+                <div class="card p-3 bg-danger-subtle border-0 rounded-3 mb-3 text-start">
+                    <div class="d-flex justify-content-between small text-danger-emphasis mb-1">
+                        <span>Email:</span>
+                        <strong id="deleteTargetEmail">--</strong>
+                    </div>
+                    <div class="d-flex justify-content-between small text-danger-emphasis">
+                        <span>Associated Orders / Listings:</span>
+                        <strong id="deleteTargetOrders">0 Orders</strong>
+                    </div>
+                </div>
+
+                <div class="small text-muted mb-2">
+                    <i class="fa-solid fa-circle-info text-danger me-1"></i>
+                    All user profile data, orders, and sessions will be permanently removed.
+                </div>
+            </div>
+            
+            <div class="modal-footer border-0 p-3 pt-0 d-flex gap-2">
+                <button type="button" class="btn btn-light rounded-pill flex-fill py-2 fw-semibold" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-danger rounded-pill flex-fill py-2 fw-bold shadow-sm" id="btnExecuteDeleteUser">
+                    <i class="fa-solid fa-trash me-1"></i> Delete User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
+     RED FLOATING TOAST POPUP (MAST RED POPUP)
+     ========================================== -->
+<div id="redToastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 107000;">
+    <div id="redDeleteSuccessToast" class="toast align-items-center text-white bg-danger border-0 rounded-4 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex p-2">
+            <div class="toast-body d-flex align-items-center gap-2 fw-semibold fs-6">
+                <i class="fa-solid fa-circle-check fs-4"></i>
+                <span id="redToastMessage">User permanently deleted successfully!</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
 {% endblock %}

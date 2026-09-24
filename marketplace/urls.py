@@ -25,6 +25,8 @@ urlpatterns = [
     path('crops/<int:pk>/delete/', views.crop_delete_view, name='crop_delete'),
     path('farmer/orders/', views.farmer_orders_view, name='farmer_orders'),
     path('farmer/orders/<int:pk>/status/', views.farmer_update_order_status_view, name='farmer_update_order_status'),
+    path('farmer/orders/<int:pk>/accept/', views.farmer_accept_order_view, name='farmer_accept_order'),
+    path('farmer/orders/<int:pk>/reject/', views.farmer_reject_order_view, name='farmer_reject_order'),
     
     # Buyer Actions (Cart, Checkout, Tracking, Invoice)
     path('cart/', views.view_cart_view, name='view_cart'),
@@ -60,10 +62,6 @@ urlpatterns = [
     path('smart-tools/', views.smart_tools_view, name='smart_tools'),
     path('weather-dashboard/', views.weather_dashboard_view, name='weather_dashboard'),
 
-    # Chat Messaging
-    path('chat/', views.chat_list_view, name='chat_list'),
-    path('chat/<str:username>/', views.chat_detail_view, name='chat_detail'),
-    
     # Farmer API & Storefront
     path('farmer/analytics-api/', views.farmer_sales_analytics_api_view, name='farmer_sales_analytics_api'),
     path('farmer/analytics-pdf/', views.farmer_sales_analytics_pdf_view, name='farmer_sales_analytics_pdf'),

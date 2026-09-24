@@ -16,6 +16,12 @@ db.sqlite3
 # VS Code
 .vscode/
 
-# OS files
+# OS and Editor files
 .DS_Store
 Thumbs.db
+~$*
+*.tmp
+*.temp
+scratch.js
+script*.js
+farmer_script.js

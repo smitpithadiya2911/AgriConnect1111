@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout, authenticate, get_user_model
+from django.contrib.auth import login, logout, authenticate, get_user_model, update_session_auth_hash
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -170,7 +170,7 @@ def select_role_view(request):
 
 @login_required
 def profile_view(request):
-    """Allows users to update their base user details and role-specific profile details."""
+    """Allows users (farmers and buyers) to update their base user details, upload/change profile pictures, role settings, and change their password."""
     user = request.user
     
     # Map role to profile model and form class
@@ -182,20 +182,52 @@ def profile_view(request):
     ModelClass, FormClass = ROLE_MAP.get(user.role, (None, None))
     profile_instance = ModelClass.objects.get_or_create(user=user)[0] if ModelClass else None
         
-    # Instantiate the forms
     if request.method == 'POST':
-        user_form = UserUpdateForm(request.POST, request.FILES, instance=user)
-        profile_form = FormClass(request.POST, instance=profile_instance) if FormClass else None
+        action = request.POST.get('action', 'update_profile')
+        
+        # --- Handle Password Change from Profile ---
+        if action == 'change_password':
+            new_password = request.POST.get('new_password', '').strip()
+            confirm_password = request.POST.get('confirm_password', '').strip()
             
-        if user_form.is_valid() and (not profile_form or profile_form.is_valid()):
-            user_form.save()
-            if profile_form:
-                profile_form.save()
+            if not new_password or not confirm_password:
+                messages.error(request, "Please enter and confirm your new password.")
+            elif len(new_password) < 6:
+                messages.error(request, "Password must be at least 6 characters long.")
+            elif new_password != confirm_password:
+                messages.error(request, "Passwords do not match. Please re-enter them carefully.")
+            else:
+                user.set_password(new_password)
+                user.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, "Your password has been changed successfully! Your account is secured.")
+                return redirect('profile')
                 
-            messages.success(request, "Your profile has been updated successfully!")
-            return redirect('profile')
+        # --- Handle Profile Info & Picture Update ---
         else:
-            messages.error(request, "Please correct the errors below.")
+            user_form = UserUpdateForm(request.POST, request.FILES, instance=user)
+            profile_form = FormClass(request.POST, instance=profile_instance) if FormClass else None
+                
+            if user_form.is_valid() and (not profile_form or profile_form.is_valid()):
+                saved_user = user_form.save(commit=False)
+                
+                # Check if remove profile picture was requested
+                if request.POST.get('remove_picture') == '1':
+                    if saved_user.profile_picture:
+                        try:
+                            saved_user.profile_picture.delete(save=False)
+                        except Exception:
+                            pass
+                    saved_user.profile_picture = None
+                    
+                saved_user.save()
+                if profile_form:
+                    profile_form.save()
+                    
+                messages.success(request, "Your profile details have been saved successfully!")
+                return redirect('profile')
+            else:
+                messages.error(request, "Please correct the errors below.")
     else:
         user_form = UserUpdateForm(instance=user)
         profile_form = FormClass(instance=profile_instance) if FormClass else None
@@ -206,6 +238,90 @@ def profile_view(request):
         'role': user.role
     }
     return render(request, 'accounts/profile.html', context)
+
+
+def forgot_password_view(request):
+    """Initiates password reset by sending an OTP to the user's registered email."""
+    if request.user.is_authenticated:
+        return redirect('profile')
+
+    if request.method == 'POST':
+        identifier = request.POST.get('identifier', '').strip()
+        user = None
+        if '@' in identifier:
+            user = User.objects.filter(email__iexact=identifier).first()
+        else:
+            user = User.objects.filter(username__iexact=identifier).first()
+
+        if user and user.email:
+            otp_code = generate_otp()
+            auth_otp = AuthOTP.objects.create(
+                user=user,
+                email=user.email,
+                otp_code=otp_code,
+                otp_type='password_reset',
+                expires_at=timezone.now() + timedelta(minutes=10)
+            )
+
+            send_html_email(
+                subject='AgriConnect - Password Reset Instructions',
+                template_name='emails/auth_otp_email.html',
+                context={'otp_code': otp_code, 'user': user, 'otp_type': 'password_reset'},
+                recipient_list=[user.email]
+            )
+            messages.success(request, f"A 6-digit verification code has been sent to {user.email}.")
+            return redirect('verify_password_reset_otp', pk=auth_otp.pk)
+        else:
+            messages.error(request, "No account was found with that username or email address.")
+
+    return render(request, 'accounts/forgot_password.html')
+
+
+def verify_password_reset_otp_view(request, pk):
+    """Verifies the password reset OTP and sets the new password."""
+    auth_otp = get_object_or_404(AuthOTP, pk=pk, otp_type='password_reset')
+
+    if auth_otp.is_verified:
+        messages.info(request, "This password reset code has already been used. Please log in.")
+        return redirect('login')
+
+    if request.method == 'POST':
+        entered_otp = request.POST.get('otp_code', '').strip()
+        new_password = request.POST.get('new_password', '').strip()
+        confirm_password = request.POST.get('confirm_password', '').strip()
+
+        if auth_otp.attempts >= 5:
+            messages.error(request, "Too many failed attempts. Please request a new password reset.")
+            return redirect('forgot_password')
+
+        auth_otp.attempts += 1
+        auth_otp.save(update_fields=['attempts'])
+
+        if auth_otp.is_expired():
+            messages.error(request, "Verification code has expired. Please request a new one.")
+            return redirect('forgot_password')
+
+        if entered_otp != auth_otp.otp_code:
+            messages.error(request, "Invalid verification code.")
+        elif not new_password or not confirm_password:
+            messages.error(request, "Please enter and confirm your new password.")
+        elif len(new_password) < 6:
+            messages.error(request, "Password must be at least 6 characters long.")
+        elif new_password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+        else:
+            auth_otp.is_verified = True
+            auth_otp.save(update_fields=['is_verified'])
+
+            user = auth_otp.user
+            user.set_password(new_password)
+            user.save()
+
+            messages.success(request, "Password reset successful! You can now log in with your new password.")
+            return redirect('login')
+
+    return render(request, 'accounts/otp_verify_password_reset.html', {'auth_otp': auth_otp})
+
 
 
 # ==========================================

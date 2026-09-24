@@ -605,7 +605,7 @@
                     {% for crop in recommended_crops %}
                         <div class="col-sm-6 col-md-4 col-xl-3">
                             <div class="produce-mini-card p-3">
-                                <div style="width: 100%; aspect-ratio: 4/3; overflow: hidden; border-radius: 12px; margin-bottom: 12px; position: relative;">
+                                <div style="width: 100%; height: 180px; overflow: hidden; border-radius: 12px; margin-bottom: 12px; position: relative;">
                                     {% if crop.image %}
                                         <img src="{{ crop.image.url }}" alt="{{ crop.name }}" style="width: 100%; height: 100%; object-fit: cover;">
                                     {% else %}
@@ -693,8 +693,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 1. Chart.js Render for Buyer Spend Analytics
     const ctx = document.getElementById('buyerSpendChart');
     if (ctx) {
-        const labels = {{ months|safe|default:"['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul']" }};
-        const dataValues = {{ spending_trend|safe|default:"[250, 420, 310, 580, 490, 620]" }};
+        const labels = JSON.parse('{{ months|escapejs|default:"[\"Feb\", \"Mar\", \"Apr\", \"May\", \"Jun\", \"Jul\"]" }}');
+        const dataValues = JSON.parse('{{ spending_trend|escapejs|default:"[250, 420, 310, 580, 490, 620]" }}');
 
         new Chart(ctx, {
             type: 'line',

@@ -10,7 +10,6 @@ from .models import (
     Payment,
     Review,
     Notification,
-    ChatMessage,
     Wishlist,
 )
 
@@ -197,26 +196,6 @@ class NotificationAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(ChatMessage)
-class ChatMessageAdmin(admin.ModelAdmin):
-    list_display = (
-        'id',
-        'sender',
-        'receiver',
-        'crop',
-        'is_read',
-        'created_at'
-    )
-
-    list_filter = (
-        'is_read',
-    )
-
-    search_fields = (
-        'sender__username',
-        'receiver__username',
-        'message'
-    )
 
 
 @admin.register(Wishlist)

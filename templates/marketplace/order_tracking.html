@@ -108,10 +108,11 @@
 {% block extra_js %}
 <script>
     const orderId = "{{ order.id }}";
-    const allSteps = ['Pending', 'Confirmed', 'Out For Delivery', 'Delivered'];
+    const allSteps = ['Placed', 'Confirmed', 'Packed', 'Out For Delivery', 'Delivered'];
     const icons = {
-        'Pending': 'fa-cart-shopping',
+        'Placed': 'fa-cart-shopping',
         'Confirmed': 'fa-clipboard-check',
+        'Packed': 'fa-box-open',
         'Out For Delivery': 'fa-motorcycle',
         'Delivered': 'fa-house-circle-check'
     };
@@ -121,6 +122,9 @@
         let html = '';
         let passed = true;
         
+        // Normalize Pending to Placed
+        const normalizedStatus = (currentStatus === 'Pending') ? 'Placed' : currentStatus;
+        
         if(['Cancelled', 'Rejected', 'Returned'].includes(currentStatus)) {
             container.innerHTML = `<div class="alert alert-danger w-100 text-center fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Order is ${currentStatus}</div>`;
             return;
@@ -129,7 +133,7 @@
         allSteps.forEach((step, index) => {
             let stateClass = '';
             if (passed) {
-                if (step === currentStatus) {
+                if (step === normalizedStatus) {
                     stateClass = 'current';
                     passed = false;
                 } else {
